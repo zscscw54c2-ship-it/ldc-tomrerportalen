@@ -1212,7 +1212,7 @@
       list.forEach(function(e){
         var a = dayIndex(range, e.start), b = dayIndex(range, e.end);
         html += '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
-          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+STATUS_LABEL[e.status]+'</div></div></div>';
+          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
       });
     });
     box.innerHTML = html;
