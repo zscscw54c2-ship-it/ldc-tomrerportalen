@@ -318,34 +318,28 @@
   .kpi.warn .num{color:var(--warn-ink);} .kpi.bad .num{color:var(--bad-ink);}
   .kpi.link{cursor:pointer;} .kpi.link:hover{border-color:var(--border-strong);}
 
-  .week-timeline{padding:10px 12px 6px; display:flex; flex-direction:column; gap:5px; border-bottom:1px solid var(--border);}
-  .wt-row{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); height:20px;}
-  .wt-bar{grid-row:1; align-self:center; height:18px; border-radius:6px; border:1.5px solid transparent; display:flex; align-items:center; padding:0 8px; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
-  .wt-bar.s-mangler{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink);}
-  .wt-bar.s-pabegynt{background:var(--warn-soft); border-color:var(--warn); color:var(--warn-ink);}
-  .wt-bar.s-ferdig{background:var(--good); border-color:var(--good); color:#fff;}
-  .wt-bar.late{box-shadow:0 0 0 2px var(--bad-soft), 0 0 0 3px var(--bad);}
-  .wt-bar.cont-left{border-top-left-radius:2px; border-bottom-left-radius:2px;}
-  .wt-bar.cont-right{border-top-right-radius:2px; border-bottom-right-radius:2px;}
-  .wk{display:grid; grid-template-columns:repeat(5,minmax(0,1fr));}
-  .wkday{border-left:1px solid var(--border); min-height:170px; display:flex; flex-direction:column;}
-  .wkday:first-child{border-left:none;}
-  .wkday-head{padding:10px 12px 8px; display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--border);}
-  .wkday-head .dn{font-weight:700; font-size:13px;}
-  .wkday-head .dd{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);}
-  .wkday-head .staff{margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
-  .wkday.today{background:linear-gradient(var(--accent-soft), transparent 90px);}
-  .wkday.today .dn, .wkday.today .dd{color:var(--accent);}
-  .wkday.today .wkday-head{box-shadow:inset 0 3px 0 var(--accent);}
-  .wkday-body{padding:8px; display:flex; flex-direction:column; gap:7px; flex:1;}
-  .wkday .none{font-size:12px; color:var(--muted); padding:4px 2px;}
-  .wkel{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--innvendig); border-radius:9px; padding:8px 9px; cursor:pointer; box-shadow:0 1px 2px rgba(30,42,58,.04); transition:border-color .12s, transform .12s;}
+  .wk-headrow{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; padding:10px 12px 8px; border-bottom:1px solid var(--border);}
+  .wk-daycol-head{display:flex; align-items:baseline; gap:6px;}
+  .wk-daycol-head .dn{font-weight:700; font-size:13px;}
+  .wk-daycol-head .dd{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);}
+  .wk-daycol-head .staff{margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
+  .wk-daycol-head.today .dn, .wk-daycol-head.today .dd{color:var(--accent);}
+  .wk-row{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; padding:6px 12px;}
+  .wkel{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--innvendig); border-radius:9px; cursor:pointer; box-shadow:0 1px 2px rgba(30,42,58,.04); transition:border-color .12s, transform .12s; overflow:hidden;}
   .wkel:hover{border-color:var(--border-strong); transform:translateY(-1px);}
   .wkel.sec-utvendig{border-left-color:var(--utvendig);}
   .wkel.st-ferdig{opacity:.62;}
   .wkel.st-ferdig .wkel-name{text-decoration:line-through;}
-  .wkel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:6px;}
+  .wkel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:6px; padding:8px 9px 4px;}
   .wkel-name{font-weight:600; font-size:13px; line-height:1.3;}
+  .wkel .contmark{font-weight:700; color:var(--muted); flex:none;}
+  .wkel-days{display:grid;}
+  .wk-daycell{padding:0 9px 8px;}
+  .wk-daycell + .wk-daycell{border-left:1px solid var(--border);}
+  .wk-daycell-lbl{display:none; font-size:10.5px; font-weight:700; color:var(--muted); margin-bottom:3px;}
+  .wk-empty-row{padding:2px 12px 8px; font-size:12px; color:var(--muted);}
+  .wk-footrow{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; padding:8px 12px 10px; border-top:1px solid var(--border);}
+  .wk-foot-daylabel{display:none;}
   .stpill{font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; white-space:nowrap; flex:none;}
   .stpill.s-mangler{background:var(--bad-soft); color:var(--bad-ink);}
   .stpill.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink);}
@@ -444,8 +438,8 @@
   .ppl .pchip.conf{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink); font-weight:700;}
   .ppl .pchip.sel{background:var(--accent); border-color:var(--accent); color:#fff;}
   .drag-ghost{position:fixed; z-index:1000; pointer-events:none; transform:translate(-50%,-60%) rotate(-2deg); background:var(--accent); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px; font-weight:600; box-shadow:0 10px 24px -8px rgba(30,42,58,.5);}
-  .wkel.droppable{outline:2px dashed var(--accent); outline-offset:-2px;}
-  .wkel.drop-hover{background:var(--accent-soft); outline-style:solid; transform:scale(1.02);}
+  .wk-daycell.droppable{outline:2px dashed var(--accent); outline-offset:-2px;}
+  .wk-daycell.drop-hover{background:var(--accent-soft); outline-style:solid;}
   .miss.droppable{outline:2px dashed var(--warn-ink); outline-offset:-2px;}
   .miss.drop-hover{background:#fff3cf;}
   body.dragging, body.dragging *{cursor:grabbing !important;}
@@ -456,11 +450,14 @@
 
   /* ---------- mobil ---------- */
   @media (max-width:820px){
-    .wk{grid-template-columns:1fr;}
-    .wkday{border-left:none; border-top:1px solid var(--border); min-height:0;}
-    .wkday:first-child{border-top:none;}
-    .wkday.past{display:none;}
-    .wkday-body{flex-direction:column;}
+    .wk-headrow{display:none;}
+    .wk-row{grid-template-columns:1fr; gap:10px;}
+    .wkel{grid-column:1 !important;}
+    .wkel-days{grid-template-columns:1fr !important;}
+    .wk-daycell + .wk-daycell{border-left:none; border-top:1px solid var(--border);}
+    .wk-daycell-lbl{display:block;}
+    .wk-footrow{grid-template-columns:1fr;}
+    .wk-foot-daylabel{display:block; font-weight:700; font-size:12px; margin-bottom:4px;}
     .kpis{grid-template-columns:repeat(2,1fr);}
   }
   @media (max-width:640px){
@@ -550,8 +547,7 @@
         </div>
       </div>
       <div class="unplanned-note" id="unplannedNote" hidden></div>
-      <div class="week-timeline" id="weekTimeline" hidden></div>
-      <div class="wk" id="weekGrid"></div>
+      <div id="weekGrid"></div>
       <div class="cal-foot">
         <div class="legend">
           <span><i class="dot good"></i> Nok folk</span>
@@ -989,61 +985,65 @@
     byId("wkLabel").innerHTML = "Uke " + info.week + ' <span style="font-weight:500; color:var(--muted); font-size:13px;">' + fmtRange(toISODate(view.weekStart), toISODate(end)) + '</span>';
   }
 
-  function renderWeekTimeline(){
-    var box = byId("weekTimeline");
+  function renderWeekGrid(){
+    var grid = byId("weekGrid");
+    var todayIso = toISODate(new Date());
     var weekStartIso = toISODate(view.weekStart);
     var weekEnd = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+4);
     var weekEndIso = toISODate(weekEnd);
-    var list = elementsForCurrentProject().filter(function(e){
+    var isoList = [], dayMeta = [];
+    for(var i=0;i<5;i++){
+      var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
+      var iso = toISODate(d);
+      isoList.push(iso);
+      dayMeta.push({ date:d, iso:iso, name:DAY_NAMES[i], isToday: iso===todayIso });
+    }
+
+    var headHtml = dayMeta.map(function(m){
+      var els = activeElementsOn(m.iso, calSection());
+      var ppl = peopleAssignedOn(m.iso, els);
+      var status = dayStatus(els.length, ppl.size);
+      return '<div class="wk-daycol-head'+(m.isToday?' today':'')+'"><span class="dn">'+m.name+'</span><span class="dd">'+m.date.getDate()+'. '+NB_MONTHS_SHORT[m.date.getMonth()]+'</span>'+
+        (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') + '</div>';
+    }).join("");
+
+    var tasks = elementsForCurrentProject().filter(function(e){
       return isPlanned(e) && (!calSection() || e.section === calSection()) && e.start <= weekEndIso && e.end >= weekStartIso;
-    }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : (a.end < b.end ? -1 : (a.end > b.end ? 1 : 0)); });
-    if(list.length === 0){ box.hidden = true; box.innerHTML = ""; return; }
-    box.hidden = false;
-    box.innerHTML = list.map(function(e){
+    }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)); });
+
+    var rowsHtml = tasks.map(function(e){
       var s = e.start < weekStartIso ? weekStartIso : e.start;
       var en = e.end > weekEndIso ? weekEndIso : e.end;
       var startIdx = Math.round((fromISODate(s) - view.weekStart)/86400000);
       var endIdx = Math.round((fromISODate(en) - view.weekStart)/86400000);
       var contLeft = e.start < weekStartIso, contRight = e.end > weekEndIso;
-      var label = (contLeft ? '‹ ' : '') + escapeHtml(e.name) + (contRight ? ' ›' : '');
-      return '<div class="wt-row"><div class="wt-bar s-'+e.status+(isLate(e)?' late':'')+(contLeft?' cont-left':'')+(contRight?' cont-right':'')+
-        '" data-detail="'+e.id+'" style="grid-column:'+(startIdx+1)+' / '+(endIdx+2)+'" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+'">'+label+'</div></div>';
-    }).join("");
-    bindDetail(box);
-  }
-
-  function renderWeekGrid(){
-    var grid = byId("weekGrid");
-    var todayIso = toISODate(new Date());
-    var html = "";
-    for(var i=0;i<5;i++){
-      var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
-      var iso = toISODate(d);
-      var els = activeElementsOn(iso, calSection());
-      var ppl = peopleAssignedOn(iso, els);
-      var status = dayStatus(els.length, ppl.size);
-      var conflicts = conflictsForDate(iso);
-      html += '<div class="wkday'+(iso===todayIso?' today':'')+(iso<todayIso && view.weekStart.getTime()===mondayOf(new Date()).getTime()?' past':'')+'">' +
-        '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-        (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
-        '</div><div class="wkday-body">';
-      if(els.length === 0){
-        html += '<div class="none">Ingenting planlagt</div>';
-      } else {
-        els.forEach(function(e){
-          var ids = (e.assignments && e.assignments[iso]) || [];
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'" data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
-            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>' +
-            '<div class="ppl">' + (ids.length ? ids.map(function(pid){
-              var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
-              return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
-            }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
-        });
+      var span = endIdx - startIdx + 1;
+      var daycellsHtml = "";
+      for(var di=startIdx; di<=endIdx; di++){
+        var iso = isoList[di];
+        var ids = (e.assignments && e.assignments[iso]) || [];
+        var conflicts = conflictsForDate(iso);
+        daycellsHtml += '<div class="wk-daycell" data-drop-el="'+e.id+'" data-iso="'+iso+'">' +
+          '<span class="wk-daycell-lbl">'+dayMeta[di].name+' '+dayMeta[di].date.getDate()+'.</span>' +
+          '<div class="ppl">' + (ids.length ? ids.map(function(pid){
+            var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
+            return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
+          }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
       }
+      return '<div class="wkel sec-'+e.section+' st-'+e.status+'" data-detail="'+e.id+'" role="button" tabindex="0" style="grid-column:'+(startIdx+1)+' / '+(endIdx+2)+'">' +
+        '<div class="wkel-top">'+(contLeft?'<span class="contmark">‹</span>':'')+'<span class="wkel-name">'+escapeHtml(e.name)+'</span>'+statusPill(e)+(contRight?'<span class="contmark">›</span>':'')+'</div>' +
+        '<div class="wkel-days" style="grid-template-columns:repeat('+span+',1fr)">'+daycellsHtml+'</div></div>';
+    }).join("");
+
+    var footHtml = dayMeta.map(function(m){
+      var iso = m.iso;
+      var els = activeElementsOn(iso, calSection());
       var present = presentOn(iso);
+      var body = '<div class="wk-foot-daylabel">'+m.name+' '+m.date.getDate()+'. '+NB_MONTHS_SHORT[m.date.getMonth()]+'</div>';
+      if(els.length === 0){ body += '<div class="none">Ingenting planlagt</div>'; }
       if(present.size){
         var missing = presentWithoutTask(iso);
-        html += '<div class="present">'+present.size+' til stede' +
+        body += '<div class="present">'+present.size+' til stede' +
           '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
             (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
               missing.map(function(id){
@@ -1053,9 +1053,14 @@
             : '<b>Alle har oppgave</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
           '</div>';
       }
-      html += '</div></div>';
-    }
-    grid.innerHTML = html;
+      return '<div class="wk-daycol-foot">'+body+'</div>';
+    }).join("");
+
+    grid.innerHTML =
+      '<div class="wk-headrow">'+headHtml+'</div>' +
+      (rowsHtml ? '<div class="wk-row">'+rowsHtml+'</div>' : '<div class="wk-empty-row">Ingenting planlagt denne uken.</div>') +
+      '<div class="wk-footrow">'+footHtml+'</div>';
+
     bindDetail(grid);
     if(view.sel) markDroppable(view.sel.iso, view.sel.from);
   }
@@ -1260,7 +1265,7 @@
     byId("ganttView").hidden = view.calView !== "prosjekt";
     document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
     document.querySelectorAll("#calSecSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calsec===view.calSec ? "true":"false"); });
-    if(view.calView === "uke"){ renderWeekLabel(); renderWeekTimeline(); renderWeekGrid(); renderConflictBanner(); }
+    if(view.calView === "uke"){ renderWeekLabel(); renderWeekGrid(); renderConflictBanner(); }
     else { renderGantt(); byId("conflictBanner").hidden = true; }
     renderUnplannedNote();
   }
