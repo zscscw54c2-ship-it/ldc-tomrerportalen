@@ -498,7 +498,7 @@
       </div>
       <nav class="tabs" role="tablist">
         <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
-        <button role="tab" data-tab="elementer" aria-selected="false">Elementer</button>
+        <button role="tab" data-tab="elementer" aria-selected="false">Oppgaver</button>
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
@@ -549,7 +549,7 @@
           <span><i class="dot warn"></i> For få folk</span>
           <span><i class="dot bad"></i> Ingen satt opp</span>
         </div>
-        <span>Dra et navn opp på et element for å sette personen på · trykk på elementet for detaljer</span>
+        <span>Dra et navn opp på en oppgave for å sette personen på · trykk på oppgaven for detaljer</span>
       </div>
     </div>
 
@@ -576,7 +576,7 @@
       <div class="seccard">
         <div class="sechead">
           <h2><i class="sec-dot" style="background:var(--innvendig)"></i> Innvendig tømring</h2>
-          <button class="btn small primary" data-newel="innvendig">+ Nytt element</button>
+          <button class="btn small primary" data-newel="innvendig">+ Ny oppgave</button>
         </div>
         <div class="progress" id="progress-innvendig"></div>
         <div class="seclist" id="list-innvendig"></div>
@@ -584,7 +584,7 @@
       <div class="seccard">
         <div class="sechead">
           <h2><i class="sec-dot" style="background:var(--utvendig)"></i> Utvendig tømring</h2>
-          <button class="btn small primary" data-newel="utvendig">+ Nytt element</button>
+          <button class="btn small primary" data-newel="utvendig">+ Ny oppgave</button>
         </div>
         <div class="progress" id="progress-utvendig"></div>
         <div class="seclist" id="list-utvendig"></div>
@@ -667,7 +667,7 @@
     <div class="det-days" id="detDays"></div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="detClose">Lukk</button>
-      <button type="button" class="btn primary" id="detGoto">Gå til elementet</button>
+      <button type="button" class="btn primary" id="detGoto">Gå til oppgaven</button>
     </div>
   </div>
 </dialog>
@@ -678,7 +678,7 @@
   <div class="dlg-body">
     <h3 id="wvTitle">Frivillige</h3>
     <div class="det-meta" id="wvMeta"></div>
-    <div class="att-legend"><span><i style="background:var(--good)"></i>Til stede og satt på et element</span><span><i style="background:var(--warn)"></i>Til stede, mangler element</span></div>
+    <div class="att-legend"><span><i style="background:var(--good)"></i>Til stede og satt på en oppgave</span><span><i style="background:var(--warn)"></i>Til stede, mangler oppgave</span></div>
     <div class="att-scroll"><table class="att-table" id="wvTable"></table></div>
     <div class="att-add">
       <select id="wvAddSel"></select>
@@ -714,14 +714,14 @@
 
 <dialog id="elDialog">
   <form class="dlg-body" id="elForm" method="dialog">
-    <h3 id="elDlgTitle">Nytt element</h3>
+    <h3 id="elDlgTitle">Ny oppgave</h3>
     <input type="hidden" id="elId" />
     <div class="field" id="elPickWrap" hidden>
-      <label for="elPick">Hent et element som ikke er planlagt ennå</label>
+      <label for="elPick">Hent en oppgave som ikke er planlagt ennå</label>
       <select id="elPick"></select>
     </div>
     <div class="field">
-      <label for="elName">Navn på element</label>
+      <label for="elName">Navn på oppgave</label>
       <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" />
     </div>
     <div class="field">
@@ -992,7 +992,7 @@
       var conflicts = conflictsForDate(iso);
       html += '<div class="wkday'+(iso===todayIso?' today':'')+(iso<todayIso && view.weekStart.getTime()===mondayOf(new Date()).getTime()?' past':'')+'">' +
         '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-        (els.length ? '<span class="staff" title="Personer satt opp / elementer"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+        (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
         '</div><div class="wkday-body">';
       if(els.length === 0){
         html += '<div class="none">Ingenting planlagt</div>';
@@ -1003,7 +1003,7 @@
             '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>' +
             '<div class="ppl">' + (ids.length ? ids.map(function(pid){
               var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
-              return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til et annet element, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
+              return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
             }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
         });
       }
@@ -1012,12 +1012,12 @@
         var missing = presentWithoutTask(iso);
         html += '<div class="present">'+present.size+' til stede' +
           '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-            (missing.length ? '<b>Ledige – mangler element ('+missing.length+')<span class="hint">Dra navnet opp på et element</span></b>' +
+            (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
               missing.map(function(id){
                 var sel = view.sel && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
                 return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
               }).join("")
-            : '<b>Alle har element</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
+            : '<b>Alle har oppgave</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
           '</div>';
       }
       html += '</div></div>';
@@ -1062,7 +1062,7 @@
     view.sel = sel;
     var bar = byId("selBar");
     if(sel){
-      byId("selText").innerHTML = 'Trykk på et element for å sette på <b>'+escapeHtml(personName(sel.pid))+'</b>' + (sel.from ? ' (eller på listen «Ledige» for å ta av)' : '');
+      byId("selText").innerHTML = 'Trykk på en oppgave for å sette på <b>'+escapeHtml(personName(sel.pid))+'</b>' + (sel.from ? ' (eller på listen «Ledige» for å ta av)' : '');
       bar.hidden = false;
     } else { bar.hidden = true; }
     renderWeekGrid();
@@ -1173,7 +1173,7 @@
 
     if(!range || planned.length === 0){
       box.style.removeProperty("--days");
-      box.innerHTML = '<div class="g-empty">Ingen elementer er lagt inn i planen ennå.<br>Gå til <b>Elementer</b> og trykk «+ Legg i planen».</div>';
+      box.innerHTML = '<div class="g-empty">Ingen oppgaver er lagt inn i planen ennå.<br>Gå til <b>Oppgaver</b> og trykk «+ Legg i planen».</div>';
       return;
     }
     var dw = window.matchMedia("(max-width:640px)").matches ? 16 : 22;
@@ -1203,7 +1203,7 @@
       var dw0 = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+w);
       weeks += '<div style="left:'+(w*dw)+'px; width:'+(7*dw)+'px">'+(dw>=20?'Uke ':'')+isoWeekInfo(dw0).week+'</div>';
     }
-    var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Element</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+    var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Oppgave</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
 
     ["innvendig","utvendig"].forEach(function(sec){
       var list = planned.filter(function(e){ return e.section === sec; }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
@@ -1307,7 +1307,7 @@
       var cells = days.map(function(iso,i){
         var on = isPresent(p.id, iso); if(on) cnt++;
         var asg = on && assignedByDay[i].has(p.id);
-        return '<td><button type="button" class="att-cell'+(on?' on':'')+(asg?' assigned':'')+'" data-att="'+p.id+'|'+iso+'" title="'+(on ? (asg?'Til stede, satt på element':'Til stede, mangler element') : 'Ikke med')+'">'+(on?'✓':'')+'</button></td>';
+        return '<td><button type="button" class="att-cell'+(on?' on':'')+(asg?' assigned':'')+'" data-att="'+p.id+'|'+iso+'" title="'+(on ? (asg?'Til stede, satt på oppgave':'Til stede, mangler oppgave') : 'Ikke med')+'">'+(on?'✓':'')+'</button></td>';
       }).join("");
       return '<tr><td>'+escapeHtml(p.name)+(p.group?'<small>'+escapeHtml(p.group)+'</small>':'')+'</td>'+cells +
         '<td><button type="button" class="att-cell all" data-attall="'+p.id+'">'+(cnt===5?'Fjern':'Alle')+'</button></td></tr>';
@@ -1412,7 +1412,7 @@
       var presNoTask = presentWithoutTask(iso).length;
       var row = '<div class="det-day staff-day">'+dayLabel(d)+'<div style="flex:1; min-width:0">' +
         '<div class="ppl">'+(ids.length ? ids.map(function(pid){
-          return '<span'+(conflicts[pid]?' class="conf" title="Satt opp på et annet element samme dag"':'')+'>'+escapeHtml(personName(pid))+'<button type="button" data-unstaff="'+iso+'|'+pid+'" title="Fjern">×</button></span>';
+          return '<span'+(conflicts[pid]?' class="conf" title="Satt opp på en annen oppgave samme dag"':'')+'>'+escapeHtml(personName(pid))+'<button type="button" data-unstaff="'+iso+'|'+pid+'" title="Fjern">×</button></span>';
         }).join("") : '<span class="nobody">Ingen satt opp</span>')+'</div>' +
         '<div class="tools"><select data-staff="'+iso+'"><option value="">+ Legg til person</option>' +
         (function(){
@@ -1422,11 +1422,11 @@
           return (pres.length ? '<optgroup label="Til stede denne dagen">'+pres.map(opt).join("")+'</optgroup><optgroup label="Andre">' : '') + rest.map(opt).join("") + (pres.length ? '</optgroup>' : '');
         })() + '</select>' +
         (prevIso ? '<button type="button" class="copy" data-copyday="'+prevIso+'|'+iso+'">Samme som dagen før</button>' : '') +
-        (presNoTask ? '<span style="font-size:11px; color:var(--warn-ink)">'+presNoTask+' til stede uten element</span>' : '') +
+        (presNoTask ? '<span style="font-size:11px; color:var(--warn-ink)">'+presNoTask+' til stede uten oppgave</span>' : '') +
         '</div></div></div>';
       prevIso = iso;
       return row;
-    }).join("") || '<p class="empty-note">Elementet har ingen arbeidsdager i perioden.</p>';
+    }).join("") || '<p class="empty-note">Oppgaven har ingen arbeidsdager i perioden.</p>';
     var box = byId("staffDays");
     box.querySelectorAll("[data-staff]").forEach(function(sel){
       sel.addEventListener("change", function(){ if(this.value) assignPerson(id, this.dataset.staff, this.value); });
@@ -1450,7 +1450,7 @@
     var list = elementsForCurrentProject().filter(function(e){ return (!calSection() || e.section === calSection()) && !isPlanned(e) && e.status !== "ferdig"; });
     if(list.length === 0 || view.calView !== "uke"){ box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
-    box.innerHTML = '<b>'+list.length+'</b> element'+(list.length===1?'':'er')+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
+    box.innerHTML = '<b>'+list.length+'</b> oppgave'+(list.length===1?'':'r')+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
     byId("showUnplanned").addEventListener("click", function(){ view.elFilter = "ikkeplanlagt"; renderElementsTab(); switchTab("elementer"); });
   }
 
@@ -1495,7 +1495,7 @@
     var nAtt = state.attendance.filter(function(a){ return a.project_id === pid; }).length;
     var nShop = state.shopItems.filter(function(x){ return x.project_id === pid; }).length;
     var nDraw = state.drawings.filter(function(x){ return x.project_id === pid; }).length;
-    var msg = 'Slette prosjektet «'+p.name+'»?\n\nDette sletter også for godt:\n· '+nEl+' element(er)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nSkriv prosjektnavnet for å bekrefte:';
+    var msg = 'Slette prosjektet «'+p.name+'»?\n\nDette sletter også for godt:\n· '+nEl+' oppgave(r)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nSkriv prosjektnavnet for å bekrefte:';
     var answer = prompt(msg, "");
     if(answer === null) return;
     if(answer.trim() !== p.name.trim()){ showError("Navnet stemte ikke – prosjektet ble ikke slettet."); return; }
@@ -1541,12 +1541,12 @@
     var noTask = 0;
     weekDays(mondayOf(new Date())).forEach(function(d){ noTask += presentWithoutTask(toISODate(d)).length; });
     byId("summaryRow").innerHTML =
-      '<div class="kpi"><div class="num">'+c.ferdig+'<small> / '+all.length+'</small></div><div class="lbl">Elementer ferdig · '+c.pabegynt+' påbegynt</div>' +
+      '<div class="kpi"><div class="num">'+c.ferdig+'<small> / '+all.length+'</small></div><div class="lbl">Oppgaver ferdig · '+c.pabegynt+' påbegynt</div>' +
         '<div class="bar"><i style="width:'+(c.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(c.pabegynt/tot*100)+'%; background:var(--warn)"></i></div></div>' +
       '<div class="kpi link'+(unplannedC>0?' warn':'')+'" data-kpi="ikkeplanlagt"><div class="num">'+unplannedC+'</div><div class="lbl">Ikke lagt inn i planen</div></div>' +
       '<div class="kpi link'+(lateC>0?' bad':'')+'" data-kpi="forsinket"><div class="num">'+lateC+'</div><div class="lbl">Forsinket</div></div>' +
       '<div class="kpi'+(badDays>0?' bad':(warnDays>0?' warn':''))+'"><div class="num">'+staffC+'</div><div class="lbl">Dager med for lite folk (neste 3 uker)</div></div>' +
-      '<div class="kpi'+(noTask>0?' warn':'')+'"><div class="num">'+noTask+'</div><div class="lbl">Frivillig-dager uten element denne uka</div></div>';
+      '<div class="kpi'+(noTask>0?' warn':'')+'"><div class="num">'+noTask+'</div><div class="lbl">Frivillig-dager uten oppgave denne uka</div></div>';
     byId("summaryRow").querySelectorAll("[data-kpi]").forEach(function(k){
       k.addEventListener("click", function(){ view.elFilter = this.dataset.kpi; renderElementsTab(); switchTab("elementer"); });
     });
@@ -1593,7 +1593,7 @@
       var list = secEls.filter(filter.test).slice().sort(elSort);
       var box = byId("list-"+sec);
       if(list.length === 0){
-        box.innerHTML = '<p class="empty-note">'+(secEls.length===0 ? 'Ingen elementer ennå.' : 'Ingen elementer med dette filteret.')+'</p>';
+        box.innerHTML = '<p class="empty-note">'+(secEls.length===0 ? 'Ingen oppgaver ennå.' : 'Ingen oppgaver med dette filteret.')+'</p>';
         return;
       }
       box.innerHTML = list.map(function(e){
@@ -1655,7 +1655,7 @@
     });
     panel.querySelectorAll("[data-delel]").forEach(function(b){
       b.addEventListener("click", function(){
-        if(confirm("Slette dette elementet? Dette fjerner også alle personer satt opp på det.")){
+        if(confirm("Slette denne oppgaven? Dette fjerner også alle personer satt opp på den.")){
           deleteElement(this.dataset.delel);
         }
       });
@@ -1755,7 +1755,7 @@
       });
       var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
       return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+'</span>' +
-        '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på element</span>' +
+        '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
         '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
         '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button></span></div>';
     }).join("");
@@ -1813,14 +1813,14 @@
   byId("elPick").addEventListener("change", function(){
     var pickDate = elDialog.dataset.prefillDate;
     if(!this.value){
-      byId("elId").value = ""; byId("elDlgTitle").textContent = "Nytt element";
+      byId("elId").value = ""; byId("elDlgTitle").textContent = "Ny oppgave";
       byId("elName").value = ""; byId("elNotes").value = ""; setDlgStatus("mangler");
       return;
     }
     var e = state.elements.find(function(x){ return x.id === byId("elPick").value; });
     if(!e) return;
     byId("elId").value = e.id;
-    byId("elDlgTitle").textContent = "Legg element i planen";
+    byId("elDlgTitle").textContent = "Legg oppgave i planen";
     fillElForm(e);
     byId("elStart").value = pickDate; byId("elEnd").value = pickDate;
   });
@@ -1833,14 +1833,14 @@
     byId("elPickWrap").hidden = true;
     if(isEdit){
       var e = state.elements.find(function(x){ return x.id === elementId; });
-      if(!e){ showError("Fant ikke elementet – det kan ha blitt slettet."); return; }
-      byId("elDlgTitle").textContent = planNow ? "Legg element i planen" : "Rediger element";
+      if(!e){ showError("Fant ikke oppgaven – den kan ha blitt slettet."); return; }
+      byId("elDlgTitle").textContent = planNow ? "Legg oppgave i planen" : "Rediger oppgave";
       fillElForm(e);
       byId("elStart").value = e.start || "";
       byId("elEnd").value = e.end || "";
       byId("elPlanned").checked = isPlanned(e) || !!planNow;
     } else {
-      byId("elDlgTitle").textContent = "Nytt element";
+      byId("elDlgTitle").textContent = "Ny oppgave";
       byId("elName").value = "";
       byId("elNotes").value = "";
       byId("elSection").value = prefillSection || view.section || "innvendig";
@@ -1853,7 +1853,7 @@
         var unplanned = elementsForCurrentProject().filter(function(x){ return !isPlanned(x) && x.status !== "ferdig"; })
           .sort(function(a,b){ return a.section===sec ? (b.section===sec ? 0 : -1) : (b.section===sec ? 1 : 0); });
         if(unplanned.length > 0){
-          byId("elPick").innerHTML = '<option value="">— Nytt element —</option>' + unplanned.map(function(x){
+          byId("elPick").innerHTML = '<option value="">— Ny oppgave —</option>' + unplanned.map(function(x){
             return '<option value="'+x.id+'">'+escapeHtml(x.name)+' ('+x.section+', '+STATUS_LABEL[x.status].toLowerCase()+')</option>';
           }).join("");
           byId("elPickWrap").hidden = false;
@@ -1940,7 +1940,7 @@
   }
   function refetchElements(){
     sb.from("elements").select("*").order("created_at").then(function(res){
-      if(res.error){ showError("Klarte ikke å hente elementer: "+res.error.message); return; }
+      if(res.error){ showError("Klarte ikke å hente oppgaver: "+res.error.message); return; }
       state.elements = res.data.map(rowToElement);
       renderAll();
     });
@@ -2098,15 +2098,15 @@
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     var body = Object.assign({}, payload, { done:false, assignments:{}, project_id: currentProjectId() });
-    sb.from("elements").insert(body).then(function(res){ if(res.error){ showError("Kunne ikke lagre elementet: "+res.error.message); return; } refetchElements(); });
+    sb.from("elements").insert(body).then(function(res){ if(res.error){ showError("Kunne ikke lagre oppgaven: "+res.error.message); return; } refetchElements(); });
   }
   function updateElement(id, payload){
     if(!sb) return;
-    sb.from("elements").update(payload).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere elementet: "+res.error.message); return; } refetchElements(); });
+    sb.from("elements").update(payload).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere oppgaven: "+res.error.message); return; } refetchElements(); });
   }
   function deleteElement(id){
     if(!sb) return;
-    sb.from("elements").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette elementet: "+res.error.message); return; } refetchElements(); });
+    sb.from("elements").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette oppgaven: "+res.error.message); return; } refetchElements(); });
   }
   function setElementStatus(id, status){
     if(!sb) return;
