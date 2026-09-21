@@ -318,6 +318,15 @@
   .kpi.warn .num{color:var(--warn-ink);} .kpi.bad .num{color:var(--bad-ink);}
   .kpi.link{cursor:pointer;} .kpi.link:hover{border-color:var(--border-strong);}
 
+  .week-timeline{padding:10px 12px 6px; display:flex; flex-direction:column; gap:5px; border-bottom:1px solid var(--border);}
+  .wt-row{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); height:20px;}
+  .wt-bar{grid-row:1; align-self:center; height:18px; border-radius:6px; border:1.5px solid transparent; display:flex; align-items:center; padding:0 8px; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
+  .wt-bar.s-mangler{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink);}
+  .wt-bar.s-pabegynt{background:var(--warn-soft); border-color:var(--warn); color:var(--warn-ink);}
+  .wt-bar.s-ferdig{background:var(--good); border-color:var(--good); color:#fff;}
+  .wt-bar.late{box-shadow:0 0 0 2px var(--bad-soft), 0 0 0 3px var(--bad);}
+  .wt-bar.cont-left{border-top-left-radius:2px; border-bottom-left-radius:2px;}
+  .wt-bar.cont-right{border-top-right-radius:2px; border-bottom-right-radius:2px;}
   .wk{display:grid; grid-template-columns:repeat(5,minmax(0,1fr));}
   .wkday{border-left:1px solid var(--border); min-height:170px; display:flex; flex-direction:column;}
   .wkday:first-child{border-left:none;}
@@ -541,6 +550,7 @@
         </div>
       </div>
       <div class="unplanned-note" id="unplannedNote" hidden></div>
+      <div class="week-timeline" id="weekTimeline" hidden></div>
       <div class="wk" id="weekGrid"></div>
       <div class="cal-foot">
         <div class="legend">
@@ -979,6 +989,29 @@
     byId("wkLabel").innerHTML = "Uke " + info.week + ' <span style="font-weight:500; color:var(--muted); font-size:13px;">' + fmtRange(toISODate(view.weekStart), toISODate(end)) + '</span>';
   }
 
+  function renderWeekTimeline(){
+    var box = byId("weekTimeline");
+    var weekStartIso = toISODate(view.weekStart);
+    var weekEnd = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+4);
+    var weekEndIso = toISODate(weekEnd);
+    var list = elementsForCurrentProject().filter(function(e){
+      return isPlanned(e) && (!calSection() || e.section === calSection()) && e.start <= weekEndIso && e.end >= weekStartIso;
+    }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : (a.end < b.end ? -1 : (a.end > b.end ? 1 : 0)); });
+    if(list.length === 0){ box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = list.map(function(e){
+      var s = e.start < weekStartIso ? weekStartIso : e.start;
+      var en = e.end > weekEndIso ? weekEndIso : e.end;
+      var startIdx = Math.round((fromISODate(s) - view.weekStart)/86400000);
+      var endIdx = Math.round((fromISODate(en) - view.weekStart)/86400000);
+      var contLeft = e.start < weekStartIso, contRight = e.end > weekEndIso;
+      var label = (contLeft ? '‹ ' : '') + escapeHtml(e.name) + (contRight ? ' ›' : '');
+      return '<div class="wt-row"><div class="wt-bar s-'+e.status+(isLate(e)?' late':'')+(contLeft?' cont-left':'')+(contRight?' cont-right':'')+
+        '" data-detail="'+e.id+'" style="grid-column:'+(startIdx+1)+' / '+(endIdx+2)+'" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+'">'+label+'</div></div>';
+    }).join("");
+    bindDetail(box);
+  }
+
   function renderWeekGrid(){
     var grid = byId("weekGrid");
     var todayIso = toISODate(new Date());
@@ -1227,7 +1260,7 @@
     byId("ganttView").hidden = view.calView !== "prosjekt";
     document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
     document.querySelectorAll("#calSecSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calsec===view.calSec ? "true":"false"); });
-    if(view.calView === "uke"){ renderWeekLabel(); renderWeekGrid(); renderConflictBanner(); }
+    if(view.calView === "uke"){ renderWeekLabel(); renderWeekTimeline(); renderWeekGrid(); renderConflictBanner(); }
     else { renderGantt(); byId("conflictBanner").hidden = true; }
     renderUnplannedNote();
   }
