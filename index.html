@@ -172,6 +172,7 @@
   .btn.small{padding:4px 9px; font-size:12px;}
   .btn.ghost{border-color:transparent; background:none;}
   .btn.danger{color:var(--bad);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
 
   .cols2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media (max-width:720px){ .cols2{grid-template-columns:1fr;} }
@@ -333,6 +334,7 @@
       <span id="projectDates" class="mono project-dates"></span>
       <button class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
       <button class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
+      <button class="btn small danger" id="projectDeleteBtn" title="Slett dette prosjektet og alt i det">Slett prosjekt</button>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
@@ -761,6 +763,9 @@
   function renderProjectBar(){
     var sel = byId("projectSelect");
     var datesEl = byId("projectDates");
+    var hasProject = state.projects.length > 0 && !!state.currentProjectId;
+    byId("projectSetActive").disabled = !hasProject;
+    byId("projectDeleteBtn").disabled = !hasProject;
     if(state.projects.length === 0){
       sel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
       datesEl.textContent = "";
@@ -776,6 +781,17 @@
   byId("projectSelect").addEventListener("change", function(){ selectProject(this.value); });
   byId("projectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
+  });
+  byId("projectDeleteBtn").addEventListener("click", function(){
+    var p = state.projects.find(function(x){ return x.id === state.currentProjectId; });
+    if(!p) return;
+    var typed = prompt('Dette sletter prosjektet "'+p.name+'" og ALT i det (elementer, oppgaver, handleliste, tegninger). Skriv inn prosjektnavnet for å bekrefte:');
+    if(typed === null) return;
+    if(typed.trim() !== p.name){
+      alert("Navnet stemte ikke – prosjektet ble ikke slettet.");
+      return;
+    }
+    deleteProject(p.id);
   });
   var projectDialog = byId("projectDialog");
   byId("projectNewBtn").addEventListener("click", function(){
@@ -1220,6 +1236,20 @@
     sb.from("projects").update({ is_active:false }).neq("id", id)
       .then(function(){ return sb.from("projects").update({ is_active:true }).eq("id", id); })
       .then(function(res){ if(res.error) showError("Kunne ikke sette aktivt prosjekt: "+res.error.message); });
+  }
+  function deleteProject(id){
+    if(!sb) return;
+    var paths = state.drawings.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
+    var cleanup = paths.length > 0 ? sb.storage.from("tegninger").remove(paths) : Promise.resolve();
+    cleanup.then(function(){ return sb.from("projects").delete().eq("id", id); })
+      .then(function(res){
+        if(res.error){ showError("Kunne ikke slette prosjektet: "+res.error.message); return; }
+        if(state.currentProjectId === id){
+          try{ localStorage.removeItem("ldc_current_project"); }catch(e){}
+          state.currentProjectId = null;
+        }
+        refetchProjects();
+      });
   }
 
   function addTask(section, name, description){
