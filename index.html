@@ -2,84 +2,38 @@
 <html lang="no">
 <head>
 <meta charset="utf-8" />
+<meta name="color-scheme" content="light" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>LDC – tømrerportalen</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
-    --bg:#fafaf6;
+    --bg:#f4f7fb;
     --surface:#ffffff;
-    --surface-alt:#f2f3ec;
-    --border:#e5e7dc;
-    --border-strong:#d2d5c5;
-    --text:#2c3026;
-    --muted:#767c6c;
-    --accent:#5089b8;
+    --surface-alt:#eef3f9;
+    --border:#e0e7f0;
+    --border-strong:#c9d4e2;
+    --text:#1e2a3a;
+    --muted:#687588;
+    --accent:#2f7fd9;
     --accent-ink:#ffffff;
-    --accent-soft:#e9f2f8;
-    --innvendig:#cf9257;
-    --innvendig-soft:#faf0e2;
-    --utvendig:#55a088;
-    --utvendig-soft:#e7f5f0;
-    --good:#5fae7b;
-    --good-soft:#ebf7ee;
-    --warn:#dba53d;
-    --warn-soft:#fcf3de;
-    --bad:#dd8574;
-    --bad-soft:#fceae6;
-    --shadow: 0 1px 2px rgba(60,60,40,0.04), 0 6px 16px -10px rgba(60,60,40,0.10);
+    --accent-soft:#e5f0fc;
+    --innvendig:#e08a3c;
+    --innvendig-soft:#fdf0e3;
+    --utvendig:#1fa38e;
+    --utvendig-soft:#e0f5f1;
+    --good:#34b074;
+    --good-soft:#e3f6ec;
+    --good-ink:#1c7a4c;
+    --warn:#e6a623;
+    --warn-soft:#fdf3da;
+    --warn-ink:#94650a;
+    --bad:#e5634f;
+    --bad-soft:#fde8e4;
+    --bad-ink:#b63c2a;
+    --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#1b1e18;
-      --surface:#242720;
-      --surface-alt:#2a2d24;
-      --border:#3a3e32;
-      --border-strong:#4c503f;
-      --text:#eceee4;
-      --muted:#aeb3a1;
-      --accent:#87b7de;
-      --accent-ink:#12212c;
-      --accent-soft:#253745;
-      --innvendig:#e3ac71;
-      --innvendig-soft:#3c2f1d;
-      --utvendig:#7fc4ad;
-      --utvendig-soft:#1a352c;
-      --good:#8ccca2;
-      --good-soft:#1b3524;
-      --warn:#e8c06f;
-      --warn-soft:#3a2f16;
-      --bad:#e8a494;
-      --bad-soft:#3c261e;
-      --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 8px 20px -10px rgba(0,0,0,0.4);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#1b1e18;
-    --surface:#242720;
-    --surface-alt:#2a2d24;
-    --border:#3a3e32;
-    --border-strong:#4c503f;
-    --text:#eceee4;
-    --muted:#aeb3a1;
-    --accent:#87b7de;
-    --accent-ink:#12212c;
-    --accent-soft:#253745;
-    --innvendig:#e3ac71;
-    --innvendig-soft:#3c2f1d;
-    --utvendig:#7fc4ad;
-    --utvendig-soft:#1a352c;
-    --good:#8ccca2;
-    --good-soft:#1b3524;
-    --warn:#e8c06f;
-    --warn-soft:#3a2f16;
-    --bad:#e8a494;
-    --bad-soft:#3c261e;
-    --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 8px 20px -10px rgba(0,0,0,0.4);
-    color-scheme: dark;
   }
 
   *{box-sizing:border-box;}
@@ -99,23 +53,24 @@
   img{max-width:100%;}
   [hidden]{display:none!important;}
 
-  .wrap{max-width:1080px; margin:0 auto; padding-block:20px 60px;}
+  .wrap{max-width:1080px; margin:0 auto; padding-block:0 60px;}
 
   header.top{
     position:sticky; top:0; z-index:20;
-    background:var(--bg); padding-block:14px 10px; margin-inline:-16px; padding-inline:16px;
-    border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,0.94); backdrop-filter:blur(8px); padding-block:14px 10px; margin-inline:-16px; padding-inline:16px;
+    box-shadow:0 0 0 100vmax rgba(255,255,255,0.94), 0 1px 0 100vmax var(--border); clip-path:inset(0 -100vmax -1px);
   }
   .top-inner{max-width:1080px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 16px;}
   .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   .brand h1{font-size:22px; letter-spacing:-0.01em;}
+  .brand h1 .ldc{color:var(--accent);}
   .brand .tag{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",monospace; letter-spacing:.02em;}
-  nav.tabs{display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px;}
+  nav.tabs{display:flex; gap:4px; max-width:100%; overflow-x:auto; scrollbar-width:none; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px;}
   nav.tabs button{
     border:none; background:transparent; padding:7px 13px; border-radius:8px; font-size:13.5px; font-weight:600;
-    color:var(--muted); cursor:pointer;
+    color:var(--muted); cursor:pointer; white-space:nowrap;
   }
-  nav.tabs button[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
+  nav.tabs button[aria-selected="true"]{background:var(--surface); color:var(--accent); box-shadow:var(--shadow);}
   nav.tabs button:hover{color:var(--text);}
 
   .project-bar{
@@ -130,7 +85,7 @@
     margin-top:14px; padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:8px;
     background:var(--surface-alt); border:1px solid var(--border); color:var(--muted);
   }
-  .status-banner.err{background:var(--bad-soft); color:var(--bad); border-color:transparent;}
+  .status-banner.err{background:var(--bad-soft); color:var(--bad-ink); cursor:pointer; border-color:transparent;}
   .status-banner.ok{display:none;}
 
   section.panel{display:none; margin-top:20px;}
@@ -140,11 +95,12 @@
   .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow);}
   .tile .num{font-family:"IBM Plex Mono",monospace; font-size:24px; font-weight:600; font-variant-numeric:tabular-nums;}
   .tile .lbl{font-size:12px; color:var(--muted); margin-top:2px;}
-  .tile.bad .num{color:var(--bad);}
-  .tile.warn .num{color:var(--warn);}
+  .tile.bad .num{color:var(--bad-ink);}
+  .tile.warn .num{color:var(--warn-ink);}
 
   .cal-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
   .cal-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border);}
+  .cal-head{flex-wrap:wrap; gap:10px;}
   .cal-head .mo{font-size:17px; font-weight:700; text-transform:capitalize;}
   .cal-nav{display:flex; gap:6px; align-items:center;}
   .cal-nav button{
@@ -171,7 +127,7 @@
   .btn.primary:hover{filter:brightness(1.06);}
   .btn.small{padding:4px 9px; font-size:12px;}
   .btn.ghost{border-color:transparent; background:none;}
-  .btn.danger{color:var(--bad);}
+  .btn.danger{color:var(--bad-ink);}
 
   .cols2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media (max-width:720px){ .cols2{grid-template-columns:1fr;} }
@@ -189,8 +145,8 @@
   .badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap;}
   .badge.planned{background:var(--surface); border:1px solid var(--border); color:var(--muted);}
   .badge.ongoing{background:var(--accent-soft); color:var(--accent);}
-  .badge.late{background:var(--bad-soft); color:var(--bad);}
-  .badge.done{background:var(--good-soft); color:var(--good);}
+  .badge.late{background:var(--bad-soft); color:var(--bad-ink);}
+  .badge.done{background:var(--good-soft); color:var(--good-ink);}
   .elcard .actions{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
   .peoplemini{font-size:11.5px; color:var(--muted); margin-top:6px;}
 
@@ -206,11 +162,11 @@
     border-left:1px solid var(--border);
   }
   .statuspicker button:first-child{border-left:none;}
-  .statuspicker button[data-status="mangler"].active{background:var(--bad-soft); color:var(--bad);}
-  .statuspicker button[data-status="pabegynt"].active{background:var(--warn-soft); color:var(--warn);}
-  .statuspicker button[data-status="ferdig"].active{background:var(--good-soft); color:var(--good);}
+  .statuspicker button[data-status="mangler"].active{background:var(--bad-soft); color:var(--bad-ink);}
+  .statuspicker button[data-status="pabegynt"].active{background:var(--warn-soft); color:var(--warn-ink);}
+  .statuspicker button[data-status="ferdig"].active{background:var(--good-soft); color:var(--good-ink);}
   .taskrow button.del{border:none; background:none; color:var(--muted); cursor:pointer; font-size:15px; padding:2px 4px; flex:none;}
-  .taskrow button.del:hover{color:var(--bad);}
+  .taskrow button.del:hover{color:var(--bad-ink);}
 
   .shoprow{
     display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:9px 4px;
@@ -219,7 +175,9 @@
   .shoprow.bought .sname{text-decoration:line-through; color:var(--muted);}
   .shoprow .sname{font-weight:600; font-size:13.5px; flex:1;}
   .shoprow .sqty{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
-  .shoprow input[type=checkbox]{width:17px; height:17px; flex:none;}
+  .shoprow input[type=checkbox]{width:17px; height:17px; flex:none; accent-color:var(--good);}
+  .shoprow button.del{border:none; background:none; color:var(--muted); cursor:pointer; font-size:15px; padding:2px 4px; flex:none;}
+  .shoprow button.del:hover{color:var(--bad-ink);}
 
   .drawgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;}
   .drawcard{background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:flex; flex-direction:column;}
@@ -241,14 +199,15 @@
   form.inline-add input[type=text]{flex:1; min-width:160px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);}
 
   dialog{border:none; border-radius:14px; padding:0; background:var(--surface); color:var(--text); box-shadow:0 20px 50px -12px rgba(0,0,0,.4); width:min(440px, calc(100vw - 32px));}
-  dialog::backdrop{background:rgba(20,22,16,.45);}
+  dialog::backdrop{background:rgba(30,42,58,.35);}
   .dlg-body{padding:20px;}
   .dlg-body h3{font-size:16px; margin-bottom:14px;}
   .field{display:flex; flex-direction:column; gap:4px; margin-bottom:12px;}
   .field label{font-size:12px; font-weight:600; color:var(--muted);}
   .field input, .field select, .field textarea{
-    border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--bg); width:100%;
+    border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); width:100%;
   }
+  .field input:focus, .field select:focus, .field textarea:focus, form.inline-add input:focus{outline:2px solid var(--accent-soft); border-color:var(--accent);}
   .field textarea{resize:vertical; min-height:56px;}
   .fieldrow{display:flex; gap:10px;}
   .fieldrow .field{flex:1;}
@@ -275,7 +234,8 @@
   .daycol{background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column;}
   .daycol:first-child{border-left:none;}
   @media (max-width:820px){ .daycol{border-left:none; border-top:1px solid var(--border);} .daycol:first-child{border-top:none;} }
-  .daycol.today .daycol-head{color:var(--accent);}
+  .daycol.today{background:linear-gradient(var(--accent-soft), var(--surface) 70px);}
+  .daycol.today .daycol-head .dname, .daycol.today .daycol-head .ddate{color:var(--accent);}
   .daycol-head{padding:8px 10px; border-bottom:1px solid var(--border); display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
   .daycol-head .dname{font-weight:700; font-size:12px;}
   .daycol-head .ddate{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted);}
@@ -283,8 +243,12 @@
   .daycol-body{padding:8px; display:flex; flex-direction:column; gap:6px; flex:1;}
   .daycol-body > .btn{align-self:flex-start; margin-top:2px;}
 
-  .elblock{border-radius:7px; padding:7px 9px; background:var(--good-soft);}
-  .elblock.unstaffed{background:var(--bad-soft);}
+  .elblock{border-radius:8px; padding:7px 9px; background:var(--good-soft); border-left:3px solid var(--good);}
+  .elblock.unstaffed{background:var(--bad-soft); border-left-color:var(--bad);}
+  .elblock.done{opacity:.6;}
+  .elblock.done .elname{text-decoration:line-through;}
+  .other-sec-note{font-size:11.5px; color:var(--muted); margin:0;}
+  .other-sec-note button{border:none; background:none; padding:0; color:var(--accent); cursor:pointer; font-size:11.5px; text-decoration:underline;}
   .elblock .elname{font-weight:600; font-size:13px; line-height:1.3;}
   .elblock .plist{margin-top:3px; font-size:12px; line-height:1.5;}
   .elblock .plist .pname-tag{display:inline; }
@@ -292,8 +256,8 @@
   .elblock .plist button.rm{
     border:none; background:none; cursor:pointer; color:inherit; opacity:.55; font-size:12px; padding:0 0 0 2px; vertical-align:baseline;
   }
-  .elblock .plist button.rm:hover{opacity:1; color:var(--bad);}
-  .elblock .plist .conflict-name{color:var(--bad); font-weight:700;}
+  .elblock .plist button.rm:hover{opacity:1; color:var(--bad-ink);}
+  .elblock .plist .conflict-name{color:var(--bad-ink); font-weight:700;}
   .addlink{
     display:block; margin-top:2px; border:none; background:none; padding:0; cursor:pointer; font-size:11.5px;
     color:var(--muted); text-decoration:underline; text-decoration-style:dotted; text-align:left;
@@ -303,7 +267,7 @@
     margin-top:4px; border:none; background:none; padding:0; font-size:11.5px; color:var(--muted); width:100%; cursor:pointer;
   }
 
-  .conflict-banner{margin-top:14px; padding:12px 14px; border-radius:10px; background:var(--bad-soft); font-size:12.5px; color:var(--bad);}
+  .conflict-banner{margin-top:14px; padding:12px 14px; border-radius:10px; background:var(--bad-soft); font-size:12.5px; color:var(--bad-ink);}
   .conflict-banner h3{font-size:12.5px; font-weight:700; margin-bottom:6px;}
   .conflict-banner ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;}
 
@@ -316,7 +280,7 @@
   <header class="top">
     <div class="top-inner">
       <div class="brand">
-        <h1>LDC &ndash; tømrerportalen</h1>
+        <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
         <span class="tag">fremdrift · tømring</span>
       </div>
       <nav class="tabs" role="tablist">
@@ -546,6 +510,16 @@
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()) };
 
   function currentProjectId(){ return state.currentProjectId; }
+  // Rader uten prosjekt (laget før prosjekter fantes) vises under det aktive prosjektet.
+  function homeProjectId(){
+    var active = state.projects.find(function(p){ return p.isActive; });
+    return active ? active.id : (state.projects[0] ? state.projects[0].id : null);
+  }
+  function inCurrentProject(item){
+    var pid = currentProjectId();
+    if(!pid) return false;
+    return item.project_id === pid || (!item.project_id && pid === homeProjectId());
+  }
 
   function toISODate(d){
     var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
@@ -604,24 +578,24 @@
   function activeElementsOn(dateIso, section){
     var pid = currentProjectId();
     return state.elements.filter(function(e){
-      return e.project_id === pid && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
+      return inCurrentProject(e) && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
     });
   }
   function elementsForCurrentProject(){
     var pid = currentProjectId();
-    return state.elements.filter(function(e){ return e.project_id === pid; });
+    return state.elements.filter(inCurrentProject);
   }
   function tasksForCurrentProject(){
     var pid = currentProjectId();
-    return state.tasks.filter(function(t){ return t.project_id === pid; });
+    return state.tasks.filter(inCurrentProject);
   }
   function shopItemsForCurrentProject(){
     var pid = currentProjectId();
-    return state.shopItems.filter(function(s){ return s.project_id === pid; });
+    return state.shopItems.filter(inCurrentProject);
   }
   function drawingsForCurrentProject(){
     var pid = currentProjectId();
-    return state.drawings.filter(function(d){ return d.project_id === pid; });
+    return state.drawings.filter(inCurrentProject);
   }
   function peopleAssignedOn(dateIso, elements){
     var set = new Set();
@@ -633,7 +607,7 @@
   }
   function conflictsForDate(dateIso){
     var byPerson = {};
-    state.elements.forEach(function(e){
+    elementsForCurrentProject().forEach(function(e){
       var ids = (e.assignments && e.assignments[dateIso]) || [];
       ids.forEach(function(pid){
         (byPerson[pid] = byPerson[pid] || []).push({ name: e.name, section: e.section });
@@ -691,11 +665,16 @@
 
       if(els.length === 0){
         html += '<p class="empty-note">Ingen elementer.</p>';
+        var otherSec = view.section === "innvendig" ? "utvendig" : "innvendig";
+        var otherCount = activeElementsOn(iso, otherSec).length;
+        if(otherCount > 0){
+          html += '<p class="other-sec-note">'+otherCount+' i '+otherSec+' · <button type="button" data-showsec="'+otherSec+'">vis</button></p>';
+        }
         html += '<button class="btn small" data-quickaddel="'+iso+'">+ Legg til element</button>';
       } else {
         els.forEach(function(e){
           var assignedIds = (e.assignments && e.assignments[iso]) || [];
-          html += '<div class="elblock'+(assignedIds.length===0?' unstaffed':'')+'" data-el="'+e.id+'">';
+          html += '<div class="elblock'+(assignedIds.length===0?' unstaffed':'')+(e.done?' done':'')+'" data-el="'+e.id+'">';
           html += '<div class="elname">'+escapeHtml(e.name)+'</div>';
           if(assignedIds.length > 0){
             html += '<div class="plist">' + assignedIds.map(function(pid){
@@ -736,6 +715,9 @@
         this.value = "";
       });
     });
+    grid.querySelectorAll("[data-showsec]").forEach(function(btn){
+      btn.addEventListener("click", function(){ setSection(this.dataset.showsec); });
+    });
     grid.querySelectorAll("[data-quickaddel]").forEach(function(btn){
       btn.addEventListener("click", function(){ openElDialog(null, this.dataset.quickaddel, view.section); });
     });
@@ -773,7 +755,7 @@
     datesEl.textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
   }
 
-  byId("projectSelect").addEventListener("change", function(){ selectProject(this.value); });
+  byId("projectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
   byId("projectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
   });
@@ -798,14 +780,15 @@
     var warnDays = 0, badDays = 0;
     for(var i=0;i<21;i++){
       var d = new Date(); d.setDate(d.getDate()+i);
+      if(d.getDay() === 0 || d.getDay() === 6) continue;
       var iso = toISODate(d);
       var els = activeElementsOn(iso);
       var ppl = peopleAssignedOn(iso, els);
       var st = dayStatus(els.length, ppl.size);
       if(st === "bad") badDays++; else if(st === "warn") warnDays++;
     }
-    var innC = state.elements.filter(function(e){return e.section==="innvendig";}).length;
-    var utC = state.elements.filter(function(e){return e.section==="utvendig";}).length;
+    var innC = elementsForCurrentProject().filter(function(e){return e.section==="innvendig";}).length;
+    var utC = elementsForCurrentProject().filter(function(e){return e.section==="utvendig";}).length;
 
     byId("summaryRow").innerHTML =
       '<div class="tile"><div class="num mono">'+state.people.length+'</div><div class="lbl">Personer</div></div>' +
@@ -881,12 +864,13 @@
     b.addEventListener("click", function(){ openElDialog(null, toISODate(new Date()), this.dataset.newel); });
   });
 
+  function setSection(sec){
+    view.section = sec;
+    document.querySelectorAll(".sec-toggle button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.sec===sec ? "true":"false"); });
+    renderWeekGrid();
+  }
   document.querySelectorAll(".sec-toggle button").forEach(function(btn){
-    btn.addEventListener("click", function(){
-      view.section = btn.dataset.sec;
-      document.querySelectorAll(".sec-toggle button").forEach(function(b){ b.setAttribute("aria-pressed", b===btn ? "true":"false"); });
-      renderWeekGrid();
-    });
+    btn.addEventListener("click", function(){ setSection(btn.dataset.sec); });
   });
 
   // ---------- oppgaver tab ----------
@@ -906,7 +890,7 @@
           '<div class="tinfo"><div class="tname">'+escapeHtml(t.name)+'</div>' +
           (t.description ? '<div class="tdesc">'+escapeHtml(t.description)+'</div>' : '') + '</div>' +
           '<div class="statuspicker">' + ["mangler","pabegynt","ferdig"].map(function(s){
-            return '<button type="button" data-setstatus="'+t.id+'|'+s+'" class="'+(t.status===s?'active':'')+'">'+STATUS_LABEL[s]+'</button>';
+            return '<button type="button" data-status="'+s+'" data-setstatus="'+t.id+'|'+s+'" class="'+(t.status===s?'active':'')+'">'+STATUS_LABEL[s]+'</button>';
           }).join("") + '</div>' +
           '<button class="del" data-deltask="'+t.id+'" title="Slett">×</button>' +
           '</div>';
@@ -1063,6 +1047,7 @@
     byId("elId").value = elementId || "";
     if(isEdit){
       var e = state.elements.find(function(x){ return x.id === elementId; });
+      if(!e){ showError("Fant ikke elementet – det kan ha blitt slettet."); return; }
       byId("elName").value = e.name;
       byId("elSection").value = e.section;
       byId("elStart").value = e.start;
@@ -1094,6 +1079,9 @@
     if(!payload.name) return;
     if(id){ updateElement(id, payload); } else { addElement(payload); }
     elDialog.close();
+    var startDate = fromISODate(start);
+    if(view.section !== payload.section) setSection(payload.section);
+    if(mondayOf(startDate).getTime() !== view.weekStart.getTime()) goToWeek(mondayOf(startDate));
   });
 
   // ---------- render orchestration ----------
@@ -1136,7 +1124,7 @@
   }
   function rowToElement(row){
     return {
-      id: row.id, section: row.section, name: row.name, start: row.start, end: row.end,
+      id: row.id, project_id: row.project_id, section: row.section, name: row.name, start: row.start, end: row.end,
       notes: row.notes || "", done: !!row.done, assignments: row.assignments || {}, createdAt: row.created_at
     };
   }
@@ -1183,6 +1171,7 @@
       if(res.error){ showError("Klarte ikke å hente prosjekter: "+res.error.message); return; }
       state.projects = res.data.map(rowToProject);
       pickCurrentProject();
+      if(byId("statusBanner").className === "status-banner") hideBanner();
       renderAll();
     });
   }
@@ -1219,37 +1208,37 @@
     if(!sb) return;
     sb.from("projects").update({ is_active:false }).neq("id", id)
       .then(function(){ return sb.from("projects").update({ is_active:true }).eq("id", id); })
-      .then(function(res){ if(res.error) showError("Kunne ikke sette aktivt prosjekt: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke sette aktivt prosjekt: "+res.error.message); return; } refetchProjects(); });
   }
 
   function addTask(section, name, description){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     sb.from("tasks").insert({ project_id: currentProjectId(), section: section, name: name.slice(0,80), description: description ? description.slice(0,400) : null, status:"mangler" })
-      .then(function(res){ if(res.error) showError("Kunne ikke lagre oppgaven: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke lagre oppgaven: "+res.error.message); return; } refetchTasks(); });
   }
   function setTaskStatus(id, status){
     if(!sb) return;
-    sb.from("tasks").update({ status: status }).eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke oppdatere status: "+res.error.message); });
+    sb.from("tasks").update({ status: status }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere status: "+res.error.message); return; } refetchTasks(); });
   }
   function deleteTask(id){
     if(!sb) return;
-    sb.from("tasks").delete().eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke slette oppgaven: "+res.error.message); });
+    sb.from("tasks").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette oppgaven: "+res.error.message); return; } refetchTasks(); });
   }
 
   function addShopItem(name, quantity){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     sb.from("shopping_items").insert({ project_id: currentProjectId(), name: name.slice(0,80), quantity: quantity ? quantity.slice(0,30) : null, bought:false })
-      .then(function(res){ if(res.error) showError("Kunne ikke lagre varen: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke lagre varen: "+res.error.message); return; } refetchShopItems(); });
   }
   function toggleBought(id, bought){
     if(!sb) return;
-    sb.from("shopping_items").update({ bought: bought }).eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke oppdatere varen: "+res.error.message); });
+    sb.from("shopping_items").update({ bought: bought }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere varen: "+res.error.message); return; } refetchShopItems(); });
   }
   function deleteShopItem(id){
     if(!sb) return;
-    sb.from("shopping_items").delete().eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke fjerne varen: "+res.error.message); });
+    sb.from("shopping_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne varen: "+res.error.message); return; } refetchShopItems(); });
   }
 
   function rowToDrawing(row){
@@ -1281,7 +1270,8 @@
           file_path: path, content_type: file.type || null, size_bytes: file.size
         }).then(function(res2){
           showDrawingStatus("");
-          if(res2.error) showError("Filen ble lastet opp, men kunne ikke lagres i listen: "+res2.error.message);
+          if(res2.error){ showError("Filen ble lastet opp, men kunne ikke lagres i listen: "+res2.error.message); return; }
+          refetchDrawings();
         });
       });
   }
@@ -1289,14 +1279,14 @@
     if(!sb) return;
     sb.storage.from("tegninger").remove([drawing.path]).then(function(){
       return sb.from("drawings").delete().eq("id", drawing.id);
-    }).then(function(res){ if(res && res.error) showError("Kunne ikke slette tegningen: "+res.error.message); });
+    }).then(function(res){ if(res && res.error){ showError("Kunne ikke slette tegningen: "+res.error.message); return; } refetchDrawings(); });
   }
   function showDrawingStatus(msg){ byId("drawingUploadStatus").textContent = msg; }
 
   function addPerson(name, group){
     if(!sb) return;
     sb.from("people").insert({ name: name.slice(0,60), group: group ? group.slice(0,30) : null })
-      .then(function(res){ if(res.error) showError("Kunne ikke lagre personen: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke lagre personen: "+res.error.message); return; } refetchPeople(); });
   }
   function deletePerson(id){
     if(!sb) return;
@@ -1310,28 +1300,29 @@
       cleanups.push(sb.from("elements").update({ assignments: next }).eq("id", e.id));
     });
     Promise.all(cleanups).then(function(){
+      if(cleanups.length) refetchElements();
       return sb.from("people").delete().eq("id", id);
-    }).then(function(res){ if(res && res.error) showError("Kunne ikke fjerne personen: "+res.error.message); });
+    }).then(function(res){ if(res && res.error){ showError("Kunne ikke fjerne personen: "+res.error.message); return; } refetchPeople(); });
   }
   function addElement(payload){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     var body = Object.assign({}, payload, { done:false, assignments:{}, project_id: currentProjectId() });
-    sb.from("elements").insert(body).then(function(res){ if(res.error) showError("Kunne ikke lagre elementet: "+res.error.message); });
+    sb.from("elements").insert(body).then(function(res){ if(res.error){ showError("Kunne ikke lagre elementet: "+res.error.message); return; } refetchElements(); });
   }
   function updateElement(id, payload){
     if(!sb) return;
-    sb.from("elements").update(payload).eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke oppdatere elementet: "+res.error.message); });
+    sb.from("elements").update(payload).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere elementet: "+res.error.message); return; } refetchElements(); });
   }
   function deleteElement(id){
     if(!sb) return;
-    sb.from("elements").delete().eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke slette elementet: "+res.error.message); });
+    sb.from("elements").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette elementet: "+res.error.message); return; } refetchElements(); });
   }
   function toggleDone(id){
     if(!sb) return;
     var e = state.elements.find(function(x){ return x.id === id; });
     if(!e) return;
-    sb.from("elements").update({ done: !e.done }).eq("id", id).then(function(res){ if(res.error) showError("Kunne ikke oppdatere status: "+res.error.message); });
+    sb.from("elements").update({ done: !e.done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere status: "+res.error.message); return; } refetchElements(); });
   }
   function assignPerson(elementId, iso, personId){
     if(!sb) return;
@@ -1342,7 +1333,7 @@
     var next = Object.assign({}, e.assignments, {});
     next[iso] = current.concat([personId]);
     sb.from("elements").update({ assignments: next }).eq("id", elementId)
-      .then(function(res){ if(res.error) showError("Kunne ikke sette opp person: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke sette opp person: "+res.error.message); return; } refetchElements(); });
   }
   function unassignPerson(elementId, iso, personId){
     if(!sb) return;
@@ -1352,14 +1343,19 @@
     var next = Object.assign({}, e.assignments, {});
     next[iso] = current.filter(function(id){ return id !== personId; });
     sb.from("elements").update({ assignments: next }).eq("id", elementId)
-      .then(function(res){ if(res.error) showError("Kunne ikke fjerne person: "+res.error.message); });
+      .then(function(res){ if(res.error){ showError("Kunne ikke fjerne person: "+res.error.message); return; } refetchElements(); });
   }
 
+  var errTimer = null;
   function showError(msg){
     var b = byId("statusBanner");
-    b.textContent = msg;
+    b.textContent = msg + " (trykk for å lukke)";
     b.className = "status-banner err";
+    clearTimeout(errTimer);
+    errTimer = setTimeout(hideBanner, 10000);
   }
+  function hideBanner(){ clearTimeout(errTimer); byId("statusBanner").className = "status-banner ok"; }
+  byId("statusBanner").addEventListener("click", function(){ if(this.className.indexOf("err") !== -1) hideBanner(); });
   function showInfo(msg){
     var b = byId("statusBanner");
     b.textContent = msg;
