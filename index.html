@@ -820,8 +820,9 @@
       var st = dayStatus(els.length, ppl.size);
       if(st === "bad") badDays++; else if(st === "warn") warnDays++;
     }
-    var innC = state.elements.filter(function(e){return e.section==="innvendig";}).length;
-    var utC = state.elements.filter(function(e){return e.section==="utvendig";}).length;
+    var projectEls = elementsForCurrentProject();
+    var innC = projectEls.filter(function(e){return e.section==="innvendig";}).length;
+    var utC = projectEls.filter(function(e){return e.section==="utvendig";}).length;
 
     byId("summaryRow").innerHTML =
       '<div class="tile"><div class="num mono">'+state.people.length+'</div><div class="lbl">Personer</div></div>' +
@@ -1152,7 +1153,7 @@
   }
   function rowToElement(row){
     return {
-      id: row.id, section: row.section, name: row.name, start: row.start, end: row.end,
+      id: row.id, project_id: row.project_id, section: row.section, name: row.name, start: row.start, end: row.end,
       notes: row.notes || "", done: !!row.done, assignments: row.assignments || {}, createdAt: row.created_at
     };
   }
