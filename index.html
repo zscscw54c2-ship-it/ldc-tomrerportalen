@@ -508,6 +508,7 @@
       <select id="projectSelect" title="Velg prosjekt"></select>
       <span id="projectDates" class="mono project-dates"></span>
       <button class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
+      <button class="btn small" id="projectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
       <button class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
       <button class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
     </div>
@@ -515,8 +516,6 @@
   </header>
 
   <section id="panel-kalender" class="panel active">
-    <div class="kpis" id="summaryRow"></div>
-
     <div class="cal-toolbar">
       <div class="seg" id="calViewSeg">
         <button type="button" data-calview="uke" aria-pressed="true">Uke</button>
@@ -637,7 +636,8 @@
 
 <dialog id="projectDialog">
   <form class="dlg-body" id="projectForm" method="dialog">
-    <h3>Nytt prosjekt</h3>
+    <h3 id="projDlgTitle">Nytt prosjekt</h3>
+    <input type="hidden" id="projId" />
     <div class="field">
       <label for="projName">Prosjektnavn</label>
       <input type="text" id="projName" required maxlength="80" placeholder="F.eks. Gvarv sommer 2027" />
@@ -654,7 +654,7 @@
     </div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="projectCancel">Avbryt</button>
-      <button type="submit" class="btn primary">Opprett</button>
+      <button type="submit" class="btn primary" id="projSubmitBtn">Opprett</button>
     </div>
   </form>
 </dialog>
@@ -1495,10 +1495,8 @@
     var nAtt = state.attendance.filter(function(a){ return a.project_id === pid; }).length;
     var nShop = state.shopItems.filter(function(x){ return x.project_id === pid; }).length;
     var nDraw = state.drawings.filter(function(x){ return x.project_id === pid; }).length;
-    var msg = 'Slette prosjektet «'+p.name+'»?\n\nDette sletter også for godt:\n· '+nEl+' oppgave(r)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nSkriv prosjektnavnet for å bekrefte:';
-    var answer = prompt(msg, "");
-    if(answer === null) return;
-    if(answer.trim() !== p.name.trim()){ showError("Navnet stemte ikke – prosjektet ble ikke slettet."); return; }
+    var msg = 'Slette prosjektet «'+p.name+'» for godt?\n\nDette sletter også:\n· '+nEl+' oppgave(r)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nDette kan ikke angres.';
+    if(!confirm(msg)) return;
     deleteProject(pid);
   });
   byId("projectSetActive").addEventListener("click", function(){
@@ -1506,9 +1504,23 @@
   });
   var projectDialog = byId("projectDialog");
   byId("projectNewBtn").addEventListener("click", function(){
+    byId("projDlgTitle").textContent = "Nytt prosjekt";
+    byId("projSubmitBtn").textContent = "Opprett";
+    byId("projId").value = "";
     byId("projName").value = "";
     byId("projStart").value = "";
     byId("projEnd").value = "";
+    projectDialog.showModal();
+  });
+  byId("projectEditBtn").addEventListener("click", function(){
+    var p = state.projects.find(function(x){ return x.id === state.currentProjectId; });
+    if(!p){ showError("Ingen prosjekt er valgt."); return; }
+    byId("projDlgTitle").textContent = "Rediger prosjekt";
+    byId("projSubmitBtn").textContent = "Lagre";
+    byId("projId").value = p.id;
+    byId("projName").value = p.name;
+    byId("projStart").value = p.start || "";
+    byId("projEnd").value = p.end || "";
     projectDialog.showModal();
   });
   byId("projectCancel").addEventListener("click", function(){ projectDialog.close(); });
@@ -1517,40 +1529,11 @@
     ev.preventDefault();
     var name = byId("projName").value.trim();
     if(!name) return;
-    createProject(name, byId("projStart").value, byId("projEnd").value);
+    var id = byId("projId").value;
+    if(id){ updateProject(id, name, byId("projStart").value, byId("projEnd").value); }
+    else { createProject(name, byId("projStart").value, byId("projEnd").value); }
     projectDialog.close();
   });
-
-  function renderSummary(){
-    var badDays = 0, warnDays = 0;
-    for(var i=0;i<21;i++){
-      var d = new Date(); d.setDate(d.getDate()+i);
-      if(d.getDay() === 0 || d.getDay() === 6) continue;
-      var iso = toISODate(d);
-      var els = activeElementsOn(iso);
-      var st = dayStatus(els.length, peopleAssignedOn(iso, els).size);
-      if(st === "bad") badDays++; else if(st === "warn") warnDays++;
-    }
-    var all = elementsForCurrentProject();
-    var c = {mangler:0,pabegynt:0,ferdig:0};
-    all.forEach(function(e){ c[e.status]++; });
-    var tot = all.length || 1;
-    var unplannedC = all.filter(function(e){ return !isPlanned(e) && e.status!=="ferdig"; }).length;
-    var lateC = all.filter(isLate).length;
-    var staffC = badDays + warnDays;
-    var noTask = 0;
-    weekDays(mondayOf(new Date())).forEach(function(d){ noTask += presentWithoutTask(toISODate(d)).length; });
-    byId("summaryRow").innerHTML =
-      '<div class="kpi"><div class="num">'+c.ferdig+'<small> / '+all.length+'</small></div><div class="lbl">Oppgaver ferdig · '+c.pabegynt+' påbegynt</div>' +
-        '<div class="bar"><i style="width:'+(c.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(c.pabegynt/tot*100)+'%; background:var(--warn)"></i></div></div>' +
-      '<div class="kpi link'+(unplannedC>0?' warn':'')+'" data-kpi="ikkeplanlagt"><div class="num">'+unplannedC+'</div><div class="lbl">Ikke lagt inn i planen</div></div>' +
-      '<div class="kpi link'+(lateC>0?' bad':'')+'" data-kpi="forsinket"><div class="num">'+lateC+'</div><div class="lbl">Forsinket</div></div>' +
-      '<div class="kpi'+(badDays>0?' bad':(warnDays>0?' warn':''))+'"><div class="num">'+staffC+'</div><div class="lbl">Dager med for lite folk (neste 3 uker)</div></div>' +
-      '<div class="kpi'+(noTask>0?' warn':'')+'"><div class="num">'+noTask+'</div><div class="lbl">Frivillig-dager uten oppgave denne uka</div></div>';
-    byId("summaryRow").querySelectorAll("[data-kpi]").forEach(function(k){
-      k.addEventListener("click", function(){ view.elFilter = this.dataset.kpi; renderElementsTab(); switchTab("elementer"); });
-    });
-  }
 
   // ---------- elements tab ----------
   var FILTERS = [
@@ -1894,7 +1877,6 @@
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     renderProjectBar();
-    renderSummary();
     renderCalView();
     renderElementsTab();
     if(staffDialog.open) renderStaff();
@@ -1993,6 +1975,14 @@
       .select().single().then(function(res){
         if(res.error){ showError("Kunne ikke opprette prosjektet: "+res.error.message); return; }
         selectProject(res.data.id);
+        refetchProjects();
+      });
+  }
+  function updateProject(id, name, start, end){
+    if(!sb) return;
+    sb.from("projects").update({ name: name.slice(0,80), start_date: start || null, end_date: end || null }).eq("id", id)
+      .then(function(res){
+        if(res.error){ showError("Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
         refetchProjects();
       });
   }
