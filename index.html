@@ -101,6 +101,7 @@
   .cal-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
   .cal-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border);}
   .cal-head{flex-wrap:wrap; gap:10px;}
+  .cal-head .mo{text-transform:none !important;}
   .cal-head .mo{font-size:17px; font-weight:700; text-transform:capitalize;}
   .cal-nav{display:flex; gap:6px; align-items:center;}
   .cal-nav button{
@@ -300,6 +301,134 @@
   .statuspicker.big button{padding:8px 14px; font-size:12.5px; flex:1;}
   .statuspicker.big{display:flex;}
 
+  /* ---------- forside / kalender (kun visning) ---------- */
+  .cal-toolbar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .seg{display:inline-flex; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px;}
+  .seg button{border:none; background:none; padding:7px 13px; border-radius:8px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;}
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
+  .seg .dot{width:8px; height:8px; border-radius:3px;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); min-width:0;}
+  .kpi .num{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; line-height:1.1;}
+  .kpi .num small{font-size:13px; color:var(--muted); font-weight:500;}
+  .kpi .lbl{font-size:12px; color:var(--muted); margin-top:3px;}
+  .kpi .bar{height:5px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin-top:8px; display:flex;}
+  .kpi .bar i{display:block; height:100%;}
+  .kpi.warn .num{color:var(--warn-ink);} .kpi.bad .num{color:var(--bad-ink);}
+  .kpi.link{cursor:pointer;} .kpi.link:hover{border-color:var(--border-strong);}
+
+  .wk{display:grid; grid-template-columns:repeat(5,minmax(0,1fr));}
+  .wkday{border-left:1px solid var(--border); min-height:170px; display:flex; flex-direction:column;}
+  .wkday:first-child{border-left:none;}
+  .wkday-head{padding:10px 12px 8px; display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--border);}
+  .wkday-head .dn{font-weight:700; font-size:13px;}
+  .wkday-head .dd{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted);}
+  .wkday-head .staff{margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
+  .wkday.today{background:linear-gradient(var(--accent-soft), transparent 90px);}
+  .wkday.today .dn, .wkday.today .dd{color:var(--accent);}
+  .wkday.today .wkday-head{box-shadow:inset 0 3px 0 var(--accent);}
+  .wkday-body{padding:8px; display:flex; flex-direction:column; gap:7px; flex:1;}
+  .wkday .none{font-size:12px; color:var(--muted); padding:4px 2px;}
+  .wkel{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--innvendig); border-radius:9px; padding:8px 9px; cursor:pointer; box-shadow:0 1px 2px rgba(30,42,58,.04); transition:border-color .12s, transform .12s;}
+  .wkel:hover{border-color:var(--border-strong); transform:translateY(-1px);}
+  .wkel.sec-utvendig{border-left-color:var(--utvendig);}
+  .wkel.st-ferdig{opacity:.62;}
+  .wkel.st-ferdig .wkel-name{text-decoration:line-through;}
+  .wkel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:6px;}
+  .wkel-name{font-weight:600; font-size:13px; line-height:1.3;}
+  .stpill{font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; white-space:nowrap; flex:none;}
+  .stpill.s-mangler{background:var(--bad-soft); color:var(--bad-ink);}
+  .stpill.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink);}
+  .stpill.s-ferdig{background:var(--good-soft); color:var(--good-ink);}
+  .stpill.late{background:var(--bad); color:#fff;}
+  .ppl{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
+  .ppl span{font-size:11px; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:1px 7px; white-space:nowrap;}
+  .ppl span.conf{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink); font-weight:700;}
+  .ppl .nobody{background:none; border:1px dashed var(--bad); color:var(--bad-ink);}
+  .cal-foot{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:10px 14px; border-top:1px solid var(--border); font-size:11.5px; color:var(--muted);}
+  .cal-foot .legend{margin:0;}
+
+  /* tidslinje */
+  .gantt-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .gantt{--dw:22px; --nw:190px; position:relative; min-width:calc(var(--nw) + var(--days) * var(--dw)); font-size:12px;}
+  .g-row{display:flex; height:32px; border-bottom:1px solid var(--border);}
+  .g-row:last-child{border-bottom:none;}
+  .g-name{position:sticky; left:0; z-index:3; flex:none; width:var(--nw); background:var(--surface); border-right:1px solid var(--border); padding:0 10px; display:flex; align-items:center; gap:6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:pointer;}
+  .g-name span{overflow:hidden; text-overflow:ellipsis;}
+  .g-track{position:relative; flex:none; width:calc(var(--days) * var(--dw));}
+  .g-head{height:auto; position:sticky; top:0; z-index:4; background:var(--surface);}
+  .g-head .g-name{cursor:default; font-weight:700; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+  .g-months, .g-weeks{position:relative; height:20px;}
+  .g-months div, .g-weeks div{position:absolute; top:0; height:100%; display:flex; align-items:center; padding-left:5px; border-left:1px solid var(--border); white-space:nowrap; overflow:hidden;}
+  .g-months div{font-weight:700; text-transform:capitalize; font-size:11.5px;}
+  .g-weeks div{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); border-top:1px solid var(--border);}
+  .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
+  .g-group .g-name{background:var(--surface-alt); cursor:default;}
+  .g-wkend{position:absolute; top:0; bottom:0; background:rgba(104,117,136,.07);}
+  .g-today{position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:2; opacity:.85;}
+  .g-bar{position:absolute; top:7px; height:18px; border-radius:6px; cursor:pointer; z-index:1; display:flex; align-items:center; padding:0 6px; font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; min-width:8px;}
+  .g-bar.s-mangler{background:var(--bad-soft); border:1.5px solid var(--bad); color:var(--bad-ink);}
+  .g-bar.s-pabegynt{background:var(--warn-soft); border:1.5px solid var(--warn); color:var(--warn-ink);}
+  .g-bar.s-ferdig{background:var(--good); border:1.5px solid var(--good); color:#fff;}
+  .g-bar.late{box-shadow:0 0 0 2px var(--bad-soft), 0 0 0 3px var(--bad);}
+  .g-unplanned{padding:12px 14px; border-top:1px solid var(--border); font-size:12.5px;}
+  .g-unplanned b{display:block; margin-bottom:6px;}
+  .g-unplanned .chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .g-unplanned .chips button{border:1px dashed var(--border-strong); background:var(--surface); border-radius:99px; padding:3px 10px; font-size:12px; cursor:pointer;}
+  .g-empty{padding:30px 16px; text-align:center; color:var(--muted); font-size:13px;}
+
+  /* detaljvindu + bemanning */
+  .det-meta{display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12.5px; color:var(--muted); margin:-6px 0 12px;}
+  .det-notes{font-size:13px; background:var(--surface-alt); border-radius:8px; padding:8px 10px; margin-bottom:12px;}
+  .det-days{display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto;}
+  .det-day{display:flex; gap:10px; align-items:flex-start; font-size:12.5px; padding:6px 0; border-bottom:1px solid var(--border);}
+  .det-day:last-child{border-bottom:none;}
+  .det-day .dl{width:78px; flex:none; font-weight:600; font-size:12px;}
+  .det-day .dl small{display:block; color:var(--muted); font-weight:400; font-family:"IBM Plex Mono",monospace; font-size:11px;}
+  .det-day .ppl{margin-top:0; flex:1;}
+  .staff-day .ppl button{border:none; background:none; cursor:pointer; color:var(--muted); padding:0 0 0 3px; font-size:12px;}
+  .staff-day .ppl button:hover{color:var(--bad-ink);}
+  .staff-day .tools{display:flex; gap:8px; margin-top:5px; flex-wrap:wrap; align-items:center;}
+  .staff-day select{border:1px solid var(--border); border-radius:7px; padding:3px 6px; font-size:12px; background:var(--surface); max-width:190px;}
+  .staff-day .copy{border:none; background:none; color:var(--accent); cursor:pointer; font-size:11.5px; padding:0; text-decoration:underline;}
+  .elcard.flash{animation:flash 1.6s ease;}
+  @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent);} 100%{box-shadow:none;}}
+  dialog.wide{width:min(560px, calc(100vw - 24px));}
+
+  /* ---------- mobil ---------- */
+  @media (max-width:820px){
+    .wk{grid-template-columns:1fr;}
+    .wkday{border-left:none; border-top:1px solid var(--border); min-height:0;}
+    .wkday:first-child{border-top:none;}
+    .wkday.past{display:none;}
+    .wkday-body{flex-direction:column;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:640px){
+    body{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+    header.top{position:static; backdrop-filter:none; clip-path:none; box-shadow:0 1px 0 var(--border); background:#fff; margin-inline:-16px; padding-inline:16px;}
+    header.top .top-inner{display:block;}
+    .kpis{gap:8px;}
+    .kpi{padding:10px 12px;}
+    .kpi .num{font-size:19px;}
+    .kpi .lbl{font-size:11.5px;}
+    nav.tabs{position:fixed; left:0; right:0; bottom:0; z-index:50; border-radius:0; border:none; border-top:1px solid var(--border);
+      background:rgba(255,255,255,.97); backdrop-filter:blur(8px); padding:6px 6px calc(6px + env(safe-area-inset-bottom)); gap:2px; box-shadow:0 -6px 18px -12px rgba(30,42,58,.3);}
+    nav.tabs button{flex:1; padding:10px 2px; font-size:12px; border-radius:9px; text-align:center;}
+    nav.tabs button[aria-selected="true"]{background:var(--accent-soft); color:var(--accent); box-shadow:none;}
+    .brand h1{font-size:19px;}
+    .brand .tag{display:none;}
+    #projectSetActive{display:none;}
+    .project-dates{display:none;}
+    .cal-toolbar .seg{flex:1;}
+    .cal-toolbar .seg button{flex:1; justify-content:center; padding:8px 6px;}
+    .gantt{--nw:118px; --dw:16px;}
+    .g-bar{font-size:0; padding:0;}
+    .elcard .midrow{flex-direction:column; align-items:stretch;}
+    .elcard .actions{justify-content:flex-start;}
+  }
+
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
 </style>
 </head>
@@ -330,32 +459,53 @@
   </header>
 
   <section id="panel-kalender" class="panel active">
-    <div class="summary-row" id="summaryRow"></div>
+    <div class="kpis" id="summaryRow"></div>
 
-    <div class="sec-toggle" role="tablist" aria-label="Velg seksjon">
-      <button type="button" data-sec="innvendig" aria-pressed="true"><i class="dot" style="background:var(--innvendig)"></i>Innvendig tømring</button>
-      <button type="button" data-sec="utvendig" aria-pressed="false"><i class="dot" style="background:var(--utvendig)"></i>Utvendig tømring</button>
+    <div class="cal-toolbar">
+      <div class="seg" id="calViewSeg">
+        <button type="button" data-calview="uke" aria-pressed="true">Uke</button>
+        <button type="button" data-calview="prosjekt" aria-pressed="false">Hele prosjektet</button>
+      </div>
+      <div class="seg" id="calSecSeg">
+        <button type="button" data-calsec="alle" aria-pressed="true">Alle</button>
+        <button type="button" data-calsec="innvendig" aria-pressed="false"><i class="dot" style="background:var(--innvendig)"></i>Innvendig</button>
+        <button type="button" data-calsec="utvendig" aria-pressed="false"><i class="dot" style="background:var(--utvendig)"></i>Utvendig</button>
+      </div>
     </div>
 
-    <div class="cal-card">
+    <div class="cal-card" id="weekView">
       <div class="cal-head">
         <div class="mo" id="wkLabel"></div>
         <div class="cal-nav">
           <button id="wkPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
-          <button class="today-btn" id="wkToday">Denne uken</button>
+          <button class="today-btn" id="wkToday">I dag</button>
           <button id="wkNext" title="Neste uke" aria-label="Neste uke">›</button>
-          <div class="wk-jump">
-            <input type="number" id="wkJump" min="1" max="53" title="Gå til ukenummer" />
-          </div>
         </div>
       </div>
       <div class="unplanned-note" id="unplannedNote" hidden></div>
-      <div class="week-grid" id="weekGrid"></div>
-      <div class="legend" style="padding:0 12px 12px;">
-        <span><i class="dot good"></i> Nok folk satt opp</span>
-        <span><i class="dot warn"></i> Færre folk enn elementer</span>
-        <span><i class="dot bad"></i> Ingen satt opp</span>
+      <div class="wk" id="weekGrid"></div>
+      <div class="cal-foot">
+        <div class="legend">
+          <span><i class="dot good"></i> Nok folk</span>
+          <span><i class="dot warn"></i> For få folk</span>
+          <span><i class="dot bad"></i> Ingen satt opp</span>
+        </div>
+        <span>Trykk på et element for detaljer</span>
       </div>
+    </div>
+
+    <div class="cal-card" id="ganttView" hidden>
+      <div class="cal-head">
+        <div class="mo" id="ganttLabel"></div>
+        <div class="legend" style="margin:0">
+          <span><i class="dot bad"></i> Mangler</span>
+          <span><i class="dot warn"></i> Påbegynt</span>
+          <span><i class="dot good"></i> Ferdig</span>
+          <span><i class="dot" style="background:var(--accent); border-radius:1px; width:3px; height:10px;"></i> I dag</span>
+        </div>
+      </div>
+      <div class="gantt-wrap" id="ganttWrap"><div class="gantt" id="gantt"></div></div>
+      <div class="g-unplanned" id="ganttUnplanned" hidden></div>
     </div>
 
     <div class="conflict-banner" id="conflictBanner" hidden></div>
@@ -450,6 +600,30 @@
   </form>
 </dialog>
 
+<dialog id="detailDialog" class="wide">
+  <div class="dlg-body">
+    <h3 id="detTitle"></h3>
+    <div class="det-meta" id="detMeta"></div>
+    <div id="detNotes"></div>
+    <div class="det-days" id="detDays"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="detClose">Lukk</button>
+      <button type="button" class="btn primary" id="detGoto">Gå til elementet</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="staffDialog" class="wide">
+  <div class="dlg-body">
+    <h3 id="staffTitle">Bemanning</h3>
+    <div class="det-meta" id="staffMeta"></div>
+    <div class="det-days" id="staffDays"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn primary" id="staffClose">Ferdig</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="elDialog">
   <form class="dlg-body" id="elForm" method="dialog">
     <h3 id="elDlgTitle">Nytt element</h3>
@@ -515,7 +689,8 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], currentProjectId: null };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle" };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle" };
+  try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
 
@@ -641,111 +816,254 @@
   }
   function sectionLabel(sec){ return sec === "innvendig" ? "innvendig" : "utvendig"; }
 
-  // ---------- week calendar render ----------
+  // ---------- forside: uke + tidslinje (kun visning) ----------
+  var DAY_NAMES = ["Mandag","Tirsdag","Onsdag","Torsdag","Fredag"];
+  var DAY_SHORT = ["søn","man","tir","ons","tor","fre","lør"];
+  function calSection(){ return view.calSec === "alle" ? null : view.calSec; }
+  function statusPill(e){
+    return isLate(e) ? '<span class="stpill late">Forsinket</span>' : '<span class="stpill s-'+e.status+'">'+STATUS_LABEL[e.status]+'</span>';
+  }
+
   function renderWeekLabel(){
     var info = isoWeekInfo(view.weekStart);
-    byId("wkLabel").textContent = "Uke " + info.week + " · " + info.year;
-    var jump = byId("wkJump");
-    if(document.activeElement !== jump) jump.value = info.week;
+    var end = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+4);
+    byId("wkLabel").innerHTML = "Uke " + info.week + ' <span style="font-weight:500; color:var(--muted); font-size:13px;">' + fmtRange(toISODate(view.weekStart), toISODate(end)) + '</span>';
   }
 
   function renderWeekGrid(){
     var grid = byId("weekGrid");
-    grid.innerHTML = "";
     var todayIso = toISODate(new Date());
-    var dayNames = ["Mandag","Tirsdag","Onsdag","Torsdag","Fredag"];
-
+    var html = "";
     for(var i=0;i<5;i++){
       var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
       var iso = toISODate(d);
-      var els = activeElementsOn(iso, view.section);
+      var els = activeElementsOn(iso, calSection());
       var ppl = peopleAssignedOn(iso, els);
       var status = dayStatus(els.length, ppl.size);
       var conflicts = conflictsForDate(iso);
-
-      var col = document.createElement("div");
-      col.className = "daycol" + (iso===todayIso ? " today":"");
-
-      var html = '<div class="daycol-head"><div class="dname">'+dayNames[i]+'</div>' +
-        '<div class="ddate mono">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</div>';
-      if(els.length > 0){
-        html += '<div class="dcount"><i class="dot '+status+'"></i>'+ppl.size+'/'+els.length+'</div>';
-      }
-      html += '</div><div class="daycol-body">';
-
+      html += '<div class="wkday'+(iso===todayIso?' today':'')+(iso<todayIso && view.weekStart.getTime()===mondayOf(new Date()).getTime()?' past':'')+'">' +
+        '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
+        (els.length ? '<span class="staff" title="Personer satt opp / elementer"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+        '</div><div class="wkday-body">';
       if(els.length === 0){
-        html += '<p class="empty-note">Ingen elementer.</p>';
-        var otherSec = view.section === "innvendig" ? "utvendig" : "innvendig";
-        var otherCount = activeElementsOn(iso, otherSec).length;
-        if(otherCount > 0){
-          html += '<p class="other-sec-note">'+otherCount+' i '+otherSec+' · <button type="button" data-showsec="'+otherSec+'">vis</button></p>';
-        }
-        html += '<button class="btn small" data-quickaddel="'+iso+'">+ Legg til element</button>';
+        html += '<div class="none">Ingenting planlagt</div>';
       } else {
         els.forEach(function(e){
-          var assignedIds = (e.assignments && e.assignments[iso]) || [];
-          html += '<div class="elblock'+(assignedIds.length===0?' unstaffed':'')+(e.done?' done':'')+'" data-el="'+e.id+'">';
-          html += '<div class="elhead"><div class="elname" data-editel="'+e.id+'" title="Rediger">'+escapeHtml(e.name)+'</div>' +
-            '<button type="button" class="stchip s-'+e.status+'" data-cyclestatus="'+e.id+'" title="Trykk for å endre status">'+STATUS_LABEL[e.status]+'</button></div>';
-          if(assignedIds.length > 0){
-            html += '<div class="plist">' + assignedIds.map(function(pid){
-              var isConflict = !!conflicts[pid];
-              var titleAttr = isConflict ? ' title="Satt opp flere steder denne dagen"' : "";
-              return '<span class="pname-tag'+(isConflict?' conflict-name':'')+'"'+titleAttr+'>'+escapeHtml(personName(pid))+(isConflict?' !':'')+
-                '<button class="rm" data-unassign="'+e.id+'|'+iso+'|'+pid+'" title="Fjern">×</button></span>';
-            }).join("") + '</div>';
-          }
-          var available = state.people.filter(function(p){ return assignedIds.indexOf(p.id) === -1; });
-          if(available.length > 0){
-            html += '<select class="addperson-select" data-assignselect="'+e.id+'|'+iso+'">' +
-              '<option value="">+ legg til person …</option>' +
-              available.map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+(p.group?' ('+escapeHtml(p.group)+')':'')+'</option>'; }).join("") +
-              '</select>';
-          }
-          html += '</div>';
+          var ids = (e.assignments && e.assignments[iso]) || [];
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'" data-detail="'+e.id+'" role="button" tabindex="0">' +
+            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>' +
+            '<div class="ppl">' + (ids.length ? ids.map(function(pid){
+              return '<span'+(conflicts[pid]?' class="conf" title="Satt opp flere steder denne dagen"':'')+'>'+escapeHtml(personName(pid))+'</span>';
+            }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
         });
-        html += '<button class="addlink" data-quickaddel="'+iso+'">+ nytt element</button>';
       }
-      html += '</div>';
-
-      col.innerHTML = html;
-      grid.appendChild(col);
+      html += '</div></div>';
     }
+    grid.innerHTML = html;
+    bindDetail(grid);
+  }
 
-    grid.querySelectorAll("[data-unassign]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        var parts = this.dataset.unassign.split("|");
-        unassignPerson(parts[0], parts[1], parts[2]);
-      });
-    });
-    grid.querySelectorAll("[data-assignselect]").forEach(function(sel){
-      sel.addEventListener("change", function(){
-        if(!this.value) return;
-        var parts = this.dataset.assignselect.split("|");
-        assignPerson(parts[0], parts[1], this.value);
-        this.value = "";
-      });
-    });
-    grid.querySelectorAll("[data-cyclestatus]").forEach(function(btn){
-      btn.addEventListener("click", function(){ cycleStatus(this.dataset.cyclestatus); });
-    });
-    grid.querySelectorAll("[data-editel]").forEach(function(el){
-      el.addEventListener("click", function(){ openElDialog(this.dataset.editel); });
-    });
-    grid.querySelectorAll("[data-showsec]").forEach(function(btn){
-      btn.addEventListener("click", function(){ setSection(this.dataset.showsec); });
-    });
-    grid.querySelectorAll("[data-quickaddel]").forEach(function(btn){
-      btn.addEventListener("click", function(){ openElDialog(null, this.dataset.quickaddel, view.section); });
+  function bindDetail(root){
+    root.querySelectorAll("[data-detail]").forEach(function(el){
+      el.addEventListener("click", function(){ openDetail(this.dataset.detail); });
+      el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openDetail(this.dataset.detail); });
     });
   }
 
+  function projectRange(){
+    var els = elementsForCurrentProject().filter(isPlanned);
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var s = cur && cur.start, e = cur && cur.end;
+    els.forEach(function(x){ if(!s || x.start < s) s = x.start; if(!e || x.end > e) e = x.end; });
+    if(!s || !e) return null;
+    // start på mandag, slutt på søndag
+    var a = mondayOf(fromISODate(s)), b = fromISODate(e);
+    b = new Date(b.getFullYear(), b.getMonth(), b.getDate() + (7 - ((b.getDay()+6)%7) - 1));
+    return { start: a, end: b, days: Math.round((b - a)/86400000) + 1 };
+  }
+  function dayIndex(range, iso){ return Math.round((fromISODate(iso) - range.start)/86400000); }
+
+  function renderGantt(){
+    var box = byId("gantt");
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var all = elementsForCurrentProject().filter(function(e){ return !calSection() || e.section === calSection(); });
+    var planned = all.filter(isPlanned);
+    var range = projectRange();
+    var doneC = all.filter(function(e){ return e.status==="ferdig"; }).length;
+    byId("ganttLabel").innerHTML = escapeHtml(cur ? cur.name : "Prosjekt") +
+      (range ? ' <span style="font-weight:500; color:var(--muted); font-size:13px;">'+fmtRange(toISODate(range.start), toISODate(range.end))+' · '+doneC+' av '+all.length+' ferdig</span>' : '');
+
+    var unplanned = all.filter(function(e){ return !isPlanned(e) && e.status !== "ferdig"; });
+    var up = byId("ganttUnplanned");
+    if(unplanned.length){
+      up.hidden = false;
+      up.innerHTML = '<b>Ikke lagt inn i planen ('+unplanned.length+')</b><div class="chips">' +
+        unplanned.map(function(e){ return '<button type="button" data-detail="'+e.id+'">'+escapeHtml(e.name)+'</button>'; }).join("") + '</div>';
+      bindDetail(up);
+    } else { up.hidden = true; up.innerHTML = ""; }
+
+    if(!range || planned.length === 0){
+      box.style.removeProperty("--days");
+      box.innerHTML = '<div class="g-empty">Ingen elementer er lagt inn i planen ennå.<br>Gå til <b>Elementer</b> og trykk «+ Legg i planen».</div>';
+      return;
+    }
+    var dw = window.matchMedia("(max-width:640px)").matches ? 16 : 22;
+    box.style.setProperty("--days", range.days);
+
+    // bakgrunn: helger + i dag
+    var bg = "";
+    for(var i=0;i<range.days;i++){
+      var dd = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+i);
+      if(dd.getDay()===6) bg += '<div class="g-wkend" style="left:'+(i*dw)+'px; width:'+(2*dw)+'px"></div>';
+    }
+    var ti = dayIndex(range, toISODate(new Date()));
+    if(ti >= 0 && ti < range.days) bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+
+    // topp: måneder + uker
+    var months = "", weeks = "";
+    var m0 = 0;
+    for(var j=0;j<=range.days;j++){
+      var dj = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+j);
+      var d0 = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+m0);
+      if(j === range.days || dj.getMonth() !== d0.getMonth()){
+        months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
+        m0 = j;
+      }
+    }
+    for(var w=0; w<range.days; w+=7){
+      var dw0 = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+w);
+      weeks += '<div style="left:'+(w*dw)+'px; width:'+(7*dw)+'px">'+(dw>=20?'Uke ':'')+isoWeekInfo(dw0).week+'</div>';
+    }
+    var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Element</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+
+    ["innvendig","utvendig"].forEach(function(sec){
+      var list = planned.filter(function(e){ return e.section === sec; }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+      if(!list.length) return;
+      html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
+      list.forEach(function(e){
+        var a = dayIndex(range, e.start), b = dayIndex(range, e.end);
+        html += '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
+          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+STATUS_LABEL[e.status]+'</div></div></div>';
+      });
+    });
+    box.innerHTML = html;
+    bindDetail(box);
+    // rull slik at i dag er synlig
+    var wrap = byId("ganttWrap");
+    if(ti > 0 && !wrap.dataset.scrolled){ wrap.scrollLeft = Math.max(0, ti*dw - 7*dw); wrap.dataset.scrolled = "1"; }
+  }
+
+  function renderCalView(){
+    byId("weekView").hidden = view.calView !== "uke";
+    byId("ganttView").hidden = view.calView !== "prosjekt";
+    document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
+    document.querySelectorAll("#calSecSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calsec===view.calSec ? "true":"false"); });
+    if(view.calView === "uke"){ renderWeekLabel(); renderWeekGrid(); renderConflictBanner(); }
+    else { renderGantt(); byId("conflictBanner").hidden = true; }
+    renderUnplannedNote();
+  }
+  document.querySelectorAll("#calViewSeg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      view.calView = this.dataset.calview;
+      try{ localStorage.setItem("ldc_cal_view", view.calView); }catch(e){}
+      renderCalView();
+    });
+  });
+  document.querySelectorAll("#calSecSeg button").forEach(function(b){
+    b.addEventListener("click", function(){ view.calSec = this.dataset.calsec; renderCalView(); });
+  });
+
+  // ---------- detaljvindu (kun visning) ----------
+  var detailDialog = byId("detailDialog");
+  function workdays(e){
+    var out = [];
+    if(!isPlanned(e)) return out;
+    var d0 = fromISODate(e.start), d1 = fromISODate(e.end);
+    for(var t=new Date(d0); t<=d1; t.setDate(t.getDate()+1)){
+      if(t.getDay()!==0 && t.getDay()!==6) out.push(new Date(t));
+    }
+    return out;
+  }
+  function dayLabel(d){ return '<div class="dl">'+DAY_SHORT[d.getDay()].replace(/^./, function(c){return c.toUpperCase();})+'<small>'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</small></div>'; }
+  function openDetail(id){
+    var e = state.elements.find(function(x){ return x.id === id; });
+    if(!e) return;
+    detailDialog.dataset.id = id;
+    byId("detTitle").textContent = e.name;
+    byId("detMeta").innerHTML = statusPill(e) + '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>' +
+      '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
+    byId("detNotes").innerHTML = e.notes ? '<div class="det-notes">'+escapeHtml(e.notes)+'</div>' : '';
+    var days = workdays(e);
+    byId("detDays").innerHTML = days.map(function(d){
+      var iso = toISODate(d), ids = (e.assignments && e.assignments[iso]) || [];
+      return '<div class="det-day">'+dayLabel(d)+'<div class="ppl">'+(ids.length ? ids.map(function(pid){ return '<span>'+escapeHtml(personName(pid))+'</span>'; }).join("") : '<span class="nobody">Ingen satt opp</span>')+'</div></div>';
+    }).join("");
+    detailDialog.showModal();
+  }
+  byId("detClose").addEventListener("click", function(){ detailDialog.close(); });
+  detailDialog.addEventListener("click", function(ev){ if(ev.target === detailDialog) detailDialog.close(); });
+  byId("detGoto").addEventListener("click", function(){
+    var id = detailDialog.dataset.id;
+    detailDialog.close();
+    gotoElement(id);
+  });
+  function gotoElement(id){
+    view.elFilter = "alle";
+    renderElementsTab();
+    switchTab("elementer");
+    var card = document.querySelector('[data-elcard="'+id+'"]');
+    if(card){ card.scrollIntoView({block:"center"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); }
+  }
+
+  // ---------- bemanning (fra Elementer-siden) ----------
+  var staffDialog = byId("staffDialog");
+  function openStaff(id){ staffDialog.dataset.id = id; renderStaff(); if(!staffDialog.open) staffDialog.showModal(); }
+  function renderStaff(){
+    var id = staffDialog.dataset.id;
+    var e = state.elements.find(function(x){ return x.id === id; });
+    if(!e){ if(staffDialog.open) staffDialog.close(); return; }
+    byId("staffTitle").textContent = "Bemanning – " + e.name;
+    byId("staffMeta").innerHTML = '<span class="mono">'+fmtRange(e.start, e.end)+'</span><span>Velg hvem som jobber hver dag.</span>';
+    var days = workdays(e), prevIso = null;
+    byId("staffDays").innerHTML = days.map(function(d){
+      var iso = toISODate(d), ids = (e.assignments && e.assignments[iso]) || [];
+      var conflicts = conflictsForDate(iso);
+      var avail = state.people.filter(function(p){ return ids.indexOf(p.id) === -1; });
+      var row = '<div class="det-day staff-day">'+dayLabel(d)+'<div style="flex:1; min-width:0">' +
+        '<div class="ppl">'+(ids.length ? ids.map(function(pid){
+          return '<span'+(conflicts[pid]?' class="conf" title="Satt opp på et annet element samme dag"':'')+'>'+escapeHtml(personName(pid))+'<button type="button" data-unstaff="'+iso+'|'+pid+'" title="Fjern">×</button></span>';
+        }).join("") : '<span class="nobody">Ingen satt opp</span>')+'</div>' +
+        '<div class="tools"><select data-staff="'+iso+'"><option value="">+ Legg til person</option>' +
+        avail.map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+(p.group?' ('+escapeHtml(p.group)+')':'')+'</option>'; }).join("") + '</select>' +
+        (prevIso ? '<button type="button" class="copy" data-copyday="'+prevIso+'|'+iso+'">Samme som dagen før</button>' : '') +
+        '</div></div></div>';
+      prevIso = iso;
+      return row;
+    }).join("") || '<p class="empty-note">Elementet har ingen arbeidsdager i perioden.</p>';
+    var box = byId("staffDays");
+    box.querySelectorAll("[data-staff]").forEach(function(sel){
+      sel.addEventListener("change", function(){ if(this.value) assignPerson(id, this.dataset.staff, this.value); });
+    });
+    box.querySelectorAll("[data-unstaff]").forEach(function(b){
+      b.addEventListener("click", function(){ var p = this.dataset.unstaff.split("|"); unassignPerson(id, p[0], p[1]); });
+    });
+    box.querySelectorAll("[data-copyday]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var p = this.dataset.copyday.split("|");
+        var src = (e.assignments && e.assignments[p[0]]) || [];
+        setDayAssignments(id, p[1], src.slice());
+      });
+    });
+  }
+  byId("staffClose").addEventListener("click", function(){ staffDialog.close(); });
+  staffDialog.addEventListener("click", function(ev){ if(ev.target === staffDialog) staffDialog.close(); });
+
   function renderUnplannedNote(){
     var box = byId("unplannedNote");
-    var list = elementsForCurrentProject().filter(function(e){ return e.section === view.section && !isPlanned(e) && e.status !== "ferdig"; });
-    if(list.length === 0){ box.hidden = true; box.innerHTML = ""; return; }
+    var list = elementsForCurrentProject().filter(function(e){ return (!calSection() || e.section === calSection()) && !isPlanned(e) && e.status !== "ferdig"; });
+    if(list.length === 0 || view.calView !== "uke"){ box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
-    box.innerHTML = '<b>'+list.length+'</b> element'+(list.length===1?'':'er')+' i '+view.section+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
+    box.innerHTML = '<b>'+list.length+'</b> element'+(list.length===1?'':'er')+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
     byId("showUnplanned").addEventListener("click", function(){ view.elFilter = "ikkeplanlagt"; renderElementsTab(); switchTab("elementer"); });
   }
 
@@ -757,13 +1075,13 @@
       var iso = toISODate(d);
       var conflicts = conflictsForDate(iso);
       Object.keys(conflicts).forEach(function(pid){
-        var places = conflicts[pid].map(function(x){ return '"'+x.name+'" ('+sectionLabel(x.section)+')'; }).join(" og ");
-        items.push(personName(pid) + " er satt opp flere steder " + d.getDate() + ". " + NB_MONTHS_SHORT[d.getMonth()] + ": " + places + ".");
+        var places = conflicts[pid].map(function(x){ return '"'+x.name+'"'; }).join(" og ");
+        items.push(personName(pid) + " – " + d.getDate() + ". " + NB_MONTHS_SHORT[d.getMonth()] + ": " + places);
       });
     }
     if(items.length === 0){ box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
-    box.innerHTML = '<h3>Dobbeltbooking denne uken</h3><ul>' + items.map(function(t){ return "<li>"+escapeHtml(t)+"</li>"; }).join("") + '</ul>';
+    box.innerHTML = '<h3>Satt opp flere steder samme dag</h3><ul>' + items.map(function(t){ return "<li>"+escapeHtml(t)+"</li>"; }).join("") + '</ul>';
   }
 
   function renderProjectBar(){
@@ -803,28 +1121,31 @@
   });
 
   function renderSummary(){
-    var warnDays = 0, badDays = 0;
+    var badDays = 0, warnDays = 0;
     for(var i=0;i<21;i++){
       var d = new Date(); d.setDate(d.getDate()+i);
       if(d.getDay() === 0 || d.getDay() === 6) continue;
       var iso = toISODate(d);
       var els = activeElementsOn(iso);
-      var ppl = peopleAssignedOn(iso, els);
-      var st = dayStatus(els.length, ppl.size);
+      var st = dayStatus(els.length, peopleAssignedOn(iso, els).size);
       if(st === "bad") badDays++; else if(st === "warn") warnDays++;
     }
     var all = elementsForCurrentProject();
-    var doneC = all.filter(function(e){ return e.status==="ferdig"; }).length;
+    var c = {mangler:0,pabegynt:0,ferdig:0};
+    all.forEach(function(e){ c[e.status]++; });
+    var tot = all.length || 1;
     var unplannedC = all.filter(function(e){ return !isPlanned(e) && e.status!=="ferdig"; }).length;
     var lateC = all.filter(isLate).length;
-
+    var staffC = badDays + warnDays;
     byId("summaryRow").innerHTML =
-      '<div class="tile"><div class="num mono">'+state.people.length+'</div><div class="lbl">Personer</div></div>' +
-      '<div class="tile"><div class="num mono">'+doneC+' / '+all.length+'</div><div class="lbl">Elementer ferdig</div></div>' +
-      '<div class="tile'+(unplannedC>0?' warn':'')+'"><div class="num mono">'+unplannedC+'</div><div class="lbl">Ikke lagt inn i planen</div></div>' +
-      '<div class="tile'+(lateC>0?' bad':'')+'"><div class="num mono">'+lateC+'</div><div class="lbl">Forsinket</div></div>' +
-      '<div class="tile'+(badDays>0?' bad':'')+'"><div class="num mono">'+badDays+'</div><div class="lbl">Dager uten bemanning (neste 21 dager)</div></div>' +
-      '<div class="tile'+(warnDays>0?' warn':'')+'"><div class="num mono">'+warnDays+'</div><div class="lbl">Dager med for få folk (neste 21 dager)</div></div>';
+      '<div class="kpi"><div class="num">'+c.ferdig+'<small> / '+all.length+'</small></div><div class="lbl">Elementer ferdig · '+c.pabegynt+' påbegynt</div>' +
+        '<div class="bar"><i style="width:'+(c.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(c.pabegynt/tot*100)+'%; background:var(--warn)"></i></div></div>' +
+      '<div class="kpi link'+(unplannedC>0?' warn':'')+'" data-kpi="ikkeplanlagt"><div class="num">'+unplannedC+'</div><div class="lbl">Ikke lagt inn i planen</div></div>' +
+      '<div class="kpi link'+(lateC>0?' bad':'')+'" data-kpi="forsinket"><div class="num">'+lateC+'</div><div class="lbl">Forsinket</div></div>' +
+      '<div class="kpi'+(badDays>0?' bad':(warnDays>0?' warn':''))+'"><div class="num">'+staffC+'</div><div class="lbl">Dager med for lite folk (neste 3 uker)</div></div>';
+    byId("summaryRow").querySelectorAll("[data-kpi]").forEach(function(k){
+      k.addEventListener("click", function(){ view.elFilter = this.dataset.kpi; renderElementsTab(); switchTab("elementer"); });
+    });
   }
 
   // ---------- elements tab ----------
@@ -897,7 +1218,7 @@
             return '<button type="button" data-status="'+s+'" data-elstatus="'+e.id+'|'+s+'" class="'+(e.status===s?'active':'')+'">'+STATUS_LABEL[s]+'</button>';
           }).join("") + '</div>' +
           '<div class="actions" style="margin-top:0">' +
-            (planned ? '<button class="btn small" data-showinplan="'+e.id+'">Vis i planen</button>'
+            (planned ? '<button class="btn small primary" data-staffel="'+e.id+'">Bemanning</button><button class="btn small" data-showinplan="'+e.id+'">Vis i planen</button>'
                      : '<button class="btn small primary" data-plan="'+e.id+'">+ Legg i planen</button>') +
             '<button class="btn small" data-editel="'+e.id+'">Rediger</button>' +
             '<button class="btn small danger" data-delel="'+e.id+'">Slett</button>' +
@@ -912,6 +1233,9 @@
     panel.querySelectorAll("[data-editel]").forEach(function(b){
       b.addEventListener("click", function(){ openElDialog(this.dataset.editel); });
     });
+    panel.querySelectorAll("[data-staffel]").forEach(function(b){
+      b.addEventListener("click", function(){ openStaff(this.dataset.staffel); });
+    });
     panel.querySelectorAll("[data-plan]").forEach(function(b){
       b.addEventListener("click", function(){ openElDialog(this.dataset.plan, null, null, true); });
     });
@@ -919,8 +1243,9 @@
       b.addEventListener("click", function(){
         var e = state.elements.find(function(x){ return x.id === b.dataset.showinplan; });
         if(!e) return;
-        setSection(e.section);
-        goToWeek(mondayOf(fromISODate(e.start)));
+        view.calView = "uke";
+        view.weekStart = mondayOf(fromISODate(e.start));
+        renderCalView();
         switchTab("kalender");
       });
     });
@@ -935,16 +1260,6 @@
 
   document.querySelectorAll("[data-newel]").forEach(function(b){
     b.addEventListener("click", function(){ openElDialog(null, null, this.dataset.newel); });
-  });
-
-  function setSection(sec){
-    view.section = sec;
-    document.querySelectorAll(".sec-toggle button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.sec===sec ? "true":"false"); });
-    renderWeekGrid();
-    renderUnplannedNote();
-  }
-  document.querySelectorAll(".sec-toggle button").forEach(function(btn){
-    btn.addEventListener("click", function(){ setSection(btn.dataset.sec); });
   });
 
   // ---------- handleliste tab ----------
@@ -1162,9 +1477,7 @@
     if(id){ updateElement(id, payload); } else { addElement(payload); }
     elDialog.close();
     if(planned){
-      if(view.section !== payload.section) setSection(payload.section);
-      var ws = mondayOf(fromISODate(start));
-      if(ws.getTime() !== view.weekStart.getTime()) goToWeek(ws);
+      view.weekStart = mondayOf(fromISODate(start));
     }
   });
 
@@ -1172,11 +1485,9 @@
   function renderAll(){
     renderProjectBar();
     renderSummary();
-    renderWeekLabel();
-    renderWeekGrid();
-    renderUnplannedNote();
-    renderConflictBanner();
+    renderCalView();
     renderElementsTab();
+    if(staffDialog.open) renderStaff();
     renderShopTab();
     renderDrawingsTab();
     renderPeopleTab();
@@ -1184,9 +1495,7 @@
 
   function goToWeek(newStart){
     view.weekStart = newStart;
-    renderWeekLabel();
-    renderWeekGrid();
-    renderConflictBanner();
+    renderCalView();
   }
   byId("wkPrev").addEventListener("click", function(){
     goToWeek(new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()-7));
@@ -1195,12 +1504,8 @@
     goToWeek(new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+7));
   });
   byId("wkToday").addEventListener("click", function(){ goToWeek(mondayOf(new Date())); });
-  byId("wkJump").addEventListener("change", function(){
-    var info = isoWeekInfo(view.weekStart);
-    var wk = parseInt(this.value, 10);
-    if(!wk || wk < 1 || wk > 53){ this.value = info.week; return; }
-    goToWeek(mondayOfISOWeek(info.year, wk));
-  });
+  var resizeT = null;
+  window.addEventListener("resize", function(){ clearTimeout(resizeT); resizeT = setTimeout(function(){ if(view.calView==="prosjekt") renderGantt(); }, 150); });
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
@@ -1392,26 +1697,31 @@
     if(!e) return;
     setElementStatus(id, STATUS_ORDER[(STATUS_ORDER.indexOf(e.status)+1) % 3]);
   }
-  function assignPerson(elementId, iso, personId){
+  function setDayAssignments(elementId, iso, ids){
     if(!sb) return;
+    var e = state.elements.find(function(x){ return x.id === elementId; });
+    if(!e) return;
+    var next = Object.assign({}, e.assignments);
+    var uniq = [];
+    ids.forEach(function(id){ if(uniq.indexOf(id) === -1) uniq.push(id); });
+    if(uniq.length) next[iso] = uniq; else delete next[iso];
+    e.assignments = next;
+    renderAll();
+    sb.from("elements").update({ assignments: next }).eq("id", elementId)
+      .then(function(res){ if(res.error){ showError("Kunne ikke lagre bemanning: "+res.error.message); } refetchElements(); });
+  }
+  function assignPerson(elementId, iso, personId){
     var e = state.elements.find(function(x){ return x.id === elementId; });
     if(!e) return;
     var current = (e.assignments && e.assignments[iso]) || [];
     if(current.indexOf(personId) !== -1) return;
-    var next = Object.assign({}, e.assignments, {});
-    next[iso] = current.concat([personId]);
-    sb.from("elements").update({ assignments: next }).eq("id", elementId)
-      .then(function(res){ if(res.error){ showError("Kunne ikke sette opp person: "+res.error.message); return; } refetchElements(); });
+    setDayAssignments(elementId, iso, current.concat([personId]));
   }
   function unassignPerson(elementId, iso, personId){
-    if(!sb) return;
     var e = state.elements.find(function(x){ return x.id === elementId; });
     if(!e) return;
     var current = (e.assignments && e.assignments[iso]) || [];
-    var next = Object.assign({}, e.assignments, {});
-    next[iso] = current.filter(function(id){ return id !== personId; });
-    sb.from("elements").update({ assignments: next }).eq("id", elementId)
-      .then(function(res){ if(res.error){ showError("Kunne ikke fjerne person: "+res.error.message); return; } refetchElements(); });
+    setDayAssignments(elementId, iso, current.filter(function(id){ return id !== personId; }));
   }
 
   var errTimer = null;
