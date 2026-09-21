@@ -509,6 +509,7 @@
       <span id="projectDates" class="mono project-dates"></span>
       <button class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
       <button class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
+      <button class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
@@ -1486,6 +1487,20 @@
   }
 
   byId("projectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
+  byId("projectDelete").addEventListener("click", function(){
+    var pid = state.currentProjectId;
+    var p = state.projects.find(function(x){ return x.id === pid; });
+    if(!p){ showError("Ingen prosjekt er valgt."); return; }
+    var nEl = state.elements.filter(function(e){ return e.project_id === pid; }).length;
+    var nAtt = state.attendance.filter(function(a){ return a.project_id === pid; }).length;
+    var nShop = state.shopItems.filter(function(x){ return x.project_id === pid; }).length;
+    var nDraw = state.drawings.filter(function(x){ return x.project_id === pid; }).length;
+    var msg = 'Slette prosjektet «'+p.name+'»?\n\nDette sletter også for godt:\n· '+nEl+' element(er)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nSkriv prosjektnavnet for å bekrefte:';
+    var answer = prompt(msg, "");
+    if(answer === null) return;
+    if(answer.trim() !== p.name.trim()){ showError("Navnet stemte ikke – prosjektet ble ikke slettet."); return; }
+    deleteProject(pid);
+  });
   byId("projectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
   });
@@ -1980,6 +1995,19 @@
         selectProject(res.data.id);
         refetchProjects();
       });
+  }
+  function deleteProject(id){
+    if(!sb) return;
+    var paths = state.drawings.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
+    var clean = paths.length ? sb.storage.from("tegninger").remove(paths) : Promise.resolve();
+    Promise.resolve(clean).then(function(){
+      return sb.from("projects").delete().eq("id", id);
+    }).then(function(res){
+      if(res && res.error){ showError("Kunne ikke slette prosjektet: "+res.error.message); return; }
+      try{ if(localStorage.getItem("ldc_current_project") === id) localStorage.removeItem("ldc_current_project"); }catch(e){}
+      state.currentProjectId = null;
+      refetchProjects(); refetchElements(); refetchShopItems(); refetchDrawings(); refetchAttendance();
+    });
   }
   function setActiveProject(id){
     if(!sb) return;
