@@ -271,6 +271,35 @@
   .conflict-banner h3{font-size:12.5px; font-weight:700; margin-bottom:6px;}
   .conflict-banner ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px;}
 
+  /* status på elementer */
+  .stchip{border:none; font:inherit; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; cursor:pointer; white-space:nowrap; vertical-align:1px;}
+  .stchip.s-mangler{background:#fff; color:var(--bad-ink); box-shadow:inset 0 0 0 1px var(--bad);}
+  .stchip.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink); box-shadow:inset 0 0 0 1px var(--warn);}
+  .stchip.s-ferdig{background:var(--good); color:#fff;}
+  .elblock .elhead{display:flex; justify-content:space-between; gap:6px; align-items:flex-start;}
+  .elblock .elname{cursor:pointer;}
+  .elblock .elname:hover{text-decoration:underline;}
+  .elcard{border-left:4px solid var(--bad);}
+  .elcard.st-pabegynt{border-left-color:var(--warn);}
+  .elcard.st-ferdig{border-left-color:var(--good);}
+  .elcard.st-ferdig .name{text-decoration:line-through; color:var(--muted);}
+  .elcard .dates.unplanned{color:var(--accent); font-weight:600;}
+  .elcard .midrow{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .badge.late{margin-left:6px;}
+  .filterbar{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .filterbar button{border:1px solid var(--border); background:var(--surface); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:600; color:var(--muted); cursor:pointer;}
+  .filterbar button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .filterbar .n{opacity:.75; margin-left:4px; font-family:"IBM Plex Mono",monospace; font-size:11px;}
+  .progress{padding:10px 16px 0; font-size:12px; color:var(--muted);}
+  .progress .bar{height:6px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin-top:5px; display:flex;}
+  .progress .bar i{display:block; height:100%;}
+  .unplanned-note{padding:10px 16px; border-bottom:1px solid var(--border); background:var(--accent-soft); font-size:12.5px; color:var(--text);}
+  .unplanned-note button{border:none; background:none; padding:0; color:var(--accent); font-weight:600; cursor:pointer; text-decoration:underline; font-size:12.5px;}
+  .checkrow{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; margin:4px 0 12px; cursor:pointer;}
+  .checkrow input{width:17px; height:17px; accent-color:var(--accent);}
+  .statuspicker.big button{padding:8px 14px; font-size:12.5px; flex:1;}
+  .statuspicker.big{display:flex;}
+
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
 </style>
 </head>
@@ -286,7 +315,6 @@
       <nav class="tabs" role="tablist">
         <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
         <button role="tab" data-tab="elementer" aria-selected="false">Elementer</button>
-        <button role="tab" data-tab="oppgaver" aria-selected="false">Oppgaver</button>
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
@@ -321,6 +349,7 @@
           </div>
         </div>
       </div>
+      <div class="unplanned-note" id="unplannedNote" hidden></div>
       <div class="week-grid" id="weekGrid"></div>
       <div class="legend" style="padding:0 12px 12px;">
         <span><i class="dot good"></i> Nok folk satt opp</span>
@@ -333,12 +362,14 @@
   </section>
 
   <section id="panel-elementer" class="panel">
+    <div class="filterbar" id="elFilterBar"></div>
     <div class="cols2">
       <div class="seccard">
         <div class="sechead">
           <h2><i class="sec-dot" style="background:var(--innvendig)"></i> Innvendig tømring</h2>
           <button class="btn small primary" data-newel="innvendig">+ Nytt element</button>
         </div>
+        <div class="progress" id="progress-innvendig"></div>
         <div class="seclist" id="list-innvendig"></div>
       </div>
       <div class="seccard">
@@ -346,26 +377,8 @@
           <h2><i class="sec-dot" style="background:var(--utvendig)"></i> Utvendig tømring</h2>
           <button class="btn small primary" data-newel="utvendig">+ Nytt element</button>
         </div>
+        <div class="progress" id="progress-utvendig"></div>
         <div class="seclist" id="list-utvendig"></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="panel-oppgaver" class="panel">
-    <div class="cols2">
-      <div class="seccard">
-        <div class="sechead">
-          <h2><i class="sec-dot" style="background:var(--innvendig)"></i> Innvendig</h2>
-          <button class="btn small primary" data-newtask="innvendig">+ Ny oppgave</button>
-        </div>
-        <div class="seclist" id="tasklist-innvendig"></div>
-      </div>
-      <div class="seccard">
-        <div class="sechead">
-          <h2><i class="sec-dot" style="background:var(--utvendig)"></i> Utvendig</h2>
-          <button class="btn small primary" data-newtask="utvendig">+ Ny oppgave</button>
-        </div>
-        <div class="seclist" id="tasklist-utvendig"></div>
       </div>
     </div>
   </section>
@@ -437,29 +450,14 @@
   </form>
 </dialog>
 
-<dialog id="taskDialog">
-  <form class="dlg-body" id="taskForm" method="dialog">
-    <h3>Ny oppgave</h3>
-    <input type="hidden" id="taskSection" />
-    <div class="field">
-      <label for="taskName">Navn</label>
-      <input type="text" id="taskName" required maxlength="80" placeholder="F.eks. Montering av alle vinduer" />
-    </div>
-    <div class="field">
-      <label for="taskDesc">Beskrivelse (valgfritt)</label>
-      <textarea id="taskDesc" maxlength="400" placeholder="Detaljer om oppgaven …"></textarea>
-    </div>
-    <div class="dlg-actions">
-      <button type="button" class="btn ghost" id="taskCancel">Avbryt</button>
-      <button type="submit" class="btn primary">Lagre</button>
-    </div>
-  </form>
-</dialog>
-
 <dialog id="elDialog">
   <form class="dlg-body" id="elForm" method="dialog">
     <h3 id="elDlgTitle">Nytt element</h3>
     <input type="hidden" id="elId" />
+    <div class="field" id="elPickWrap" hidden>
+      <label for="elPick">Hent et element som ikke er planlagt ennå</label>
+      <select id="elPick"></select>
+    </div>
     <div class="field">
       <label for="elName">Navn på element</label>
       <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" />
@@ -471,14 +469,24 @@
         <option value="utvendig">Utvendig tømring</option>
       </select>
     </div>
-    <div class="fieldrow">
+    <div class="field">
+      <label>Status</label>
+      <div class="statuspicker big" id="elStatusPicker">
+        <button type="button" data-status="mangler" data-pick="mangler">Mangler</button>
+        <button type="button" data-status="pabegynt" data-pick="pabegynt">Påbegynt</button>
+        <button type="button" data-status="ferdig" data-pick="ferdig">Ferdig</button>
+      </div>
+      <input type="hidden" id="elStatus" value="mangler" />
+    </div>
+    <label class="checkrow"><input type="checkbox" id="elPlanned" /> Legg inn i fremdriftsplanen</label>
+    <div class="fieldrow" id="elDates">
       <div class="field">
         <label for="elStart">Start</label>
-        <input type="date" id="elStart" required />
+        <input type="date" id="elStart" />
       </div>
       <div class="field">
         <label for="elEnd">Slutt</label>
-        <input type="date" id="elEnd" required />
+        <input type="date" id="elEnd" />
       </div>
     </div>
     <div class="field">
@@ -506,8 +514,10 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], tasks: [], shopItems: [], drawings: [], currentProjectId: null };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()) };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], currentProjectId: null };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle" };
+  var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
+  var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
 
   function currentProjectId(){ return state.currentProjectId; }
   // Rader uten prosjekt (laget før prosjekter fantes) vises under det aktive prosjektet.
@@ -563,31 +573,31 @@
   }
 
   function byId(id){ return document.getElementById(id); }
+  function isPlanned(e){ return !!(e.start && e.end); }
+  function isLate(e){ return isPlanned(e) && e.status !== "ferdig" && toISODate(new Date()) > e.end; }
 
   // ---------- tabs ----------
+  function switchTab(tab){
+    view.tab = tab;
+    document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.tab===tab ? "true":"false"); });
+    document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
+    byId("panel-"+tab).classList.add("active");
+    window.scrollTo(0,0);
+  }
   document.querySelectorAll("nav.tabs button").forEach(function(btn){
-    btn.addEventListener("click", function(){
-      view.tab = btn.dataset.tab;
-      document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b===btn ? "true":"false"); });
-      document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
-      byId("panel-"+view.tab).classList.add("active");
-    });
+    btn.addEventListener("click", function(){ switchTab(btn.dataset.tab); });
   });
 
   // ---------- derived data ----------
   function activeElementsOn(dateIso, section){
     var pid = currentProjectId();
     return state.elements.filter(function(e){
-      return inCurrentProject(e) && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
+      return inCurrentProject(e) && isPlanned(e) && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
     });
   }
   function elementsForCurrentProject(){
     var pid = currentProjectId();
     return state.elements.filter(inCurrentProject);
-  }
-  function tasksForCurrentProject(){
-    var pid = currentProjectId();
-    return state.tasks.filter(inCurrentProject);
   }
   function shopItemsForCurrentProject(){
     var pid = currentProjectId();
@@ -675,7 +685,8 @@
         els.forEach(function(e){
           var assignedIds = (e.assignments && e.assignments[iso]) || [];
           html += '<div class="elblock'+(assignedIds.length===0?' unstaffed':'')+(e.done?' done':'')+'" data-el="'+e.id+'">';
-          html += '<div class="elname">'+escapeHtml(e.name)+'</div>';
+          html += '<div class="elhead"><div class="elname" data-editel="'+e.id+'" title="Rediger">'+escapeHtml(e.name)+'</div>' +
+            '<button type="button" class="stchip s-'+e.status+'" data-cyclestatus="'+e.id+'" title="Trykk for å endre status">'+STATUS_LABEL[e.status]+'</button></div>';
           if(assignedIds.length > 0){
             html += '<div class="plist">' + assignedIds.map(function(pid){
               var isConflict = !!conflicts[pid];
@@ -715,12 +726,27 @@
         this.value = "";
       });
     });
+    grid.querySelectorAll("[data-cyclestatus]").forEach(function(btn){
+      btn.addEventListener("click", function(){ cycleStatus(this.dataset.cyclestatus); });
+    });
+    grid.querySelectorAll("[data-editel]").forEach(function(el){
+      el.addEventListener("click", function(){ openElDialog(this.dataset.editel); });
+    });
     grid.querySelectorAll("[data-showsec]").forEach(function(btn){
       btn.addEventListener("click", function(){ setSection(this.dataset.showsec); });
     });
     grid.querySelectorAll("[data-quickaddel]").forEach(function(btn){
       btn.addEventListener("click", function(){ openElDialog(null, this.dataset.quickaddel, view.section); });
     });
+  }
+
+  function renderUnplannedNote(){
+    var box = byId("unplannedNote");
+    var list = elementsForCurrentProject().filter(function(e){ return e.section === view.section && !isPlanned(e) && e.status !== "ferdig"; });
+    if(list.length === 0){ box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = '<b>'+list.length+'</b> element'+(list.length===1?'':'er')+' i '+view.section+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
+    byId("showUnplanned").addEventListener("click", function(){ view.elFilter = "ikkeplanlagt"; renderElementsTab(); switchTab("elementer"); });
   }
 
   function renderConflictBanner(){
@@ -787,71 +813,118 @@
       var st = dayStatus(els.length, ppl.size);
       if(st === "bad") badDays++; else if(st === "warn") warnDays++;
     }
-    var innC = elementsForCurrentProject().filter(function(e){return e.section==="innvendig";}).length;
-    var utC = elementsForCurrentProject().filter(function(e){return e.section==="utvendig";}).length;
+    var all = elementsForCurrentProject();
+    var doneC = all.filter(function(e){ return e.status==="ferdig"; }).length;
+    var unplannedC = all.filter(function(e){ return !isPlanned(e) && e.status!=="ferdig"; }).length;
+    var lateC = all.filter(isLate).length;
 
     byId("summaryRow").innerHTML =
       '<div class="tile"><div class="num mono">'+state.people.length+'</div><div class="lbl">Personer</div></div>' +
-      '<div class="tile"><div class="num mono">'+innC+' / '+utC+'</div><div class="lbl">Elementer (innvendig / utvendig)</div></div>' +
+      '<div class="tile"><div class="num mono">'+doneC+' / '+all.length+'</div><div class="lbl">Elementer ferdig</div></div>' +
+      '<div class="tile'+(unplannedC>0?' warn':'')+'"><div class="num mono">'+unplannedC+'</div><div class="lbl">Ikke lagt inn i planen</div></div>' +
+      '<div class="tile'+(lateC>0?' bad':'')+'"><div class="num mono">'+lateC+'</div><div class="lbl">Forsinket</div></div>' +
       '<div class="tile'+(badDays>0?' bad':'')+'"><div class="num mono">'+badDays+'</div><div class="lbl">Dager uten bemanning (neste 21 dager)</div></div>' +
       '<div class="tile'+(warnDays>0?' warn':'')+'"><div class="num mono">'+warnDays+'</div><div class="lbl">Dager med for få folk (neste 21 dager)</div></div>';
   }
 
   // ---------- elements tab ----------
-  function statusOf(e){
-    var todayIso = toISODate(new Date());
-    if(e.done) return {cls:"done", label:"Ferdig"};
-    if(todayIso > e.end) return {cls:"late", label:"Forsinket"};
-    if(todayIso >= e.start) return {cls:"ongoing", label:"Pågår"};
-    return {cls:"planned", label:"Planlagt"};
+  var FILTERS = [
+    {key:"alle", label:"Alle", test:function(){ return true; }},
+    {key:"mangler", label:"Mangler", test:function(e){ return e.status==="mangler"; }},
+    {key:"pabegynt", label:"Påbegynt", test:function(e){ return e.status==="pabegynt"; }},
+    {key:"ferdig", label:"Ferdig", test:function(e){ return e.status==="ferdig"; }},
+    {key:"ikkeplanlagt", label:"Ikke i planen", test:function(e){ return !isPlanned(e) && e.status!=="ferdig"; }},
+    {key:"forsinket", label:"Forsinket", test:isLate}
+  ];
+  function elSort(a,b){
+    var sa = STATUS_ORDER.indexOf(a.status)===2 ? 1 : 0, sb2 = STATUS_ORDER.indexOf(b.status)===2 ? 1 : 0;
+    if(sa !== sb2) return sa - sb2;                       // ferdige nederst
+    var pa = isPlanned(a) ? 1 : 0, pb = isPlanned(b) ? 1 : 0;
+    if(pa !== pb) return pa - pb;                         // ikke planlagte øverst
+    if(pa && a.start !== b.start) return a.start < b.start ? -1 : 1;
+    return (a.createdAt||"") < (b.createdAt||"") ? -1 : 1;
   }
-
   function renderElementsTab(){
     var projectEls = elementsForCurrentProject();
+    var bar = byId("elFilterBar");
+    bar.innerHTML = FILTERS.map(function(f){
+      var n = projectEls.filter(f.test).length;
+      return '<button type="button" data-elfilter="'+f.key+'" aria-pressed="'+(view.elFilter===f.key)+'">'+f.label+'<span class="n">'+n+'</span></button>';
+    }).join("");
+    bar.querySelectorAll("[data-elfilter]").forEach(function(b){
+      b.addEventListener("click", function(){ view.elFilter = this.dataset.elfilter; renderElementsTab(); });
+    });
+    var filter = FILTERS.find(function(f){ return f.key===view.elFilter; }) || FILTERS[0];
+
     ["innvendig","utvendig"].forEach(function(sec){
-      var list = projectEls.filter(function(e){ return e.section===sec; })
-        .slice().sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+      var secEls = projectEls.filter(function(e){ return e.section===sec; });
+      var counts = {mangler:0,pabegynt:0,ferdig:0};
+      secEls.forEach(function(e){ counts[e.status]++; });
+      var tot = secEls.length || 1;
+      byId("progress-"+sec).innerHTML = secEls.length === 0 ? "" :
+        counts.ferdig+' av '+secEls.length+' ferdig · '+counts.pabegynt+' påbegynt · '+counts.mangler+' mangler' +
+        '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>';
+
+      var list = secEls.filter(filter.test).slice().sort(elSort);
       var box = byId("list-"+sec);
       if(list.length === 0){
-        box.innerHTML = '<p class="empty-note">Ingen elementer ennå.</p>';
+        box.innerHTML = '<p class="empty-note">'+(secEls.length===0 ? 'Ingen elementer ennå.' : 'Ingen elementer med dette filteret.')+'</p>';
         return;
       }
       box.innerHTML = list.map(function(e){
-        var st = statusOf(e);
-        var allPeople = new Set();
-        var d0 = fromISODate(e.start), d1 = fromISODate(e.end);
-        for(var t=new Date(d0); t<=d1; t.setDate(t.getDate()+1)){
-          var iso = toISODate(t);
-          ((e.assignments && e.assignments[iso]) || []).forEach(function(id){ allPeople.add(id); });
+        var planned = isPlanned(e);
+        var peopleLine = "";
+        if(planned){
+          var allPeople = new Set(), noOneDays = 0, totalDays = 0;
+          var d0 = fromISODate(e.start), d1 = fromISODate(e.end);
+          for(var t=new Date(d0); t<=d1; t.setDate(t.getDate()+1)){
+            if(t.getDay()===0 || t.getDay()===6) continue;
+            totalDays++;
+            var ids = (e.assignments && e.assignments[toISODate(t)]) || [];
+            ids.forEach(function(id){ allPeople.add(id); });
+            if(ids.length===0) noOneDays++;
+          }
+          peopleLine = '<div class="peoplemini">'+(allPeople.size>0 ? allPeople.size+" person(er) satt opp" : "Ingen satt opp ennå")+
+            (noOneDays>0 && noOneDays<totalDays ? ' · '+noOneDays+' av '+totalDays+' dager uten folk' : '')+'</div>';
         }
-        var noOneDays = 0, totalDays = 0;
-        for(var t2=new Date(d0); t2<=d1; t2.setDate(t2.getDate()+1)){
-          totalDays++;
-          var iso2 = toISODate(t2);
-          if(((e.assignments && e.assignments[iso2]) || []).length===0) noOneDays++;
-        }
-        return '<div class="elcard" data-elcard="'+e.id+'">' +
-          '<div class="top"><div><div class="name">'+escapeHtml(e.name)+'</div><div class="dates mono">'+fmtRange(e.start,e.end)+'</div></div>' +
-          '<span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+        return '<div class="elcard st-'+e.status+'" data-elcard="'+e.id+'">' +
+          '<div class="top"><div><div class="name">'+escapeHtml(e.name)+(isLate(e)?'<span class="badge late">Forsinket</span>':'')+'</div>' +
+          (planned ? '<div class="dates mono">'+fmtRange(e.start,e.end)+'</div>' : '<div class="dates unplanned">Ikke lagt inn i planen</div>') +
+          '</div></div>' +
           (e.notes ? '<div class="notes">'+escapeHtml(e.notes)+'</div>' : '') +
-          '<div class="peoplemini">'+(allPeople.size>0 ? allPeople.size+" person(er) involvert" : "Ingen satt opp ennå")+
-            (noOneDays>0 && noOneDays<totalDays ? ' · '+noOneDays+' av '+totalDays+' dager uten folk' : (noOneDays===totalDays ? ' · ingen dager bemannet' : ''))+
-          '</div>' +
-          '<div class="actions">' +
+          peopleLine +
+          '<div class="midrow"><div class="statuspicker">' + STATUS_ORDER.map(function(s){
+            return '<button type="button" data-status="'+s+'" data-elstatus="'+e.id+'|'+s+'" class="'+(e.status===s?'active':'')+'">'+STATUS_LABEL[s]+'</button>';
+          }).join("") + '</div>' +
+          '<div class="actions" style="margin-top:0">' +
+            (planned ? '<button class="btn small" data-showinplan="'+e.id+'">Vis i planen</button>'
+                     : '<button class="btn small primary" data-plan="'+e.id+'">+ Legg i planen</button>') +
             '<button class="btn small" data-editel="'+e.id+'">Rediger</button>' +
-            '<button class="btn small" data-toggledone="'+e.id+'">'+(e.done?"Merk uferdig":"Merk ferdig")+'</button>' +
             '<button class="btn small danger" data-delel="'+e.id+'">Slett</button>' +
-          '</div></div>';
+          '</div></div></div>';
       }).join("");
     });
 
-    document.querySelectorAll("[data-editel]").forEach(function(b){
+    var panel = byId("panel-elementer");
+    panel.querySelectorAll("[data-elstatus]").forEach(function(b){
+      b.addEventListener("click", function(){ var p = this.dataset.elstatus.split("|"); setElementStatus(p[0], p[1]); });
+    });
+    panel.querySelectorAll("[data-editel]").forEach(function(b){
       b.addEventListener("click", function(){ openElDialog(this.dataset.editel); });
     });
-    document.querySelectorAll("[data-toggledone]").forEach(function(b){
-      b.addEventListener("click", function(){ toggleDone(this.dataset.toggledone); });
+    panel.querySelectorAll("[data-plan]").forEach(function(b){
+      b.addEventListener("click", function(){ openElDialog(this.dataset.plan, null, null, true); });
     });
-    document.querySelectorAll("[data-delel]").forEach(function(b){
+    panel.querySelectorAll("[data-showinplan]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var e = state.elements.find(function(x){ return x.id === b.dataset.showinplan; });
+        if(!e) return;
+        setSection(e.section);
+        goToWeek(mondayOf(fromISODate(e.start)));
+        switchTab("kalender");
+      });
+    });
+    panel.querySelectorAll("[data-delel]").forEach(function(b){
       b.addEventListener("click", function(){
         if(confirm("Slette dette elementet? Dette fjerner også alle personer satt opp på det.")){
           deleteElement(this.dataset.delel);
@@ -861,71 +934,17 @@
   }
 
   document.querySelectorAll("[data-newel]").forEach(function(b){
-    b.addEventListener("click", function(){ openElDialog(null, toISODate(new Date()), this.dataset.newel); });
+    b.addEventListener("click", function(){ openElDialog(null, null, this.dataset.newel); });
   });
 
   function setSection(sec){
     view.section = sec;
     document.querySelectorAll(".sec-toggle button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.sec===sec ? "true":"false"); });
     renderWeekGrid();
+    renderUnplannedNote();
   }
   document.querySelectorAll(".sec-toggle button").forEach(function(btn){
     btn.addEventListener("click", function(){ setSection(btn.dataset.sec); });
-  });
-
-  // ---------- oppgaver tab ----------
-  var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
-
-  function renderTasksTab(){
-    var projectTasks = tasksForCurrentProject();
-    ["innvendig","utvendig"].forEach(function(sec){
-      var box = byId("tasklist-"+sec);
-      var list = projectTasks.filter(function(t){ return t.section===sec; });
-      if(list.length === 0){
-        box.innerHTML = '<p class="empty-note">Ingen oppgaver ennå.</p>';
-        return;
-      }
-      box.innerHTML = list.map(function(t){
-        return '<div class="taskrow" data-task="'+t.id+'">' +
-          '<div class="tinfo"><div class="tname">'+escapeHtml(t.name)+'</div>' +
-          (t.description ? '<div class="tdesc">'+escapeHtml(t.description)+'</div>' : '') + '</div>' +
-          '<div class="statuspicker">' + ["mangler","pabegynt","ferdig"].map(function(s){
-            return '<button type="button" data-status="'+s+'" data-setstatus="'+t.id+'|'+s+'" class="'+(t.status===s?'active':'')+'">'+STATUS_LABEL[s]+'</button>';
-          }).join("") + '</div>' +
-          '<button class="del" data-deltask="'+t.id+'" title="Slett">×</button>' +
-          '</div>';
-      }).join("");
-    });
-    document.querySelectorAll("[data-setstatus]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var parts = this.dataset.setstatus.split("|");
-        setTaskStatus(parts[0], parts[1]);
-      });
-    });
-    document.querySelectorAll("[data-deltask]").forEach(function(b){
-      b.addEventListener("click", function(){
-        if(confirm("Slette denne oppgaven?")) deleteTask(this.dataset.deltask);
-      });
-    });
-  }
-
-  var taskDialog = byId("taskDialog");
-  document.querySelectorAll("[data-newtask]").forEach(function(b){
-    b.addEventListener("click", function(){
-      byId("taskSection").value = this.dataset.newtask;
-      byId("taskName").value = "";
-      byId("taskDesc").value = "";
-      taskDialog.showModal();
-    });
-  });
-  byId("taskCancel").addEventListener("click", function(){ taskDialog.close(); });
-  taskDialog.addEventListener("click", function(ev){ if(ev.target === taskDialog) taskDialog.close(); });
-  byId("taskForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var name = byId("taskName").value.trim();
-    if(!name) return;
-    addTask(byId("taskSection").value, name, byId("taskDesc").value.trim());
-    taskDialog.close();
   });
 
   // ---------- handleliste tab ----------
@@ -1041,25 +1060,83 @@
 
   // ---------- element dialog ----------
   var elDialog = byId("elDialog");
-  function openElDialog(elementId, prefillDate, prefillSection){
+  function setDlgStatus(s){
+    byId("elStatus").value = s;
+    byId("elStatusPicker").querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.pick===s); });
+  }
+  byId("elStatusPicker").querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click", function(){ setDlgStatus(this.dataset.pick); });
+  });
+  function syncPlanned(){
+    var on = byId("elPlanned").checked;
+    byId("elDates").hidden = !on;
+    if(on){
+      var today = toISODate(new Date());
+      if(!byId("elStart").value) byId("elStart").value = today;
+      if(!byId("elEnd").value) byId("elEnd").value = byId("elStart").value;
+    }
+  }
+  byId("elPlanned").addEventListener("change", syncPlanned);
+  byId("elStart").addEventListener("change", function(){
+    if(!byId("elEnd").value || byId("elEnd").value < this.value) byId("elEnd").value = this.value;
+  });
+  function fillElForm(e){
+    byId("elName").value = e.name;
+    byId("elSection").value = e.section;
+    byId("elNotes").value = e.notes || "";
+    setDlgStatus(e.status);
+  }
+  byId("elPick").addEventListener("change", function(){
+    var pickDate = elDialog.dataset.prefillDate;
+    if(!this.value){
+      byId("elId").value = ""; byId("elDlgTitle").textContent = "Nytt element";
+      byId("elName").value = ""; byId("elNotes").value = ""; setDlgStatus("mangler");
+      return;
+    }
+    var e = state.elements.find(function(x){ return x.id === byId("elPick").value; });
+    if(!e) return;
+    byId("elId").value = e.id;
+    byId("elDlgTitle").textContent = "Legg element i planen";
+    fillElForm(e);
+    byId("elStart").value = pickDate; byId("elEnd").value = pickDate;
+  });
+
+  // elementId: rediger eksisterende · prefillDate: åpnet fra en dag i kalenderen · planNow: åpne med datoer slått på
+  function openElDialog(elementId, prefillDate, prefillSection, planNow){
     var isEdit = !!elementId;
-    byId("elDlgTitle").textContent = isEdit ? "Rediger element" : "Nytt element";
+    elDialog.dataset.prefillDate = prefillDate || "";
     byId("elId").value = elementId || "";
+    byId("elPickWrap").hidden = true;
     if(isEdit){
       var e = state.elements.find(function(x){ return x.id === elementId; });
       if(!e){ showError("Fant ikke elementet – det kan ha blitt slettet."); return; }
-      byId("elName").value = e.name;
-      byId("elSection").value = e.section;
-      byId("elStart").value = e.start;
-      byId("elEnd").value = e.end;
-      byId("elNotes").value = e.notes || "";
+      byId("elDlgTitle").textContent = planNow ? "Legg element i planen" : "Rediger element";
+      fillElForm(e);
+      byId("elStart").value = e.start || "";
+      byId("elEnd").value = e.end || "";
+      byId("elPlanned").checked = isPlanned(e) || !!planNow;
     } else {
+      byId("elDlgTitle").textContent = "Nytt element";
       byId("elName").value = "";
-      byId("elSection").value = prefillSection || view.section || "innvendig";
-      byId("elStart").value = prefillDate || toISODate(new Date());
-      byId("elEnd").value = prefillDate || toISODate(new Date());
       byId("elNotes").value = "";
+      byId("elSection").value = prefillSection || view.section || "innvendig";
+      setDlgStatus("mangler");
+      byId("elStart").value = prefillDate || "";
+      byId("elEnd").value = prefillDate || "";
+      byId("elPlanned").checked = !!prefillDate;
+      if(prefillDate){
+        var sec = byId("elSection").value;
+        var unplanned = elementsForCurrentProject().filter(function(x){ return !isPlanned(x) && x.status !== "ferdig"; })
+          .sort(function(a,b){ return a.section===sec ? (b.section===sec ? 0 : -1) : (b.section===sec ? 1 : 0); });
+        if(unplanned.length > 0){
+          byId("elPick").innerHTML = '<option value="">— Nytt element —</option>' + unplanned.map(function(x){
+            return '<option value="'+x.id+'">'+escapeHtml(x.name)+' ('+x.section+', '+STATUS_LABEL[x.status].toLowerCase()+')</option>';
+          }).join("");
+          byId("elPickWrap").hidden = false;
+        }
+      }
     }
+    syncPlanned();
     elDialog.showModal();
   }
   byId("elCancel").addEventListener("click", function(){ elDialog.close(); });
@@ -1067,21 +1144,28 @@
   byId("elForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var id = byId("elId").value;
-    var start = byId("elStart").value, end = byId("elEnd").value;
-    if(end < start){ end = start; }
+    var planned = byId("elPlanned").checked;
+    var start = planned ? (byId("elStart").value || toISODate(new Date())) : null;
+    var end = planned ? (byId("elEnd").value || start) : null;
+    if(planned && end < start){ end = start; }
+    var status = byId("elStatus").value || "mangler";
     var payload = {
       name: byId("elName").value.trim().slice(0,80),
       section: byId("elSection").value,
       start: start,
       end: end,
+      status: status,
+      done: status === "ferdig",
       notes: byId("elNotes").value.trim().slice(0,400)
     };
     if(!payload.name) return;
     if(id){ updateElement(id, payload); } else { addElement(payload); }
     elDialog.close();
-    var startDate = fromISODate(start);
-    if(view.section !== payload.section) setSection(payload.section);
-    if(mondayOf(startDate).getTime() !== view.weekStart.getTime()) goToWeek(mondayOf(startDate));
+    if(planned){
+      if(view.section !== payload.section) setSection(payload.section);
+      var ws = mondayOf(fromISODate(start));
+      if(ws.getTime() !== view.weekStart.getTime()) goToWeek(ws);
+    }
   });
 
   // ---------- render orchestration ----------
@@ -1090,9 +1174,9 @@
     renderSummary();
     renderWeekLabel();
     renderWeekGrid();
+    renderUnplannedNote();
     renderConflictBanner();
     renderElementsTab();
-    renderTasksTab();
     renderShopTab();
     renderDrawingsTab();
     renderPeopleTab();
@@ -1124,7 +1208,8 @@
   }
   function rowToElement(row){
     return {
-      id: row.id, project_id: row.project_id, section: row.section, name: row.name, start: row.start, end: row.end,
+      id: row.id, project_id: row.project_id, section: row.section, name: row.name, start: row.start || null, end: row.end || null,
+      status: STATUS_ORDER.indexOf(row.status) !== -1 ? row.status : (row.done ? "ferdig" : "mangler"),
       notes: row.notes || "", done: !!row.done, assignments: row.assignments || {}, createdAt: row.created_at
     };
   }
@@ -1146,9 +1231,6 @@
 
   function rowToProject(row){
     return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, isActive: !!row.is_active, createdAt: row.created_at };
-  }
-  function rowToTask(row){
-    return { id: row.id, project_id: row.project_id, section: row.section, name: row.name, description: row.description || "", status: row.status, createdAt: row.created_at };
   }
   function rowToShopItem(row){
     return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, createdAt: row.created_at };
@@ -1172,13 +1254,6 @@
       state.projects = res.data.map(rowToProject);
       pickCurrentProject();
       if(byId("statusBanner").className === "status-banner") hideBanner();
-      renderAll();
-    });
-  }
-  function refetchTasks(){
-    sb.from("tasks").select("*").order("created_at").then(function(res){
-      if(res.error){ showError("Klarte ikke å hente oppgaver: "+res.error.message); return; }
-      state.tasks = res.data.map(rowToTask);
       renderAll();
     });
   }
@@ -1209,21 +1284,6 @@
     sb.from("projects").update({ is_active:false }).neq("id", id)
       .then(function(){ return sb.from("projects").update({ is_active:true }).eq("id", id); })
       .then(function(res){ if(res.error){ showError("Kunne ikke sette aktivt prosjekt: "+res.error.message); return; } refetchProjects(); });
-  }
-
-  function addTask(section, name, description){
-    if(!sb) return;
-    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("tasks").insert({ project_id: currentProjectId(), section: section, name: name.slice(0,80), description: description ? description.slice(0,400) : null, status:"mangler" })
-      .then(function(res){ if(res.error){ showError("Kunne ikke lagre oppgaven: "+res.error.message); return; } refetchTasks(); });
-  }
-  function setTaskStatus(id, status){
-    if(!sb) return;
-    sb.from("tasks").update({ status: status }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere status: "+res.error.message); return; } refetchTasks(); });
-  }
-  function deleteTask(id){
-    if(!sb) return;
-    sb.from("tasks").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette oppgaven: "+res.error.message); return; } refetchTasks(); });
   }
 
   function addShopItem(name, quantity){
@@ -1318,11 +1378,19 @@
     if(!sb) return;
     sb.from("elements").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke slette elementet: "+res.error.message); return; } refetchElements(); });
   }
-  function toggleDone(id){
+  function setElementStatus(id, status){
     if(!sb) return;
     var e = state.elements.find(function(x){ return x.id === id; });
+    if(e){ e.status = status; e.done = status === "ferdig"; renderAll(); }   // vis endringen med en gang
+    sb.from("elements").update({ status: status, done: status === "ferdig" }).eq("id", id).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("status") !== -1 ? "Databasen mangler status-kolonnen. Kjør sql/05-elementer-med-status.sql i Supabase." : "Kunne ikke oppdatere status: "+res.error.message); refetchElements(); return; }
+      refetchElements();
+    });
+  }
+  function cycleStatus(id){
+    var e = state.elements.find(function(x){ return x.id === id; });
     if(!e) return;
-    sb.from("elements").update({ done: !e.done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere status: "+res.error.message); return; } refetchElements(); });
+    setElementStatus(id, STATUS_ORDER[(STATUS_ORDER.indexOf(e.status)+1) % 3]);
   }
   function assignPerson(elementId, iso, personId){
     if(!sb) return;
@@ -1372,7 +1440,6 @@
     refetchPeople();
     refetchElements();
     refetchProjects();
-    refetchTasks();
     refetchShopItems();
     refetchDrawings();
 
@@ -1380,7 +1447,6 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
       .on("postgres_changes", { event: "*", schema: "public", table: "elements" }, refetchElements)
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, refetchProjects)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, refetchTasks)
       .on("postgres_changes", { event: "*", schema: "public", table: "shopping_items" }, refetchShopItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "drawings" }, refetchDrawings)
       .subscribe(function(status){
