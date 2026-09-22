@@ -1866,7 +1866,11 @@
       notes: byId("elNotes").value.trim().slice(0,400)
     };
     if(!payload.name) return;
-    if(id){ updateElement(id, payload); } else { addElement(payload); }
+    if(id){
+      var existing = state.elements.find(function(x){ return x.id === id; });
+      payload.assignments = prunedAssignments(existing && existing.assignments, start, end);
+      updateElement(id, payload);
+    } else { addElement(payload); }
     elDialog.close();
     if(planned){
       view.weekStart = mondayOf(fromISODate(start));
@@ -2093,6 +2097,16 @@
   function updateElement(id, payload){
     if(!sb) return;
     sb.from("elements").update(payload).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere oppgaven: "+res.error.message); return; } refetchElements(); });
+  }
+  // Fjerner tildelinger på dager som faller utenfor oppgavens (nye) datoperiode,
+  // så personer ikke blir "spøkelsesbundet" til en dag oppgaven ikke lenger dekker.
+  function prunedAssignments(existing, start, end){
+    var next = {};
+    if(!start || !end) return next;
+    Object.keys(existing || {}).forEach(function(iso){
+      if(iso >= start && iso <= end) next[iso] = existing[iso];
+    });
+    return next;
   }
   function deleteElement(id){
     if(!sb) return;
