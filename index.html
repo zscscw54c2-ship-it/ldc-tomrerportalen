@@ -351,7 +351,7 @@
 
   /* tidslinje */
   .gantt-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
-  .gantt{--dw:22px; --nw:190px; position:relative; min-width:calc(var(--nw) + var(--days) * var(--dw)); font-size:12px;}
+  .gantt{--dw:32px; --nw:190px; position:relative; min-width:calc(var(--nw) + var(--days) * var(--dw)); font-size:12px;}
   .g-row{display:flex; height:32px; border-bottom:1px solid var(--border);}
   .g-row:last-child{border-bottom:none;}
   .g-name{position:sticky; left:0; z-index:3; flex:none; width:var(--nw); background:var(--surface); border-right:1px solid var(--border); padding:0 10px; display:flex; align-items:center; gap:6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:pointer;}
@@ -365,7 +365,7 @@
   .g-weeks div{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); border-top:1px solid var(--border);}
   .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
-  .g-wkend{position:absolute; top:0; bottom:0; background:rgba(104,117,136,.07);}
+  .g-weekband{position:absolute; top:0; bottom:0; background:rgba(104,117,136,.06);}
   .g-today{position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:2; opacity:.85;}
   .g-bar{position:absolute; top:7px; height:18px; border-radius:6px; cursor:pointer; z-index:1; display:flex; align-items:center; padding:0 6px; font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; min-width:8px;}
   .g-bar.s-mangler{background:var(--bad-soft); border:1.5px solid var(--bad); color:var(--bad-ink);}
@@ -472,7 +472,7 @@
     .project-dates{display:none;}
     .cal-toolbar .seg{flex:1;}
     .cal-toolbar .seg button{flex:1; justify-content:center; padding:8px 6px;}
-    .gantt{--nw:118px; --dw:16px;}
+    .gantt{--nw:118px; --dw:22px;}
     .g-bar{font-size:0; padding:0;}
     .elcard .midrow{flex-direction:column; align-items:stretch;}
     .elcard .actions{justify-content:flex-start;}
@@ -1145,12 +1145,24 @@
     var s = cur && cur.start, e = cur && cur.end;
     els.forEach(function(x){ if(!s || x.start < s) s = x.start; if(!e || x.end > e) e = x.end; });
     if(!s || !e) return null;
-    // start på mandag, slutt på søndag
+    // start på mandag, slutt på søndag (hele uker), men selve tidslinjen viser kun arbeidsdager
     var a = mondayOf(fromISODate(s)), b = fromISODate(e);
     b = new Date(b.getFullYear(), b.getMonth(), b.getDate() + (7 - ((b.getDay()+6)%7) - 1));
-    return { start: a, end: b, days: Math.round((b - a)/86400000) + 1 };
+    var calDays = Math.round((b - a)/86400000) + 1;
+    return { start: a, end: b, days: calDays, workdays: Math.round(calDays/7)*5 };
   }
-  function dayIndex(range, iso){ return Math.round((fromISODate(iso) - range.start)/86400000); }
+  // Regner om en kalenderdato til dens posisjon blant arbeidsdager (man-fre), uten hull for helger.
+  function workdayIndex(range, iso){
+    var offset = Math.round((fromISODate(iso) - range.start)/86400000);
+    var week = Math.floor(offset/7);
+    var dow = ((offset % 7) + 7) % 7; // 0=man .. 6=søn
+    if(dow > 4) dow = 4; // en dato som skulle havnet i helgen vises på fredagen
+    return week*5 + dow;
+  }
+  function workdayDate(range, idx){
+    var week = Math.floor(idx/5), dow = idx%5;
+    return new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + week*7 + dow);
+  }
 
   function renderGantt(){
     var box = byId("gantt");
@@ -1176,32 +1188,36 @@
       box.innerHTML = '<div class="g-empty">Ingen oppgaver er lagt inn i planen ennå.<br>Gå til <b>Oppgaver</b> og trykk «+ Legg i planen».</div>';
       return;
     }
-    var dw = window.matchMedia("(max-width:640px)").matches ? 16 : 22;
-    box.style.setProperty("--days", range.days);
+    var dw = window.matchMedia("(max-width:640px)").matches ? 22 : 32;
+    box.style.setProperty("--days", range.workdays);
 
-    // bakgrunn: helger + i dag
+    // bakgrunn: skravering annenhver uke (for lesbarhet) + i dag
     var bg = "";
-    for(var i=0;i<range.days;i++){
-      var dd = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+i);
-      if(dd.getDay()===6) bg += '<div class="g-wkend" style="left:'+(i*dw)+'px; width:'+(2*dw)+'px"></div>';
+    for(var w=0; w<range.workdays; w+=10){
+      bg += '<div class="g-weekband" style="left:'+(w*dw)+'px; width:'+(Math.min(5,range.workdays-w)*dw)+'px"></div>';
     }
-    var ti = dayIndex(range, toISODate(new Date()));
-    if(ti >= 0 && ti < range.days) bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+    var todayIso = toISODate(new Date());
+    var todayOffset = Math.round((fromISODate(todayIso) - range.start)/86400000);
+    var todayDow = ((todayOffset % 7) + 7) % 7;
+    var ti = workdayIndex(range, todayIso);
+    if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
+      bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+    }
 
-    // topp: måneder + uker
+    // topp: måneder + uker (kun arbeidsdager, uten hull for helg)
     var months = "", weeks = "";
     var m0 = 0;
-    for(var j=0;j<=range.days;j++){
-      var dj = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+j);
-      var d0 = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+m0);
-      if(j === range.days || dj.getMonth() !== d0.getMonth()){
+    for(var j=0;j<=range.workdays;j++){
+      var dj = workdayDate(range, Math.min(j, range.workdays-1));
+      var d0 = workdayDate(range, m0);
+      if(j === range.workdays || dj.getMonth() !== d0.getMonth()){
         months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
         m0 = j;
       }
     }
-    for(var w=0; w<range.days; w+=7){
-      var dw0 = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()+w);
-      weeks += '<div style="left:'+(w*dw)+'px; width:'+(7*dw)+'px">'+(dw>=20?'Uke ':'')+isoWeekInfo(dw0).week+'</div>';
+    for(var wi=0; wi<range.workdays; wi+=5){
+      var wStart = workdayDate(range, wi);
+      weeks += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">'+(dw>=28?'Uke ':'')+isoWeekInfo(wStart).week+'</div>';
     }
     var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Oppgave</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
 
@@ -1210,7 +1226,7 @@
       if(!list.length) return;
       html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
       list.forEach(function(e){
-        var a = dayIndex(range, e.start), b = dayIndex(range, e.end);
+        var a = workdayIndex(range, e.start), b = workdayIndex(range, e.end);
         html += '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
           '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
       });
