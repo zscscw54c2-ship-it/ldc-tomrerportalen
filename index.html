@@ -609,8 +609,8 @@
       <h2 style="font-size:16px; margin-bottom:4px;">Tegninger</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Bilder og PDF-er knyttet til dette prosjektet.</p>
       <form class="inline-add" id="addDrawingForm">
-        <input type="file" id="newDrawingFile" accept="image/*,application/pdf" required style="flex:1; min-width:200px;" />
-        <input type="text" id="newDrawingName" placeholder="Navn (valgfritt)" maxlength="80" style="max-width:200px;" />
+        <input type="file" id="newDrawingFile" accept="image/*,application/pdf" multiple required style="flex:1; min-width:200px;" />
+        <input type="text" id="newDrawingName" placeholder="Navn (valgfritt, kun ved én fil)" maxlength="80" style="max-width:220px;" />
         <button class="btn primary" type="submit">Last opp</button>
       </form>
       <p class="empty-note" id="drawingUploadStatus" style="margin-top:6px;"></p>
@@ -1735,9 +1735,9 @@
     ev.preventDefault();
     var fileInput = byId("newDrawingFile");
     var nameInput = byId("newDrawingName");
-    var file = fileInput.files && fileInput.files[0];
-    if(!file) return;
-    uploadDrawing(file, nameInput.value);
+    var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
+    if(!files.length) return;
+    uploadDrawings(files, files.length === 1 ? nameInput.value : "");
     fileInput.value = "";
     nameInput.value = "";
   });
@@ -2060,24 +2060,30 @@
   }
   var MAX_DRAWING_BYTES = 20 * 1024 * 1024;
   function uploadDrawing(file, name){
-    if(!sb) return;
-    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    if(file.size > MAX_DRAWING_BYTES){ showDrawingStatus("Filen er for stor (maks 20 MB)."); return; }
+    if(file.size > MAX_DRAWING_BYTES){ showError('«'+file.name+'» er for stor (maks 20 MB).'); return Promise.resolve(); }
     var safeName = file.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
-    var path = currentProjectId() + "/" + Date.now() + "-" + safeName;
-    showDrawingStatus("Laster opp …");
-    sb.storage.from("tegninger").upload(path, file, { contentType: file.type || "application/octet-stream" })
+    var path = currentProjectId() + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,7) + "-" + safeName;
+    return sb.storage.from("tegninger").upload(path, file, { contentType: file.type || "application/octet-stream" })
       .then(function(res){
-        if(res.error){ showDrawingStatus(""); showError("Kunne ikke laste opp filen: "+res.error.message); return; }
+        if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
         return sb.from("drawings").insert({
           project_id: currentProjectId(), name: (name && name.trim()) ? name.trim().slice(0,80) : file.name,
           file_path: path, content_type: file.type || null, size_bytes: file.size
         }).then(function(res2){
-          showDrawingStatus("");
-          if(res2.error){ showError("Filen ble lastet opp, men kunne ikke lagres i listen: "+res2.error.message); return; }
-          refetchDrawings();
+          if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
         });
       });
+  }
+  function uploadDrawings(files, name){
+    if(!sb) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    var total = files.length, i = 0;
+    function next(){
+      if(i >= total){ showDrawingStatus(""); refetchDrawings(); return; }
+      showDrawingStatus(total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …");
+      uploadDrawing(files[i], name).then(function(){ i++; next(); });
+    }
+    next();
   }
   function deleteDrawing(drawing){
     if(!sb) return;
