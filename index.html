@@ -1222,7 +1222,11 @@
     var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Oppgave</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
 
     ["innvendig","utvendig"].forEach(function(sec){
-      var list = planned.filter(function(e){ return e.section === sec; }).sort(function(a,b){ return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+      var list = planned.filter(function(e){ return e.section === sec; }).sort(function(a,b){
+        if(a.start !== b.start) return a.start < b.start ? -1 : 1;
+        var da = fromISODate(a.end) - fromISODate(a.start), db = fromISODate(b.end) - fromISODate(b.start);
+        return da - db;
+      });
       if(!list.length) return;
       html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
       list.forEach(function(e){
