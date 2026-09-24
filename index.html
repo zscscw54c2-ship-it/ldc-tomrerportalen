@@ -622,6 +622,7 @@
     <div class="peoplecard">
       <h2 style="font-size:16px; margin-bottom:4px;">Personer</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
+      <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); width:100%; margin-bottom:10px;" />
       <div id="peopleList"></div>
       <form class="inline-add" id="addPersonForm">
         <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
@@ -777,7 +778,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], currentProjectId: null };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle" };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "" };
   try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
@@ -1749,7 +1750,13 @@
       box.innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
       return;
     }
-    box.innerHTML = state.people.map(function(p){
+    var q = (view.peopleSearch || "").trim().toLowerCase();
+    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
+    if(list.length === 0){
+      box.innerHTML = '<p class="empty-note">Ingen personer matcher søket.</p>';
+      return;
+    }
+    box.innerHTML = list.map(function(p){
       var days = new Set();
       state.elements.forEach(function(e){
         Object.keys(e.assignments||{}).forEach(function(iso){
@@ -1773,6 +1780,8 @@
       });
     });
   }
+
+  byId("peopleSearch").addEventListener("input", function(){ view.peopleSearch = this.value; renderPeopleTab(); });
 
   byId("addPersonForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -1940,7 +1949,7 @@
   function refetchPeople(){
     sb.from("people").select("*").order("created_at").then(function(res){
       if(res.error){ showError("Klarte ikke å hente personer: "+res.error.message); return; }
-      state.people = res.data.map(rowToPerson);
+      state.people = res.data.map(rowToPerson).sort(function(a,b){ return a.name.localeCompare(b.name, "no"); });
       renderAll();
     });
   }
