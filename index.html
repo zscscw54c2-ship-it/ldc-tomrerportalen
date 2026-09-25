@@ -5,6 +5,11 @@
 <meta name="color-scheme" content="light" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>LDC – tømrerportalen</title>
+<link rel="icon" href="icons/icon-512.png" type="image/png">
+<link rel="icon" sizes="192x192" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="icons/manifest.json">
+<meta name="theme-color" content="#2f7fd9">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -78,10 +83,13 @@
   .project-bar{
     max-width:1080px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
-  .project-bar select{
-    border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); font-size:13px; font-weight:600; max-width:220px;
+  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:2px 10px 2px 10px; }
+  .project-pill select{
+    border:none; background:none; padding:6px 0; font-size:14px; font-weight:700; max-width:200px; cursor:pointer;
   }
+  .project-pill .chevron{ font-size:11px; color:var(--muted); pointer-events:none; }
   .project-dates{font-size:11.5px; color:var(--muted);}
+  #projectMoreMenu{ display:flex; gap:6px; flex-wrap:wrap; width:100%; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
 
   .status-banner{
     margin-top:14px; padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:8px;
@@ -471,7 +479,6 @@
     nav.tabs button[aria-selected="true"]{background:var(--accent-soft); color:var(--accent); box-shadow:none;}
     .brand h1{font-size:19px;}
     .brand .tag{display:none;}
-    #projectSetActive{display:none;}
     .project-dates{display:none;}
     .cal-toolbar .seg{flex:1;}
     .cal-toolbar .seg button{flex:1; justify-content:center; padding:8px 6px;}
@@ -487,12 +494,13 @@
     .att-week .wl{width:100%;}
   }
 
-  #panel-andelig:not(.editing) [data-editonly]{ display:none !important; }
-  #panel-andelig.editing [data-viewonly]{ display:none !important; }
+  .panel:not(.editing) [data-editonly]{ display:none !important; }
+  .panel.editing [data-viewonly]{ display:none !important; }
 
   /* ---------- mobil hjemskjerm ---------- */
   #mobileHome{ display:none; }
-  #mobileBackHome{ display:none; }
+  #mobileBackHome{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:11px 4px; margin-bottom:2px; font-size:15px; font-weight:700; color:var(--accent); border:none; background:none; text-decoration:none; }
+  #mobileBackHome .arrow{ font-size:18px; line-height:1; }
   .mh-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px; }
   .mh-tile{
     position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow);
@@ -521,11 +529,10 @@
     .wrap > .foot-note{ display:none !important; }
 
     body.section-active #mobileHome{ display:none; }
-    body.section-active header.top nav.tabs{ display:flex; }
     body.section-active header.top .project-bar{ display:flex; }
     body.section-active .wrap > section.panel.active{ display:block !important; }
     body.section-active .wrap > .foot-note{ display:block !important; }
-    body.section-active #mobileBackHome{ display:inline-flex; }
+    body.section-active #mobileBackHome{ display:flex; }
   }
 
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
@@ -535,7 +542,7 @@
 
 <div class="wrap">
   <header class="top">
-    <a href="#" id="mobileBackHome" class="btn small ghost" style="margin:0 0 8px; width:fit-content;">← Hjem</a>
+    <a href="#" id="mobileBackHome"><span class="arrow">←</span> Hjem</a>
     <div class="top-inner">
       <div class="brand">
         <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
@@ -547,17 +554,23 @@
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
-        <button role="tab" data-tab="rom" aria-selected="false">Rom</button>
+        <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
       </nav>
     </div>
     <div class="project-bar">
-      <select id="projectSelect" title="Velg prosjekt"></select>
+      <div class="project-pill">
+        <select id="projectSelect" title="Velg prosjekt"></select>
+        <span class="chevron">⌄</span>
+      </div>
       <span id="projectDates" class="mono project-dates"></span>
-      <button class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
-      <button class="btn small" id="projectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
-      <button class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
-      <button class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
+      <button class="btn small ghost" id="projectMoreBtn" title="Flere valg" aria-label="Flere valg" aria-expanded="false">⋯</button>
+      <div id="projectMoreMenu" hidden>
+        <button type="button" class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
+        <button type="button" class="btn small" id="projectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
+        <button type="button" class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
+        <button type="button" class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
+      </div>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
@@ -658,7 +671,10 @@
 
   <section id="panel-tegninger" class="panel">
     <div class="peoplecard">
-      <h2 style="font-size:16px; margin-bottom:4px;">Tegninger</h2>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
+        <h2 style="font-size:16px;">Tegninger</h2>
+        <button class="btn small" id="drawingsEditBtn">Rediger</button>
+      </div>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Bilder og PDF-er knyttet til dette prosjektet.</p>
       <form class="inline-add" id="addDrawingForm">
         <input type="file" id="newDrawingFile" accept="image/*,application/pdf" multiple required style="flex:1; min-width:200px;" />
@@ -666,7 +682,7 @@
         <button class="btn primary" type="submit">Last opp</button>
       </form>
       <p class="empty-note" id="drawingUploadStatus" style="margin-top:6px;"></p>
-      <div class="drawgrid" id="drawGrid" style="margin-top:14px;"></div>
+      <div id="drawGrid" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -1050,6 +1066,22 @@
     document.body.classList.remove("section-active");
     window.scrollTo(0,0);
   });
+  // edge-swipe (fra venstre kant) tilbake til hjemskjermen på mobil
+  (function(){
+    var startX = null, startY = null, fromEdge = false;
+    document.addEventListener("touchstart", function(ev){
+      if(!window.matchMedia("(max-width:640px)").matches || !document.body.classList.contains("section-active")) return;
+      var t = ev.touches[0];
+      startX = t.clientX; startY = t.clientY; fromEdge = t.clientX < 24;
+    }, { passive:true });
+    document.addEventListener("touchend", function(ev){
+      if(startX === null || !fromEdge) { startX = null; return; }
+      var t = ev.changedTouches[0];
+      var dx = t.clientX - startX, dy = Math.abs(t.clientY - startY);
+      if(dx > 70 && dy < 60){ document.body.classList.remove("section-active"); window.scrollTo(0,0); }
+      startX = null;
+    }, { passive:true });
+  })();
 
   // ---------- derived data ----------
   function activeElementsOn(dateIso, section){
@@ -1727,6 +1759,7 @@
 
   byId("projectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
   byId("projectDelete").addEventListener("click", function(){
+    byId("projectMoreMenu").hidden = true;
     var pid = state.currentProjectId;
     var p = state.projects.find(function(x){ return x.id === pid; });
     if(!p){ showError("Ingen prosjekt er valgt."); return; }
@@ -1738,11 +1771,19 @@
     if(!confirm(msg)) return;
     deleteProject(pid);
   });
+  byId("projectMoreBtn").addEventListener("click", function(){
+    var open = byId("projectMoreMenu").hidden;
+    byId("projectMoreMenu").hidden = !open;
+    this.setAttribute("aria-expanded", open ? "true" : "false");
+  });
   byId("projectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
+    byId("projectMoreMenu").hidden = true;
+    byId("projectMoreBtn").setAttribute("aria-expanded", "false");
   });
   var projectDialog = byId("projectDialog");
   byId("projectNewBtn").addEventListener("click", function(){
+    byId("projectMoreMenu").hidden = true;
     byId("projDlgTitle").textContent = "Nytt prosjekt";
     byId("projSubmitBtn").textContent = "Opprett";
     byId("projId").value = "";
@@ -1752,6 +1793,7 @@
     projectDialog.showModal();
   });
   byId("projectEditBtn").addEventListener("click", function(){
+    byId("projectMoreMenu").hidden = true;
     var p = state.projects.find(function(x){ return x.id === state.currentProjectId; });
     if(!p){ showError("Ingen prosjekt er valgt."); return; }
     byId("projDlgTitle").textContent = "Rediger prosjekt";
@@ -1891,7 +1933,7 @@
   // ---------- handleliste tab ----------
   function renderShopTab(){
     var box = byId("shopList");
-    var items = shopItemsForCurrentProject();
+    var items = shopItemsForCurrentProject().slice().sort(function(a,b){ return (a.bought?1:0) - (b.bought?1:0); });
     if(items.length === 0){
       box.innerHTML = '<p class="empty-note">Handlelisten er tom.</p>';
       return;
@@ -1932,14 +1974,10 @@
     }
     box.innerHTML = list.map(function(d){
       var url = sb ? drawingPublicUrl(d.path) : "#";
-      var isImg = d.contentType && d.contentType.indexOf("image/") === 0;
-      var thumb = isImg
-        ? '<img src="'+encodeURI(url)+'" alt="" loading="lazy" />'
-        : '<span class="filetype">PDF</span>';
-      return '<div class="drawcard" data-drawing="'+d.id+'">' +
-        '<a class="thumb" href="'+encodeURI(url)+'" target="_blank" rel="noopener">'+thumb+'</a>' +
-        '<div class="dmeta"><div class="dname">'+escapeHtml(d.name)+'</div></div>' +
-        '<div class="dactions"><button class="btn small" data-renamedrawing="'+d.id+'">Rediger navn</button><button class="btn small danger" data-deldrawing="'+d.id+'">Slett</button></div>' +
+      return '<div class="shoprow" data-drawing="'+d.id+'">' +
+        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
+        '<button type="button" class="btn small" data-editonly data-renamedrawing="'+d.id+'">Rediger navn</button>' +
+        '<button type="button" class="btn small danger" data-editonly data-deldrawing="'+d.id+'">Slett</button>' +
         '</div>';
     }).join("");
     document.querySelectorAll("[data-renamedrawing]").forEach(function(b){
@@ -1953,6 +1991,11 @@
       });
     });
   }
+  byId("drawingsEditBtn").addEventListener("click", function(){
+    var editing = byId("panel-tegninger").classList.toggle("editing");
+    byId("drawingsEditBtn").textContent = editing ? "Ferdig" : "Rediger";
+    byId("drawingsEditBtn").classList.toggle("primary", editing);
+  });
   byId("addDrawingForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var fileInput = byId("newDrawingFile");
@@ -2366,7 +2409,7 @@
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>' },
     { tab:"personer", name:"Personer", color:"var(--utvendig)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>' },
-    { tab:"rom", name:"Rom", color:"var(--rose)",
+    { tab:"rom", name:"To-do", color:"var(--rose)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
     { tab:"andelig", name:"Åndelig", color:"var(--warn)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' }
