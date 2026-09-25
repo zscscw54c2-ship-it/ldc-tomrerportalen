@@ -812,6 +812,10 @@
         <input type="date" id="projEnd" />
       </div>
     </div>
+    <div class="field">
+      <label for="projCloseOut">Close out-dato (valgfritt)</label>
+      <input type="date" id="projCloseOut" />
+    </div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="projectCancel">Avbryt</button>
       <button type="submit" class="btn primary" id="projSubmitBtn">Opprett</button>
@@ -1438,11 +1442,11 @@
     if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
       bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
     }
-    if(cur && cur.end){
-      var coOffset = Math.round((fromISODate(cur.end) - range.start)/86400000);
+    if(cur && cur.closeOut){
+      var coOffset = Math.round((fromISODate(cur.closeOut) - range.start)/86400000);
       if(coOffset >= 0 && coOffset < range.days){
-        var coIdx = workdayIndex(range, cur.end);
-        bg += '<div class="g-closeout" style="left:'+(coIdx*dw + dw/2 - 1)+'px" title="Close out: '+fmtRange(cur.end,cur.end)+'"></div>';
+        var coIdx = workdayIndex(range, cur.closeOut);
+        bg += '<div class="g-closeout" style="left:'+(coIdx*dw + dw/2 - 1)+'px" title="Close out: '+fmtRange(cur.closeOut,cur.closeOut)+'"></div>';
       }
     }
 
@@ -1793,6 +1797,7 @@
     byId("projName").value = "";
     byId("projStart").value = "";
     byId("projEnd").value = "";
+    byId("projCloseOut").value = "";
     projectDialog.showModal();
   });
   byId("projectEditBtn").addEventListener("click", function(){
@@ -1805,6 +1810,7 @@
     byId("projName").value = p.name;
     byId("projStart").value = p.start || "";
     byId("projEnd").value = p.end || "";
+    byId("projCloseOut").value = p.closeOut || "";
     projectDialog.showModal();
   });
   byId("projectCancel").addEventListener("click", function(){ projectDialog.close(); });
@@ -1814,8 +1820,9 @@
     var name = byId("projName").value.trim();
     if(!name) return;
     var id = byId("projId").value;
-    if(id){ updateProject(id, name, byId("projStart").value, byId("projEnd").value); }
-    else { createProject(name, byId("projStart").value, byId("projEnd").value); }
+    var closeOut = byId("projCloseOut").value;
+    if(id){ updateProject(id, name, byId("projStart").value, byId("projEnd").value, closeOut); }
+    else { createProject(name, byId("projStart").value, byId("projEnd").value, closeOut); }
     projectDialog.close();
   });
 
@@ -2545,7 +2552,7 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", createdAt: row.created_at };
   }
   function rowToDuty(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -2688,20 +2695,20 @@
     try{ localStorage.setItem("ldc_current_project", id); }catch(e){}
     renderAll();
   }
-  function createProject(name, start, end){
+  function createProject(name, start, end, closeOut){
     if(!sb) return;
-    sb.from("projects").insert({ name: name.slice(0,80), start_date: start || null, end_date: end || null })
+    sb.from("projects").insert({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null })
       .select().single().then(function(res){
-        if(res.error){ showError("Kunne ikke opprette prosjektet: "+res.error.message); return; }
+        if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke opprette prosjektet: "+res.error.message); return; }
         selectProject(res.data.id);
         refetchProjects();
       });
   }
-  function updateProject(id, name, start, end){
+  function updateProject(id, name, start, end, closeOut){
     if(!sb) return;
-    sb.from("projects").update({ name: name.slice(0,80), start_date: start || null, end_date: end || null }).eq("id", id)
+    sb.from("projects").update({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null }).eq("id", id)
       .then(function(res){
-        if(res.error){ showError("Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
+        if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
         refetchProjects();
       });
   }
