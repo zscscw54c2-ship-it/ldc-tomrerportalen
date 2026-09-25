@@ -32,6 +32,8 @@
     --bad:#e5634f;
     --bad-soft:#fde8e4;
     --bad-ink:#b63c2a;
+    --violet:#8b6fd1;
+    --rose:#d1667f;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -488,6 +490,44 @@
   #panel-andelig:not(.editing) [data-editonly]{ display:none !important; }
   #panel-andelig.editing [data-viewonly]{ display:none !important; }
 
+  /* ---------- mobil hjemskjerm ---------- */
+  #mobileHome{ display:none; }
+  #mobileBackHome{ display:none; }
+  .mh-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px; }
+  .mh-tile{
+    position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow);
+    padding:14px; text-align:left; cursor:pointer; display:flex; flex-direction:column; gap:8px; min-height:104px;
+    font-family:inherit; color:inherit;
+  }
+  .mh-tile.wide{ grid-column:span 2; }
+  .mh-icon{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .mh-icon svg{ width:20px; height:20px; fill:none; stroke:#fff; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .mh-name{ font-weight:700; font-size:14.5px; }
+  .mh-status{ font-size:12px; color:var(--muted); }
+  .mh-badge{
+    position:absolute; top:10px; right:10px; background:var(--warn-ink); color:#fff; font-size:11px; font-weight:700;
+    min-width:20px; height:20px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 5px;
+  }
+  .mh-mini{ display:flex; gap:6px; margin-top:2px; }
+  .mh-mday{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--surface-alt); border-radius:9px; padding:6px 2px; }
+  .mh-mdow{ font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; }
+  .mh-mnum{ font-size:13px; font-weight:700; font-family:"IBM Plex Mono",monospace; }
+
+  @media (max-width:640px){
+    #mobileHome{ display:block; }
+    header.top nav.tabs{ display:none; }
+    header.top .project-bar{ display:none; }
+    .wrap > section.panel{ display:none !important; }
+    .wrap > .foot-note{ display:none !important; }
+
+    body.section-active #mobileHome{ display:none; }
+    body.section-active header.top nav.tabs{ display:flex; }
+    body.section-active header.top .project-bar{ display:flex; }
+    body.section-active .wrap > section.panel.active{ display:block !important; }
+    body.section-active .wrap > .foot-note{ display:block !important; }
+    body.section-active #mobileBackHome{ display:inline-flex; }
+  }
+
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
 </style>
 </head>
@@ -495,6 +535,7 @@
 
 <div class="wrap">
   <header class="top">
+    <a href="#" id="mobileBackHome" class="btn small ghost" style="margin:0 0 8px; width:fit-content;">← Hjem</a>
     <div class="top-inner">
       <div class="brand">
         <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
@@ -520,6 +561,10 @@
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
+
+  <div id="mobileHome">
+    <div class="mh-grid" id="mhGrid"></div>
+  </div>
 
   <section id="panel-kalender" class="panel active">
     <div class="cal-toolbar">
@@ -994,10 +1039,16 @@
     document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.tab===tab ? "true":"false"); });
     document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
     byId("panel-"+tab).classList.add("active");
+    document.body.classList.add("section-active");
     window.scrollTo(0,0);
   }
   document.querySelectorAll("nav.tabs button").forEach(function(btn){
     btn.addEventListener("click", function(){ switchTab(btn.dataset.tab); });
+  });
+  byId("mobileBackHome").addEventListener("click", function(ev){
+    ev.preventDefault();
+    document.body.classList.remove("section-active");
+    window.scrollTo(0,0);
   });
 
   // ---------- derived data ----------
@@ -2304,6 +2355,92 @@
   });
 
   // ---------- render orchestration ----------
+  var HOME_TILES = [
+    { tab:"kalender", name:"Kalender", color:"var(--accent)", wide:true,
+      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="7" y1="3" x2="7" y2="7"/><line x1="17" y1="3" x2="17" y2="7"/></svg>' },
+    { tab:"elementer", name:"Oppgaver", color:"var(--innvendig)",
+      icon:'<svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><polyline points="4 6 5.5 7.5 7.5 5"/><polyline points="4 12 5.5 13.5 7.5 11"/><polyline points="4 18 5.5 19.5 7.5 17"/></svg>' },
+    { tab:"handleliste", name:"Handleliste", color:"var(--good)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>' },
+    { tab:"tegninger", name:"Tegninger", color:"var(--violet)",
+      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>' },
+    { tab:"personer", name:"Personer", color:"var(--utvendig)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>' },
+    { tab:"rom", name:"Rom", color:"var(--rose)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
+    { tab:"andelig", name:"Åndelig", color:"var(--warn)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' }
+  ];
+  function homeTileStatus(tab){
+    if(tab === "elementer"){
+      var els = elementsForCurrentProject();
+      var late = els.filter(isLate).length;
+      if(late > 0) return { badge: late, text: late+" forsinket" };
+      var unplanned = els.filter(function(e){ return !isPlanned(e) && e.status !== "ferdig"; }).length;
+      if(unplanned > 0) return { badge: unplanned, text: unplanned+" ikke planlagt" };
+      return { badge: 0, text: els.length ? "Alt følges opp" : "Ingen oppgaver ennå" };
+    }
+    if(tab === "handleliste"){
+      var items = shopItemsForCurrentProject();
+      var left = items.filter(function(s){ return !s.bought; }).length;
+      return { badge: left, text: left > 0 ? left+" gjenstår" : (items.length ? "Alt kjøpt inn" : "Listen er tom") };
+    }
+    if(tab === "tegninger"){
+      var n = drawingsForCurrentProject().length;
+      return { badge: 0, text: n === 0 ? "Ingen filer ennå" : (n+" fil"+(n===1?"":"er")) };
+    }
+    if(tab === "personer"){
+      return { badge: 0, text: state.people.length+" personer" };
+    }
+    if(tab === "rom"){
+      var todos = roomTodosForCurrentProject();
+      var open = todos.filter(function(t){ return !t.done; }).length;
+      return { badge: open, text: open > 0 ? open+" gjenstår" : (todos.length ? "Alt utført" : "Ingen oppgaver ennå") };
+    }
+    if(tab === "andelig"){
+      var curWeek = currentPrivilegeWeek();
+      if(!curWeek) return { badge: 0, text: "Ingen aktiv uke" };
+      var duties = dutiesForCurrentProject();
+      var open2 = duties.filter(function(d){ return !pwDutyStatus(curWeek.id, d.id).done; }).length;
+      return { badge: open2, text: open2 > 0 ? open2+" ansvarspunkter igjen" : "Alt gjort denne uken" };
+    }
+    return { badge: 0, text: "" };
+  }
+  function renderMiniCalendar(){
+    var html = "";
+    for(var i=0;i<5;i++){
+      var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
+      var iso = toISODate(d);
+      var els = activeElementsOn(iso);
+      var ppl = peopleAssignedOn(iso, els);
+      var status = dayStatus(els.length, ppl.size) || "good";
+      html += '<div class="mh-mday"><span class="mh-mdow">'+DAY_SHORT[d.getDay()].slice(0,2)+'</span><span class="mh-mnum">'+d.getDate()+'</span><i class="dot '+status+'"></i></div>';
+    }
+    return html;
+  }
+  function renderMobileHome(){
+    var grid = byId("mhGrid");
+    grid.innerHTML = HOME_TILES.map(function(t){
+      var body;
+      if(t.tab === "kalender"){
+        body = '<div class="mh-name">'+t.name+'</div><div class="mh-mini">'+renderMiniCalendar()+'</div>';
+        var badge = "";
+      } else {
+        var st = homeTileStatus(t.tab);
+        body = '<div class="mh-name">'+t.name+'</div><div class="mh-status">'+escapeHtml(st.text)+'</div>';
+        badge = st.badge > 0 ? '<span class="mh-badge">'+st.badge+'</span>' : "";
+      }
+      return '<button type="button" class="mh-tile'+(t.wide?' wide':'')+'" data-hometile="'+t.tab+'">' +
+        (badge||"") +
+        '<span class="mh-icon" style="background:'+t.color+'">'+t.icon+'</span>' +
+        body +
+        '</button>';
+    }).join("");
+    grid.querySelectorAll("[data-hometile]").forEach(function(b){
+      b.addEventListener("click", function(){ switchTab(this.dataset.hometile); });
+    });
+  }
+
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     renderProjectBar();
@@ -2317,6 +2454,7 @@
     renderPeopleTab();
     renderRoomTab();
     renderSpiritualTab();
+    renderMobileHome();
   }
 
   function goToWeek(newStart){
