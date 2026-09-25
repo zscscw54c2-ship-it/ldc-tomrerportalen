@@ -367,6 +367,7 @@
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
   .g-weekband{position:absolute; top:0; bottom:0; background:rgba(104,117,136,.06);}
   .g-today{position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:2; opacity:.85;}
+  .g-closeout{position:absolute; top:0; bottom:0; width:2px; background:var(--bad); z-index:2; opacity:.85; background-image:repeating-linear-gradient(180deg, var(--bad) 0 6px, transparent 6px 10px);}
   .g-bar{position:absolute; top:7px; height:18px; border-radius:6px; cursor:pointer; z-index:1; display:flex; align-items:center; padding:0 6px; font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; min-width:8px;}
   .g-bar.s-mangler{background:var(--bad-soft); border:1.5px solid var(--bad); color:var(--bad-ink);}
   .g-bar.s-pabegynt{background:var(--warn-soft); border:1.5px solid var(--warn); color:var(--warn-ink);}
@@ -484,6 +485,9 @@
     .att-week .wl{width:100%;}
   }
 
+  #panel-andelig:not(.editing) [data-editonly]{ display:none !important; }
+  #panel-andelig.editing [data-viewonly]{ display:none !important; }
+
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
 </style>
 </head>
@@ -502,6 +506,7 @@
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
+        <button role="tab" data-tab="rom" aria-selected="false">Rom</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
       </nav>
     </div>
@@ -561,6 +566,7 @@
           <span><i class="dot warn"></i> Påbegynt</span>
           <span><i class="dot good"></i> Ferdig</span>
           <span><i class="dot" style="background:var(--accent); border-radius:1px; width:3px; height:10px;"></i> I dag</span>
+          <span><i class="dot" style="background:var(--bad); border-radius:1px; width:3px; height:10px;"></i> Close out</span>
         </div>
       </div>
       <div class="gantt-wrap" id="ganttWrap"><div class="gantt" id="gantt"></div></div>
@@ -619,6 +625,20 @@
     </div>
   </section>
 
+  <section id="panel-rom" class="panel">
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Ny rom-oppgave</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Todo-lister per rom, f.eks. A-sal, Foajé osv.</p>
+      <form class="inline-add" id="addRoomTodoForm">
+        <input type="text" id="newRoomName" placeholder="Rom (f.eks. A-sal)" required maxlength="60" list="roomNamesList" style="max-width:180px;" />
+        <datalist id="roomNamesList"></datalist>
+        <input type="text" id="newRoomTodoText" placeholder="Oppgave" required maxlength="160" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
+    <div id="roomTodoGroups"></div>
+  </section>
+
   <section id="panel-personer" class="panel">
     <div class="peoplecard">
       <h2 style="font-size:16px; margin-bottom:4px;">Personer</h2>
@@ -634,19 +654,35 @@
   </section>
 
   <section id="panel-andelig" class="panel">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <div id="pwBanner" class="status-banner" style="margin-top:0; flex:1; min-width:220px;"></div>
+      <button class="btn small" id="andeligEditBtn">Rediger</button>
+    </div>
+
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
+      <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
+      <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
+        <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
+
     <div class="cols2">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
-        <textarea id="spiritualInfoInput" rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
-        <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+        <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
+        <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+        <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
           <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
         </div>
       </div>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Denne ukens ansvar</h2>
-        <div id="dutiesList"></div>
-        <form class="inline-add" id="addDutyForm">
-          <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
+        <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
+        <div id="toAgendaList"></div>
+        <form class="inline-add" id="addToAgendaForm">
+          <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
           <button class="btn primary" type="submit">Legg til</button>
         </form>
       </div>
@@ -656,7 +692,7 @@
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
         <div id="overviewProgramList"></div>
-        <form class="inline-add" id="addOverviewProgramForm">
+        <form class="inline-add" id="addOverviewProgramForm" data-editonly>
           <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
           <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
           <button class="btn primary" type="submit">Legg til</button>
@@ -665,7 +701,7 @@
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
         <div id="overviewMoteList"></div>
-        <form class="inline-add" id="addOverviewMoteForm">
+        <form class="inline-add" id="addOverviewMoteForm" data-editonly>
           <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
           <input type="text" id="newOvMoteTime" placeholder="Tid" maxlength="60" style="max-width:130px;" />
           <input type="text" id="newOvMoteAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:170px;" />
@@ -674,9 +710,9 @@
       </div>
     </div>
 
-    <div class="peoplecard" style="margin-top:16px;">
+    <div class="peoplecard" data-editonly style="margin-top:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <h2 style="font-size:16px;">Privilege Week</h2>
+        <h2 style="font-size:16px;">Privilege Week – alle uker</h2>
         <button class="btn small primary" id="pwNewBtn">+ Ny uke</button>
       </div>
       <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -722,6 +758,11 @@
   <div class="dlg-body">
     <h3 id="detTitle"></h3>
     <div class="det-meta" id="detMeta"></div>
+    <div class="statuspicker big" id="detStatusPicker" style="margin-bottom:10px;">
+      <button type="button" data-detstatus="mangler">Mangler</button>
+      <button type="button" data-detstatus="pabegynt">Påbegynt</button>
+      <button type="button" data-detstatus="ferdig">Ferdig</button>
+    </div>
     <div id="detNotes"></div>
     <div class="det-days" id="detDays"></div>
     <div class="dlg-actions">
@@ -882,8 +923,8 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], currentProjectId: null };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], currentProjectId: null };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
@@ -1310,6 +1351,13 @@
     if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
       bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
     }
+    if(cur && cur.end){
+      var coOffset = Math.round((fromISODate(cur.end) - range.start)/86400000);
+      if(coOffset >= 0 && coOffset < range.days){
+        var coIdx = workdayIndex(range, cur.end);
+        bg += '<div class="g-closeout" style="left:'+(coIdx*dw + dw/2 - 1)+'px" title="Close out: '+fmtRange(cur.end,cur.end)+'"></div>';
+      }
+    }
 
     // topp: måneder + uker (kun arbeidsdager, uten hull for helg)
     var months = "", weeks = "";
@@ -1388,6 +1436,7 @@
     byId("detTitle").textContent = e.name;
     byId("detMeta").innerHTML = statusPill(e) + '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>' +
       '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
+    byId("detStatusPicker").querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.detstatus === e.status); });
     byId("detNotes").innerHTML = e.notes ? '<div class="det-notes">'+escapeHtml(e.notes)+'</div>' : '';
     var days = workdays(e);
     byId("detDays").innerHTML = days.map(function(d){
@@ -1396,6 +1445,17 @@
     }).join("");
     detailDialog.showModal();
   }
+  byId("detStatusPicker").querySelectorAll("[data-detstatus]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var id = detailDialog.dataset.id;
+      if(!id) return;
+      setElementStatus(id, this.dataset.detstatus);
+      byId("detStatusPicker").querySelectorAll("button").forEach(function(x){ x.classList.toggle("active", x===b); });
+      var e = state.elements.find(function(x){ return x.id === id; });
+      if(e) byId("detMeta").innerHTML = statusPill(e) + '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>' +
+        '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
+    });
+  });
   byId("detClose").addEventListener("click", function(){ detailDialog.close(); });
   detailDialog.addEventListener("click", function(ev){ if(ev.target === detailDialog) detailDialog.close(); });
   byId("detGoto").addEventListener("click", function(){
@@ -1827,9 +1887,12 @@
       return '<div class="drawcard" data-drawing="'+d.id+'">' +
         '<a class="thumb" href="'+encodeURI(url)+'" target="_blank" rel="noopener">'+thumb+'</a>' +
         '<div class="dmeta"><div class="dname">'+escapeHtml(d.name)+'</div></div>' +
-        '<div class="dactions"><button class="btn small danger" data-deldrawing="'+d.id+'">Slett</button></div>' +
+        '<div class="dactions"><button class="btn small" data-renamedrawing="'+d.id+'">Rediger navn</button><button class="btn small danger" data-deldrawing="'+d.id+'">Slett</button></div>' +
         '</div>';
     }).join("");
+    document.querySelectorAll("[data-renamedrawing]").forEach(function(b){
+      b.addEventListener("click", function(){ renameDrawing(this.dataset.renamedrawing); });
+    });
     document.querySelectorAll("[data-deldrawing]").forEach(function(b){
       b.addEventListener("click", function(){
         var id = this.dataset.deldrawing;
@@ -1888,27 +1951,98 @@
   }
 
   // ---------- åndelig skjema ----------
+  function renderRoomTab(){
+    var box = byId("roomTodoGroups");
+    var list = roomTodosForCurrentProject();
+    var rooms = Array.from(new Set(list.map(function(t){ return t.room; }))).sort(function(a,b){ return a.localeCompare(b,"no"); });
+    byId("roomNamesList").innerHTML = rooms.map(function(r){ return '<option value="'+escapeHtml(r)+'"></option>'; }).join("");
+    if(list.length === 0){ box.innerHTML = '<p class="empty-note">Ingen rom-oppgaver lagt til ennå.</p>'; return; }
+    box.innerHTML = rooms.map(function(room){
+      var items = list.filter(function(t){ return t.room === room; });
+      var doneC = items.filter(function(t){ return t.done; }).length;
+      return '<div class="peoplecard" style="margin-bottom:14px;"><h2 style="font-size:15px; margin-bottom:8px;">'+escapeHtml(room)+' <span class="badge group">'+doneC+' / '+items.length+'</span></h2>' +
+        items.map(function(t){
+          return '<div class="shoprow'+(t.done?' bought':'')+'"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="sname">'+escapeHtml(t.text)+'</span><button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
+        }).join("") +
+        '</div>';
+    }).join("");
+    box.querySelectorAll("[data-roomtodo]").forEach(function(cb){
+      cb.addEventListener("change", function(){ toggleRoomTodo(this.dataset.roomtodo, this.checked); });
+    });
+    box.querySelectorAll("[data-delroomtodo]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteRoomTodo(this.dataset.delroomtodo); });
+    });
+  }
+  byId("addRoomTodoForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var roomInput = byId("newRoomName"), textInput = byId("newRoomTodoText");
+    var room = roomInput.value.trim(), text = textInput.value.trim();
+    if(!room || !text) return;
+    addRoomTodo(room, text);
+    textInput.value = "";
+  });
+
   function renderSpiritualTab(){
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
+    var infoView = byId("spiritualInfoView");
+    var infoText = (cur && cur.spiritualInfo) || "";
+    infoView.textContent = infoText || "Ingen info lagt til ennå.";
+    infoView.classList.toggle("empty-note", !infoText);
+
+    var curWeek = currentPrivilegeWeek();
+    var banner = byId("pwBanner");
+    banner.textContent = curWeek
+      ? ("Denne uken (uke "+isoWeekInfo(fromISODate(curWeek.start)).week+") har "+curWeek.responsible+" Privilege Week.")
+      : "Ingen privilege-uke er registrert for denne uken.";
 
     var duties = dutiesForCurrentProject();
-    byId("dutiesList").innerHTML = duties.length ? duties.map(function(d){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(d.text)+'</span><button class="del" data-delduty="'+d.id+'" title="Fjern">×</button></div>';
+    byId("pwWeekLabel").textContent = curWeek
+      ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
+      : "Ingen aktiv privilege-uke akkurat nå.";
+    byId("pwChecklist").innerHTML = duties.length ? duties.map(function(d){
+      var st = curWeek ? pwDutyStatus(curWeek.id, d.id) : { done:false, delegatedPersonId:null };
+      var delegateSelect = curWeek ? (
+        '<select data-pwdelegate="'+d.id+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
+        '<option value="">Delegert til …</option>' +
+        state.people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===st.delegatedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+        '</select>'
+      ) : "";
+      var checkbox = curWeek ? ('<input type="checkbox" data-pwdone="'+d.id+'" '+(st.done?'checked':'')+' style="width:17px; height:17px; flex:none;" />') : '<span style="width:17px; flex:none;"></span>';
+      return '<div class="taskrow" style="flex-wrap:wrap;">' +
+        '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:160px; cursor:pointer;">' + checkbox +
+        '<span'+(st.done?' style="text-decoration:line-through; color:var(--muted);"':'')+'>'+escapeHtml(d.text)+'</span></label>' +
+        delegateSelect +
+        '<button type="button" class="btn small danger" data-editonly data-delduty="'+d.id+'" title="Fjern ansvarspunkt">×</button>' +
+        '</div>';
     }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
-    byId("dutiesList").querySelectorAll("[data-delduty]").forEach(function(b){
+    byId("pwChecklist").querySelectorAll("[data-pwdone]").forEach(function(cb){
+      cb.addEventListener("change", function(){ if(curWeek) setPwDutyStatus(curWeek.id, this.dataset.pwdone, { done: this.checked }); });
+    });
+    byId("pwChecklist").querySelectorAll("[data-pwdelegate]").forEach(function(sel){
+      sel.addEventListener("change", function(){ if(curWeek) setPwDutyStatus(curWeek.id, this.dataset.pwdelegate, { delegated_person_id: this.value || null }); });
+    });
+    byId("pwChecklist").querySelectorAll("[data-delduty]").forEach(function(b){
       b.addEventListener("click", function(){ deleteDuty(this.dataset.delduty); });
+    });
+
+    var agenda = toAgendaForCurrentProject();
+    byId("toAgendaList").innerHTML = agenda.length ? agenda.map(function(a){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(a.text)+'</span><button class="del" data-deltoagenda="'+a.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen saker lagt til ennå.</p>';
+    byId("toAgendaList").querySelectorAll("[data-deltoagenda]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteToAgenda(this.dataset.deltoagenda); });
     });
 
     var prog = overviewForCurrentProject("program");
     byId("overviewProgramList").innerHTML = prog.length ? prog.map(function(o){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'<button class="del" data-delov="'+o.id+'" title="Fjern">×</button></div>';
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'<button class="del" data-editonly data-delov="'+o.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen rader lagt til ennå.</p>';
 
     var mote = overviewForCurrentProject("mote");
     byId("overviewMoteList").innerHTML = mote.length ? mote.map(function(o){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-delov="'+o.id+'" title="Fjern">×</button></div>';
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-editonly data-delov="'+o.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen rader lagt til ennå.</p>';
 
     document.querySelectorAll("#panel-andelig [data-delov]").forEach(function(b){
@@ -1959,6 +2093,20 @@
     });
   }
 
+  byId("andeligEditBtn").addEventListener("click", function(){
+    view.andeligEdit = !view.andeligEdit;
+    byId("panel-andelig").classList.toggle("editing", view.andeligEdit);
+    byId("andeligEditBtn").textContent = view.andeligEdit ? "Ferdig" : "Rediger";
+    byId("andeligEditBtn").classList.toggle("primary", view.andeligEdit);
+  });
+  byId("addToAgendaForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = byId("newToAgendaText");
+    var text = input.value.trim();
+    if(!text) return;
+    addToAgenda(text);
+    input.value = "";
+  });
   byId("spiritualInfoSave").addEventListener("click", function(){ saveSpiritualInfo(byId("spiritualInfoInput").value); });
   byId("addDutyForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -2166,6 +2314,7 @@
     renderShopTab();
     renderDrawingsTab();
     renderPeopleTab();
+    renderRoomTab();
     renderSpiritualTab();
   }
 
@@ -2243,6 +2392,30 @@
     state.morningWorship.filter(function(m){ return m.privilegeWeekId === weekId; }).forEach(function(m){ bySlot[m.slot] = m.personId; });
     return bySlot;
   }
+  function currentPrivilegeWeek(){
+    var todayIso = toISODate(new Date());
+    return privilegeWeeksForCurrentProject().find(function(w){ return w.start <= todayIso && todayIso <= w.end; }) || null;
+  }
+  function rowToPwDutyStatus(row){
+    return { id: row.id, privilegeWeekId: row.privilege_week_id, dutyId: row.duty_id, done: !!row.done, delegatedPersonId: row.delegated_person_id };
+  }
+  function pwDutyStatus(weekId, dutyId){
+    return state.pwDutyStatus.find(function(s){ return s.privilegeWeekId === weekId && s.dutyId === dutyId; }) || { done:false, delegatedPersonId:null };
+  }
+  function rowToToAgenda(row){
+    return { id: row.id, project_id: row.project_id, text: row.text, createdAt: row.created_at };
+  }
+  function toAgendaForCurrentProject(){
+    var pid = currentProjectId();
+    return state.toAgenda.filter(function(a){ return a.project_id === pid; });
+  }
+  function rowToRoomTodo(row){
+    return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, createdAt: row.created_at };
+  }
+  function roomTodosForCurrentProject(){
+    var pid = currentProjectId();
+    return state.roomTodos.filter(function(t){ return t.project_id === pid; });
+  }
   function rowToShopItem(row){
     return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, createdAt: row.created_at };
   }
@@ -2303,6 +2476,27 @@
       renderAll();
     });
   }
+  function refetchPwDutyStatus(){
+    sb.from("privilege_week_duty_status").select("*").then(function(res){
+      if(res.error){ return; }
+      state.pwDutyStatus = res.data.map(rowToPwDutyStatus);
+      renderAll();
+    });
+  }
+  function refetchToAgenda(){
+    sb.from("to_agenda_items").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.toAgenda = res.data.map(rowToToAgenda);
+      renderAll();
+    });
+  }
+  function refetchRoomTodos(){
+    sb.from("room_todos").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.roomTodos = res.data.map(rowToRoomTodo);
+      renderAll();
+    });
+  }
 
   function selectProject(id){
     state.currentProjectId = id;
@@ -2338,6 +2532,7 @@
       state.currentProjectId = null;
       refetchProjects(); refetchElements(); refetchShopItems(); refetchDrawings(); refetchAttendance();
       refetchDuties(); refetchOverview(); refetchPrivilegeWeeks(); refetchMorningWorship();
+      refetchPwDutyStatus(); refetchToAgenda(); refetchRoomTodos();
     });
   }
   function setActiveProject(id){
@@ -2425,6 +2620,44 @@
       refetchMorningWorship();
     });
   }
+  function setPwDutyStatus(weekId, dutyId, patch){
+    if(!sb || !weekId) return;
+    var existing = pwDutyStatus(weekId, dutyId);
+    var payload = { privilege_week_id: weekId, duty_id: dutyId, done: existing.done, delegated_person_id: existing.delegatedPersonId };
+    Object.assign(payload, patch);
+    sb.from("privilege_week_duty_status").upsert(payload, { onConflict: "privilege_week_id,duty_id" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("privilege_week_duty_status") !== -1 ? "Databasen mangler tabellen for avhuking. Kjør sql/10-utvidelser.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchPwDutyStatus();
+    });
+  }
+  function addToAgenda(text){
+    if(!sb) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("to_agenda_items").insert({ project_id: currentProjectId(), text: text.slice(0,160) }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("to_agenda_items") !== -1 ? "Databasen mangler tabellen for TO-møte-saker. Kjør sql/10-utvidelser.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchToAgenda();
+    });
+  }
+  function deleteToAgenda(id){
+    if(!sb) return;
+    sb.from("to_agenda_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchToAgenda(); });
+  }
+  function addRoomTodo(room, text){
+    if(!sb) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("room_todos").insert({ project_id: currentProjectId(), room: room.slice(0,60), text: text.slice(0,160) }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("room_todos") !== -1 ? "Databasen mangler tabellen for rom-oppgaver. Kjør sql/10-utvidelser.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchRoomTodos();
+    });
+  }
+  function toggleRoomTodo(id, done){
+    if(!sb) return;
+    sb.from("room_todos").update({ done: done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; } refetchRoomTodos(); });
+  }
+  function deleteRoomTodo(id){
+    if(!sb) return;
+    sb.from("room_todos").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchRoomTodos(); });
+  }
 
   function rowToDrawing(row){
     return { id: row.id, project_id: row.project_id, name: row.name, path: row.file_path, contentType: row.content_type, sizeBytes: row.size_bytes, createdAt: row.created_at };
@@ -2473,6 +2706,19 @@
     }).then(function(res){ if(res && res.error){ showError("Kunne ikke slette tegningen: "+res.error.message); return; } refetchDrawings(); });
   }
   function showDrawingStatus(msg){ byId("drawingUploadStatus").textContent = msg; }
+  function renameDrawing(id){
+    if(!sb) return;
+    var d = state.drawings.find(function(x){ return x.id === id; });
+    if(!d) return;
+    var name = prompt("Nytt navn på filen:", d.name);
+    if(name === null) return;
+    name = name.trim();
+    if(!name) return;
+    sb.from("drawings").update({ name: name.slice(0,80) }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke endre navn: "+res.error.message); return; }
+      refetchDrawings();
+    });
+  }
 
   function addPerson(name, group){
     if(!sb) return;
@@ -2593,6 +2839,9 @@
     refetchOverview();
     refetchPrivilegeWeeks();
     refetchMorningWorship();
+    refetchPwDutyStatus();
+    refetchToAgenda();
+    refetchRoomTodos();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -2605,6 +2854,9 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "spiritual_overview" }, refetchOverview)
       .on("postgres_changes", { event: "*", schema: "public", table: "privilege_weeks" }, refetchPrivilegeWeeks)
       .on("postgres_changes", { event: "*", schema: "public", table: "morning_worship" }, refetchMorningWorship)
+      .on("postgres_changes", { event: "*", schema: "public", table: "privilege_week_duty_status" }, refetchPwDutyStatus)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_agenda_items" }, refetchToAgenda)
+      .on("postgres_changes", { event: "*", schema: "public", table: "room_todos" }, refetchRoomTodos)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
