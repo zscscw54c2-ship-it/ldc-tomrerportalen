@@ -659,16 +659,6 @@
       <button class="btn small" id="andeligEditBtn">Rediger</button>
     </div>
 
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
-      <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
-      <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
-      <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
-        <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
-        <button class="btn primary" type="submit">Legg til</button>
-      </form>
-    </div>
-
     <div class="cols2">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
@@ -710,19 +700,30 @@
       </div>
     </div>
 
+    <div class="cols2" style="margin-top:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
+        <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
+        <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
+          <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
+        <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); margin-bottom:14px; max-width:100%;"></select>
+        <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+    </div>
+
     <div class="peoplecard" data-editonly style="margin-top:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
         <h2 style="font-size:16px;">Privilege Week – alle uker</h2>
         <button class="btn small primary" id="pwNewBtn">+ Ny uke</button>
       </div>
       <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
-    </div>
-
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
-      <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); margin-bottom:14px; max-width:100%;"></select>
-      <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
   </section>
 
