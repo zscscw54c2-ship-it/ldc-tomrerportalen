@@ -42,6 +42,7 @@
     --bad-ink:#b63c2a;
     --violet:#8b6fd1;
     --rose:#d1667f;
+    --cyan:#2696a6;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -556,6 +557,7 @@
         <button role="tab" data-tab="elementer" aria-selected="false">Oppgaver</button>
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
+        <button role="tab" data-tab="dokumentasjon" aria-selected="false">Dokumentasjon</button>
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
@@ -686,6 +688,23 @@
       </form>
       <p class="empty-note" id="drawingUploadStatus" style="margin-top:6px;"></p>
       <div id="drawGrid" style="margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <section id="panel-dokumentasjon" class="panel">
+    <div class="peoplecard">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
+        <h2 style="font-size:16px;">Dokumentasjon</h2>
+        <button class="btn small" id="dokuEditBtn">Rediger</button>
+      </div>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Ta bilde eller last opp dokumentasjonsbilder, og legg ved en tekst om hva bildet viser.</p>
+      <form class="inline-add" id="addDokuForm">
+        <input type="file" id="newDokuFile" accept="image/*" multiple required style="flex:1; min-width:200px;" />
+        <input type="text" id="newDokuCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />
+        <button class="btn primary" type="submit">Last opp</button>
+      </form>
+      <p class="empty-note" id="dokuUploadStatus" style="margin-top:6px;"></p>
+      <div class="drawgrid" id="dokuGrid" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -992,7 +1011,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], currentProjectId: null };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
@@ -1108,6 +1127,10 @@
   function drawingsForCurrentProject(){
     var pid = currentProjectId();
     return state.drawings.filter(inCurrentProject);
+  }
+  function dokuPhotosForCurrentProject(){
+    var pid = currentProjectId();
+    return state.dokuPhotos.filter(inCurrentProject);
   }
   // ---------- oppmøte ----------
   function attendanceForCurrentProject(){
@@ -2017,6 +2040,52 @@
     nameInput.value = "";
   });
 
+  // ---------- dokumentasjon tab ----------
+  function renderDokumentasjonTab(){
+    var box = byId("dokuGrid");
+    var list = dokuPhotosForCurrentProject();
+    if(list.length === 0){
+      box.innerHTML = '<p class="empty-note">Ingen dokumentasjonsbilder lastet opp ennå.</p>';
+      return;
+    }
+    box.innerHTML = list.map(function(d){
+      var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
+      return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
+        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
+        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div></div>' +
+        '<div class="dactions" data-editonly>' +
+        '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
+        '<button type="button" class="btn small danger" data-deldoku="'+d.id+'">Slett</button>' +
+        '</div>' +
+        '</div>';
+    }).join("");
+    document.querySelectorAll("[data-renamedoku]").forEach(function(b){
+      b.addEventListener("click", function(){ renameDokuCaption(this.dataset.renamedoku); });
+    });
+    document.querySelectorAll("[data-deldoku]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = this.dataset.deldoku;
+        var d = state.dokuPhotos.find(function(x){ return x.id === id; });
+        if(d && confirm("Slette dette bildet?")) deleteDokuPhoto(d);
+      });
+    });
+  }
+  byId("dokuEditBtn").addEventListener("click", function(){
+    var editing = byId("panel-dokumentasjon").classList.toggle("editing");
+    byId("dokuEditBtn").textContent = editing ? "Ferdig" : "Rediger";
+    byId("dokuEditBtn").classList.toggle("primary", editing);
+  });
+  byId("addDokuForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var fileInput = byId("newDokuFile");
+    var captionInput = byId("newDokuCaption");
+    var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
+    if(!files.length) return;
+    uploadDokuPhotos(files, captionInput.value);
+    fileInput.value = "";
+    captionInput.value = "";
+  });
+
   // ---------- people tab ----------
   function renderPeopleTab(){
     var box = byId("peopleList");
@@ -2067,7 +2136,11 @@
       var doneC = items.filter(function(t){ return t.done; }).length;
       return '<div class="peoplecard" style="margin-bottom:14px;"><h2 style="font-size:15px; margin-bottom:8px;">'+escapeHtml(room)+' <span class="badge group">'+doneC+' / '+items.length+'</span></h2>' +
         items.map(function(t){
-          return '<div class="shoprow'+(t.done?' bought':'')+'"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="sname">'+escapeHtml(t.text)+'</span><button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
+          var personSelect = '<select data-roomtodoperson="'+t.id+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
+            '<option value="">Ingen person</option>' +
+            state.people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.assignedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+            '</select>';
+          return '<div class="shoprow'+(t.done?' bought':'')+'" style="flex-wrap:wrap;"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="sname">'+escapeHtml(t.text)+'</span>'+personSelect+'<button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
         }).join("") +
         '</div>';
     }).join("");
@@ -2076,6 +2149,9 @@
     });
     box.querySelectorAll("[data-delroomtodo]").forEach(function(b){
       b.addEventListener("click", function(){ deleteRoomTodo(this.dataset.delroomtodo); });
+    });
+    box.querySelectorAll("[data-roomtodoperson]").forEach(function(sel){
+      sel.addEventListener("change", function(){ setRoomTodoPerson(this.dataset.roomtodoperson, this.value || null); });
     });
   }
   byId("addRoomTodoForm").addEventListener("submit", function(ev){
@@ -2417,6 +2493,8 @@
       icon:'<svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>' },
     { tab:"tegninger", name:"Tegninger", color:"var(--violet)",
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>' },
+    { tab:"dokumentasjon", name:"Dokumentasjon", color:"var(--cyan)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.2"/></svg>' },
     { tab:"personer", name:"Personer", color:"var(--utvendig)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>' },
     { tab:"rom", name:"To-do", color:"var(--rose)",
@@ -2441,6 +2519,10 @@
     if(tab === "tegninger"){
       var n = drawingsForCurrentProject().length;
       return { badge: 0, text: n === 0 ? "Ingen filer ennå" : (n+" fil"+(n===1?"":"er")) };
+    }
+    if(tab === "dokumentasjon"){
+      var np = dokuPhotosForCurrentProject().length;
+      return { badge: 0, text: np === 0 ? "Ingen bilder ennå" : (np+" bilde"+(np===1?"":"r")) };
     }
     if(tab === "personer"){
       return { badge: 0, text: state.people.length+" personer" };
@@ -2504,6 +2586,7 @@
     if(personDatesDialog.open) renderPersonDates();
     renderShopTab();
     renderDrawingsTab();
+    renderDokumentasjonTab();
     renderPeopleTab();
     renderRoomTab();
     renderSpiritualTab();
@@ -2602,7 +2685,7 @@
     return state.toAgenda.filter(function(a){ return a.project_id === pid; });
   }
   function rowToRoomTodo(row){
-    return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, assignedPersonId: row.assigned_person_id || null, createdAt: row.created_at };
   }
   function roomTodosForCurrentProject(){
     var pid = currentProjectId();
@@ -2715,8 +2798,10 @@
   function deleteProject(id){
     if(!sb) return;
     var paths = state.drawings.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
+    var dokuPaths = state.dokuPhotos.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
     var clean = paths.length ? sb.storage.from("tegninger").remove(paths) : Promise.resolve();
-    Promise.resolve(clean).then(function(){
+    var cleanDoku = dokuPaths.length ? sb.storage.from("dokumentasjon").remove(dokuPaths) : Promise.resolve();
+    Promise.all([clean, cleanDoku]).then(function(){
       return sb.from("projects").delete().eq("id", id);
     }).then(function(res){
       if(res && res.error){ showError("Kunne ikke slette prosjektet: "+res.error.message); return; }
@@ -2724,7 +2809,7 @@
       state.currentProjectId = null;
       refetchProjects(); refetchElements(); refetchShopItems(); refetchDrawings(); refetchAttendance();
       refetchDuties(); refetchOverview(); refetchPrivilegeWeeks(); refetchMorningWorship();
-      refetchPwDutyStatus(); refetchToAgenda(); refetchRoomTodos();
+      refetchPwDutyStatus(); refetchToAgenda(); refetchRoomTodos(); refetchDokuPhotos();
     });
   }
   function setActiveProject(id){
@@ -2850,6 +2935,13 @@
     if(!sb) return;
     sb.from("room_todos").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchRoomTodos(); });
   }
+  function setRoomTodoPerson(id, personId){
+    if(!sb) return;
+    sb.from("room_todos").update({ assigned_person_id: personId }).eq("id", id).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("assigned_person_id") !== -1 ? "Databasen mangler kolonnen for tildelt person. Kjør sql/13-todo-tildelt-person.sql i Supabase." : "Kunne ikke oppdatere: "+res.error.message); return; }
+      refetchRoomTodos();
+    });
+  }
 
   function rowToDrawing(row){
     return { id: row.id, project_id: row.project_id, name: row.name, path: row.file_path, contentType: row.content_type, sizeBytes: row.size_bytes, createdAt: row.created_at };
@@ -2909,6 +3001,65 @@
     sb.from("drawings").update({ name: name.slice(0,80) }).eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke endre navn: "+res.error.message); return; }
       refetchDrawings();
+    });
+  }
+
+  function rowToDokuPhoto(row){
+    return { id: row.id, project_id: row.project_id, path: row.file_path, caption: row.caption || "", createdAt: row.created_at };
+  }
+  function refetchDokuPhotos(){
+    sb.from("documentation_photos").select("*").order("created_at", { ascending:false }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("documentation_photos") !== -1 ? "Databasen mangler tabellen for dokumentasjonsbilder. Kjør sql/12-dokumentasjon.sql i Supabase." : "Klarte ikke å hente dokumentasjonsbilder: "+res.error.message); return; }
+      state.dokuPhotos = res.data.map(rowToDokuPhoto);
+      renderAll();
+    });
+  }
+  function dokuPhotoPublicUrl(path){
+    return sb.storage.from("dokumentasjon").getPublicUrl(path).data.publicUrl;
+  }
+  var MAX_DOKU_BYTES = 20 * 1024 * 1024;
+  function uploadDokuPhoto(file, caption){
+    if(file.size > MAX_DOKU_BYTES){ showError('«'+file.name+'» er for stor (maks 20 MB).'); return Promise.resolve(); }
+    var safeName = file.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
+    var path = currentProjectId() + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,7) + "-" + safeName;
+    return sb.storage.from("dokumentasjon").upload(path, file, { contentType: file.type || "application/octet-stream" })
+      .then(function(res){
+        if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
+        return sb.from("documentation_photos").insert({
+          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null
+        }).then(function(res2){
+          if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
+        });
+      });
+  }
+  function uploadDokuPhotos(files, caption){
+    if(!sb) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    var total = files.length, i = 0;
+    function next(){
+      if(i >= total){ showDokuStatus(""); refetchDokuPhotos(); return; }
+      showDokuStatus(total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …");
+      uploadDokuPhoto(files[i], caption).then(function(){ i++; next(); });
+    }
+    next();
+  }
+  function deleteDokuPhoto(photo){
+    if(!sb) return;
+    sb.storage.from("dokumentasjon").remove([photo.path]).then(function(){
+      return sb.from("documentation_photos").delete().eq("id", photo.id);
+    }).then(function(res){ if(res && res.error){ showError("Kunne ikke slette bildet: "+res.error.message); return; } refetchDokuPhotos(); });
+  }
+  function showDokuStatus(msg){ byId("dokuUploadStatus").textContent = msg; }
+  function renameDokuCaption(id){
+    if(!sb) return;
+    var d = state.dokuPhotos.find(function(x){ return x.id === id; });
+    if(!d) return;
+    var caption = prompt("Hva viser bildet?", d.caption);
+    if(caption === null) return;
+    caption = caption.trim();
+    sb.from("documentation_photos").update({ caption: caption ? caption.slice(0,160) : null }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke endre teksten: "+res.error.message); return; }
+      refetchDokuPhotos();
     });
   }
 
@@ -3034,6 +3185,7 @@
     refetchPwDutyStatus();
     refetchToAgenda();
     refetchRoomTodos();
+    refetchDokuPhotos();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3049,6 +3201,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "privilege_week_duty_status" }, refetchPwDutyStatus)
       .on("postgres_changes", { event: "*", schema: "public", table: "to_agenda_items" }, refetchToAgenda)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_todos" }, refetchRoomTodos)
+      .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
