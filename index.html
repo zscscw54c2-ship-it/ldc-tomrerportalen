@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="color-scheme" content="light" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>LDC – tømrerportalen</title>
+<title>LDC CG1</title>
 <link rel="icon" href="icons/icon-512.png" type="image/png">
 <link rel="icon" sizes="192x192" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#2f7fd9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Tømrerportalen">
+<meta name="apple-mobile-web-app-title" content="LDC CG1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -564,7 +564,7 @@
 
 <div id="loginScreen">
   <div class="login-card">
-    <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
+    <h1><span class="ldc">LDC</span> CG1</h1>
     <p class="sub">Logg inn for å fortsette</p>
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="E-post" required autocomplete="username" />
@@ -580,8 +580,8 @@
     <a href="#" id="mobileBackHome"><span class="arrow">←</span> Hjem</a>
     <div class="top-inner">
       <div class="brand">
-        <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
-        <span class="tag" id="brandTag">fremdrift · tømring</span>
+        <h1><span class="ldc">LDC</span> CG1</h1>
+        <span class="tag" id="brandTag"></span>
       </div>
       <nav class="tabs" role="tablist">
         <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
@@ -1052,7 +1052,7 @@
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","maler","elektriker","rorlegger"];
-  var FAG_LABELS = { tomrer:"Tømrer", maler:"Maler", elektriker:"Elektriker", rorlegger:"Rørlegger", byggeleder:"Byggeleder" };
+  var FAG_LABELS = { tomrer:"Tømrer", maler:"Maler", elektriker:"Elektriker", rorlegger:"Rørlegger", byggeleder:"ACGO" };
   var FAG_COLORS = { tomrer:"var(--fag-tomrer)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", rorlegger:"var(--fag-rorlegger)" };
   function myRole(){ return state.me && state.me.role; }
   function isByggeleder(){ return myRole() === "byggeleder"; }
@@ -1845,9 +1845,7 @@
     }
     var brandTag = byId("brandTag");
     if(state.me){
-      brandTag.textContent = isByggeleder()
-        ? "fremdrift · "+(view.byggeleiderFag==="alle" ? "alle fag" : FAG_LABELS[view.byggeleiderFag])
-        : "fremdrift · "+(FAG_LABELS[myRole()]||"");
+      brandTag.textContent = FAG_LABELS[myRole()] || "";
     }
     if(state.projects.length === 0){
       sel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
