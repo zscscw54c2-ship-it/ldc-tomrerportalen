@@ -43,6 +43,10 @@
     --violet:#8b6fd1;
     --rose:#d1667f;
     --cyan:#2696a6;
+    --fag-tomrer:#2f7fd9;
+    --fag-maler:#e6a623;
+    --fag-elektriker:#e5634f;
+    --fag-rorlegger:#1fa38e;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -501,6 +505,20 @@
   .panel:not(.editing) [data-editonly]{ display:none !important; }
   .panel.editing [data-viewonly]{ display:none !important; }
 
+  /* ---------- innlogging ---------- */
+  #loginScreen{ display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+  body:not(.authed) #loginScreen{ display:flex; }
+  body:not(.authed) .wrap{ display:none; }
+  .login-card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:28px; width:100%; max-width:340px; }
+  .login-card h1{ font-size:19px; margin-bottom:4px; }
+  .login-card .sub{ color:var(--muted); font-size:13px; margin-bottom:18px; }
+  .login-card form{ display:flex; flex-direction:column; gap:10px; }
+  .login-card input{ border:1px solid var(--border-strong); border-radius:8px; padding:10px 12px; font:inherit; background:var(--surface); }
+  .login-card .btn{ margin-top:4px; }
+  .login-card .err{ color:var(--bad-ink); font-size:12.5px; margin-top:10px; }
+
+  .fag-badge{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#fff; border-radius:99px; padding:2px 8px; flex:none; }
+
   /* ---------- mobil hjemskjerm ---------- */
   #mobileHome{ display:none; }
   #mobileBackHome{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:11px 4px; margin-bottom:2px; font-size:15px; font-weight:700; color:var(--accent); border:none; background:none; text-decoration:none; }
@@ -544,13 +562,26 @@
 </head>
 <body>
 
+<div id="loginScreen">
+  <div class="login-card">
+    <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
+    <p class="sub">Logg inn for å fortsette</p>
+    <form id="loginForm">
+      <input type="email" id="loginEmail" placeholder="E-post" required autocomplete="username" />
+      <input type="password" id="loginPassword" placeholder="Passord" required autocomplete="current-password" />
+      <button type="submit" class="btn primary">Logg inn</button>
+    </form>
+    <p class="err" id="loginError"></p>
+  </div>
+</div>
+
 <div class="wrap">
   <header class="top">
     <a href="#" id="mobileBackHome"><span class="arrow">←</span> Hjem</a>
     <div class="top-inner">
       <div class="brand">
         <h1><span class="ldc">LDC</span> &ndash; tømrerportalen</h1>
-        <span class="tag">fremdrift · tømring</span>
+        <span class="tag" id="brandTag">fremdrift · tømring</span>
       </div>
       <nav class="tabs" role="tablist">
         <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
@@ -564,18 +595,20 @@
       </nav>
     </div>
     <div class="project-bar">
+      <select id="fagSwitcher" title="Vis byggegruppe" hidden></select>
       <div class="project-pill">
         <select id="projectSelect" title="Velg prosjekt"></select>
         <span class="chevron">⌄</span>
       </div>
       <span id="projectDates" class="mono project-dates"></span>
-      <button class="btn small ghost" id="projectMoreBtn" title="Flere valg" aria-label="Flere valg" aria-expanded="false">⋯</button>
+      <button class="btn small ghost" id="projectMoreBtn" title="Flere valg" aria-label="Flere valg" aria-expanded="false" hidden>⋯</button>
       <div id="projectMoreMenu" hidden>
         <button type="button" class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
         <button type="button" class="btn small" id="projectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
         <button type="button" class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
         <button type="button" class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
+      <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
@@ -737,6 +770,10 @@
   </section>
 
   <section id="panel-andelig" class="panel">
+    <div class="peoplecard" id="andeligVisibilityBox" hidden style="margin-bottom:14px;">
+      <h2 style="font-size:14px; margin-bottom:8px;">Vis Åndelig-siden for</h2>
+      <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
+    </div>
     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
       <div id="pwBanner" class="status-banner" style="margin-top:0; flex:1; min-width:220px;"></div>
       <button class="btn small" id="andeligEditBtn">Rediger</button>
@@ -1011,9 +1048,25 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {} };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
+  var FAG_LIST = ["tomrer","maler","elektriker","rorlegger"];
+  var FAG_LABELS = { tomrer:"Tømrer", maler:"Maler", elektriker:"Elektriker", rorlegger:"Rørlegger", byggeleder:"Byggeleder" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", rorlegger:"var(--fag-rorlegger)" };
+  function myRole(){ return state.me && state.me.role; }
+  function isByggeleder(){ return myRole() === "byggeleder"; }
+  function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
+  function matchesFag(item){ return activeFag() === "alle" || item.fag === activeFag(); }
+  function andeligVisibleForMe(){
+    if(isByggeleder()) return true;
+    var v = state.andeligVisibility[myRole()];
+    return v !== false;
+  }
+  function fagBadgeHtml(fag){
+    if(activeFag() !== "alle" || !fag) return "";
+    return '<span class="fag-badge" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[fag]||fag)+'</span>';
+  }
   try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
@@ -1113,29 +1166,29 @@
   function activeElementsOn(dateIso, section){
     var pid = currentProjectId();
     return state.elements.filter(function(e){
-      return inCurrentProject(e) && isPlanned(e) && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
+      return inCurrentProject(e) && matchesFag(e) && isPlanned(e) && e.start <= dateIso && dateIso <= e.end && (!section || e.section === section);
     });
   }
   function elementsForCurrentProject(){
     var pid = currentProjectId();
-    return state.elements.filter(inCurrentProject);
+    return state.elements.filter(inCurrentProject).filter(matchesFag);
   }
   function shopItemsForCurrentProject(){
     var pid = currentProjectId();
-    return state.shopItems.filter(inCurrentProject);
+    return state.shopItems.filter(inCurrentProject).filter(matchesFag);
   }
   function drawingsForCurrentProject(){
     var pid = currentProjectId();
-    return state.drawings.filter(inCurrentProject);
+    return state.drawings.filter(inCurrentProject).filter(matchesFag);
   }
   function dokuPhotosForCurrentProject(){
     var pid = currentProjectId();
-    return state.dokuPhotos.filter(inCurrentProject);
+    return state.dokuPhotos.filter(inCurrentProject).filter(matchesFag);
   }
   // ---------- oppmøte ----------
   function attendanceForCurrentProject(){
     var pid = currentProjectId();
-    return state.attendance.filter(function(a){ return a.project_id === pid; });
+    return state.attendance.filter(function(a){ return a.project_id === pid; }).filter(matchesFag);
   }
   function presentOn(iso){
     var set = new Set();
@@ -1144,7 +1197,7 @@
   }
   function isPresent(personId, iso){
     var pid = currentProjectId();
-    return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso; });
+    return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso && matchesFag(a); });
   }
   function assignedAnywhereOn(iso){
     var set = new Set();
@@ -1164,19 +1217,21 @@
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var fag = activeFag();
+    if(fag === "alle"){ showError("Velg et bestemt fag for å registrere oppmøte."); return; }
     var has = isPresent(personId, iso);
     if(on === has) return;
     if(on){
-      state.attendance.push({ id: "tmp-"+Math.random(), project_id: pid, person_id: personId, day: iso });
+      state.attendance.push({ id: "tmp-"+Math.random(), project_id: pid, person_id: personId, day: iso, fag: fag });
       renderAll();
-      sb.from("attendance").insert({ project_id: pid, person_id: personId, day: iso }).then(function(res){
+      sb.from("attendance").insert({ project_id: pid, person_id: personId, day: iso, fag: fag }).then(function(res){
         if(res.error && String(res.error.message).indexOf("duplicate") === -1){ showError(String(res.error.message).indexOf("attendance") !== -1 ? "Databasen mangler oppmøte-tabellen. Kjør sql/06-oppmote.sql i Supabase." : "Kunne ikke lagre oppmøte: "+res.error.message); }
         refetchAttendance();
       });
     } else {
-      state.attendance = state.attendance.filter(function(a){ return !(a.project_id === pid && a.person_id === personId && a.day === iso); });
+      state.attendance = state.attendance.filter(function(a){ return !(a.project_id === pid && a.person_id === personId && a.day === iso && a.fag === fag); });
       renderAll();
-      sb.from("attendance").delete().eq("project_id", pid).eq("person_id", personId).eq("day", iso).then(function(res){
+      sb.from("attendance").delete().eq("project_id", pid).eq("person_id", personId).eq("day", iso).eq("fag", fag).then(function(res){
         if(res.error) showError("Kunne ikke fjerne oppmøte: "+res.error.message);
         refetchAttendance();
       });
@@ -1185,7 +1240,7 @@
   function refetchAttendance(){
     sb.from("attendance").select("*").then(function(res){
       if(res.error){ return; }   // tabellen finnes kanskje ikke ennå
-      state.attendance = res.data.map(function(r){ return { id: r.id, project_id: r.project_id, person_id: r.person_id, day: r.day }; });
+      state.attendance = res.data.map(function(r){ return { id: r.id, project_id: r.project_id, person_id: r.person_id, day: r.day, fag: r.fag || "tomrer" }; });
       renderAll();
     });
   }
@@ -1261,8 +1316,9 @@
       } else {
         els.forEach(function(e){
           var ids = (e.assignments && e.assignments[iso]) || [];
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'" data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
-            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>' +
+          var fagStripe = activeFag() === "alle" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
+            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
             '<div class="ppl">' + (ids.length ? ids.map(function(pid){
               var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
               return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
@@ -1500,8 +1556,10 @@
       html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
       list.forEach(function(e){
         var a = workdayIndex(range, e.start), b = workdayIndex(range, e.end);
+        var fagStripe = activeFag() === "alle" ? ' border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';' : '';
+        var fagTitle = activeFag() === "alle" ? (FAG_LABELS[e.fag]||e.fag)+' · ' : '';
         html += '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
-          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px" title="'+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
+          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
       });
     });
     box.innerHTML = html;
@@ -1775,6 +1833,22 @@
   function renderProjectBar(){
     var sel = byId("projectSelect");
     var datesEl = byId("projectDates");
+    byId("projectMoreBtn").hidden = !isByggeleder();
+    var fagSel = byId("fagSwitcher");
+    if(isByggeleder()){
+      fagSel.hidden = false;
+      fagSel.innerHTML = FAG_LIST.map(function(f){
+        return '<option value="'+f+'"'+(view.byggeleiderFag===f?' selected':'')+'>'+FAG_LABELS[f]+'</option>';
+      }).join("") + '<option value="alle"'+(view.byggeleiderFag==="alle"?' selected':'')+'>Alle fag (oversikt)</option>';
+    } else {
+      fagSel.hidden = true;
+    }
+    var brandTag = byId("brandTag");
+    if(state.me){
+      brandTag.textContent = isByggeleder()
+        ? "fremdrift · "+(view.byggeleiderFag==="alle" ? "alle fag" : FAG_LABELS[view.byggeleiderFag])
+        : "fremdrift · "+(FAG_LABELS[myRole()]||"");
+    }
     if(state.projects.length === 0){
       sel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
       datesEl.textContent = "";
@@ -1786,6 +1860,10 @@
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     datesEl.textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
   }
+  byId("fagSwitcher").addEventListener("change", function(){
+    view.byggeleiderFag = this.value;
+    renderAll();
+  });
 
   byId("projectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
   byId("projectDelete").addEventListener("click", function(){
@@ -1910,7 +1988,7 @@
             (noOneDays>0 && noOneDays<totalDays ? ' · '+noOneDays+' av '+totalDays+' dager uten folk' : '')+'</div>';
         }
         return '<div class="elcard st-'+e.status+'" data-elcard="'+e.id+'">' +
-          '<div class="top"><div><div class="name">'+escapeHtml(e.name)+(isLate(e)?'<span class="badge late">Forsinket</span>':'')+'</div>' +
+          '<div class="top"><div><div class="name">'+escapeHtml(e.name)+(isLate(e)?'<span class="badge late">Forsinket</span>':'')+fagBadgeHtml(e.fag)+'</div>' +
           (planned ? '<div class="dates mono">'+fmtRange(e.start,e.end)+'</div>' : '<div class="dates unplanned">Ikke lagt inn i planen</div>') +
           '</div></div>' +
           (e.notes ? '<div class="notes">'+escapeHtml(e.notes)+'</div>' : '') +
@@ -1976,6 +2054,7 @@
         '<input type="checkbox" data-toggleshop="'+s.id+'" '+(s.bought?'checked':'')+' />' +
         '<span class="sname">'+escapeHtml(s.name)+'</span>' +
         (s.quantity ? '<span class="sqty">'+escapeHtml(s.quantity)+'</span>' : '') +
+        fagBadgeHtml(s.fag) +
         '<button class="del" data-delshop="'+s.id+'" title="Fjern">×</button>' +
         '</div>';
     }).join("");
@@ -2009,6 +2088,7 @@
       var url = sb ? drawingPublicUrl(d.path) : "#";
       return '<div class="shoprow" data-drawing="'+d.id+'">' +
         '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
+        fagBadgeHtml(d.fag) +
         '<button type="button" class="btn small" data-editonly data-renamedrawing="'+d.id+'">Rediger navn</button>' +
         '<button type="button" class="btn small danger" data-editonly data-deldrawing="'+d.id+'">Slett</button>' +
         '</div>';
@@ -2052,7 +2132,7 @@
       var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
       return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
         '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
-        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div></div>' +
+        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div>'+fagBadgeHtml(d.fag)+'</div>' +
         '<div class="dactions" data-editonly>' +
         '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
         '<button type="button" class="btn small danger" data-deldoku="'+d.id+'">Slett</button>' +
@@ -2164,6 +2244,18 @@
   });
 
   function renderSpiritualTab(){
+    var visBox = byId("andeligVisibilityBox");
+    visBox.hidden = !isByggeleder();
+    if(isByggeleder()){
+      byId("andeligVisibilityList").innerHTML = FAG_LIST.map(function(f){
+        var visible = state.andeligVisibility[f] !== false;
+        return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
+          '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
+      }).join("");
+      visBox.querySelectorAll("[data-andeligvis]").forEach(function(cb){
+        cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
+      });
+    }
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
@@ -2476,7 +2568,11 @@
       var existing = state.elements.find(function(x){ return x.id === id; });
       payload.assignments = prunedAssignments(existing && existing.assignments, start, end);
       updateElement(id, payload);
-    } else { addElement(payload); }
+    } else {
+      if(activeFag() === "alle"){ showError("Velg et bestemt fag for å opprette en ny oppgave."); return; }
+      payload.fag = activeFag();
+      addElement(payload);
+    }
     elDialog.close();
     if(planned){
       view.weekStart = mondayOf(fromISODate(start));
@@ -2555,7 +2651,7 @@
   }
   function renderMobileHome(){
     var grid = byId("mhGrid");
-    grid.innerHTML = HOME_TILES.map(function(t){
+    grid.innerHTML = HOME_TILES.filter(function(t){ return t.tab !== "andelig" || andeligVisibleForMe(); }).map(function(t){
       var body;
       if(t.tab === "kalender"){
         body = '<div class="mh-name">'+t.name+'</div><div class="mh-mini">'+renderMiniCalendar()+'</div>';
@@ -2578,6 +2674,7 @@
 
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
+    updateAndeligTabVisibility();
     renderProjectBar();
     renderCalView();
     renderElementsTab();
@@ -2591,6 +2688,12 @@
     renderRoomTab();
     renderSpiritualTab();
     renderMobileHome();
+  }
+  function updateAndeligTabVisibility(){
+    var visible = andeligVisibleForMe();
+    var btn = document.querySelector('nav.tabs button[data-tab="andelig"]');
+    if(btn) btn.hidden = !visible;
+    if(!visible && view.tab === "andelig") switchTab("kalender");
   }
 
   function goToWeek(newStart){
@@ -2615,7 +2718,7 @@
     return {
       id: row.id, project_id: row.project_id, section: row.section, name: row.name, start: row.start || null, end: row.end || null,
       status: STATUS_ORDER.indexOf(row.status) !== -1 ? row.status : (row.done ? "ferdig" : "mangler"),
-      notes: row.notes || "", done: !!row.done, assignments: row.assignments || {}, createdAt: row.created_at
+      notes: row.notes || "", done: !!row.done, assignments: row.assignments || {}, fag: row.fag || "tomrer", createdAt: row.created_at
     };
   }
 
@@ -2692,7 +2795,7 @@
     return state.roomTodos.filter(function(t){ return t.project_id === pid; });
   }
   function rowToShopItem(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, fag: row.fag || "tomrer", createdAt: row.created_at };
   }
 
   function pickCurrentProject(){
@@ -2728,6 +2831,23 @@
       if(res.error){ return; }
       state.spiritualDuties = res.data.map(rowToDuty);
       renderAll();
+    });
+  }
+  function refetchAndeligVisibility(){
+    sb.from("andelig_visibility").select("*").then(function(res){
+      if(res.error){ return; }
+      var map = {};
+      res.data.forEach(function(r){ map[r.fag] = !!r.visible; });
+      state.andeligVisibility = map;
+      renderAll();
+    });
+  }
+  function setAndeligVisibility(fag, visible){
+    if(!sb) return;
+    state.andeligVisibility[fag] = visible;
+    renderAll();
+    sb.from("andelig_visibility").update({ visible: visible }).eq("fag", fag).then(function(res){
+      if(res.error){ showError("Kunne ikke oppdatere synlighet: "+res.error.message); refetchAndeligVisibility(); return; }
     });
   }
   function refetchOverview(){
@@ -2822,7 +2942,8 @@
   function addShopItem(name, quantity){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("shopping_items").insert({ project_id: currentProjectId(), name: name.slice(0,80), quantity: quantity ? quantity.slice(0,30) : null, bought:false })
+    if(activeFag() === "alle"){ showError("Velg et bestemt fag for å legge til en vare."); return; }
+    sb.from("shopping_items").insert({ project_id: currentProjectId(), name: name.slice(0,80), quantity: quantity ? quantity.slice(0,30) : null, bought:false, fag: activeFag() })
       .then(function(res){ if(res.error){ showError("Kunne ikke lagre varen: "+res.error.message); return; } refetchShopItems(); });
   }
   function toggleBought(id, bought){
@@ -2944,7 +3065,7 @@
   }
 
   function rowToDrawing(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, path: row.file_path, contentType: row.content_type, sizeBytes: row.size_bytes, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, path: row.file_path, contentType: row.content_type, sizeBytes: row.size_bytes, fag: row.fag || "tomrer", createdAt: row.created_at };
   }
   function refetchDrawings(){
     sb.from("drawings").select("*").order("created_at", { ascending:false }).then(function(res){
@@ -2966,7 +3087,7 @@
         if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
         return sb.from("drawings").insert({
           project_id: currentProjectId(), name: (name && name.trim()) ? name.trim().slice(0,80) : file.name,
-          file_path: path, content_type: file.type || null, size_bytes: file.size
+          file_path: path, content_type: file.type || null, size_bytes: file.size, fag: activeFag()
         }).then(function(res2){
           if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
         });
@@ -2975,6 +3096,7 @@
   function uploadDrawings(files, name){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    if(activeFag() === "alle"){ showError("Velg et bestemt fag for å laste opp tegninger."); return; }
     var total = files.length, i = 0;
     function next(){
       if(i >= total){ showDrawingStatus(""); refetchDrawings(); return; }
@@ -3005,7 +3127,7 @@
   }
 
   function rowToDokuPhoto(row){
-    return { id: row.id, project_id: row.project_id, path: row.file_path, caption: row.caption || "", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, path: row.file_path, caption: row.caption || "", fag: row.fag || "tomrer", createdAt: row.created_at };
   }
   function refetchDokuPhotos(){
     sb.from("documentation_photos").select("*").order("created_at", { ascending:false }).then(function(res){
@@ -3026,7 +3148,7 @@
       .then(function(res){
         if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
         return sb.from("documentation_photos").insert({
-          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null
+          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: activeFag()
         }).then(function(res2){
           if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
         });
@@ -3035,6 +3157,7 @@
   function uploadDokuPhotos(files, caption){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    if(activeFag() === "alle"){ showError("Velg et bestemt fag for å laste opp bilder."); return; }
     var total = files.length, i = 0;
     function next(){
       if(i >= total){ showDokuStatus(""); refetchDokuPhotos(); return; }
@@ -3165,12 +3288,11 @@
     b.className = "status-banner";
   }
 
-  // ---------- boot ----------
-  renderAll();
-
-  if(!sb){
-    showError("Denne siden er ikke koblet til en database ennå (SUPABASE_URL/SUPABASE_ANON_KEY mangler i koden).");
-  } else {
+  // ---------- innlogging ----------
+  var dataLayerStarted = false;
+  function startDataLayer(){
+    if(dataLayerStarted) return;
+    dataLayerStarted = true;
     showInfo("Kobler til database …");
     refetchPeople();
     refetchElements();
@@ -3186,6 +3308,7 @@
     refetchToAgenda();
     refetchRoomTodos();
     refetchDokuPhotos();
+    refetchAndeligVisibility();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3202,10 +3325,57 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "to_agenda_items" }, refetchToAgenda)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_todos" }, refetchRoomTodos)
       .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
+      .on("postgres_changes", { event: "*", schema: "public", table: "andelig_visibility" }, refetchAndeligVisibility)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
       });
+  }
+  function handleSession(session){
+    if(!session){
+      document.body.classList.remove("authed");
+      state.me = null;
+      return;
+    }
+    sb.from("profiles").select("role").eq("id", session.user.id).single().then(function(res){
+      if(res.error || !res.data){
+        byId("loginError").textContent = "Denne kontoen mangler en rolle. Kontakt byggeleder.";
+        sb.auth.signOut();
+        return;
+      }
+      state.me = { id: session.user.id, email: session.user.email, role: res.data.role };
+      document.body.classList.add("authed");
+      renderAll();
+      startDataLayer();
+    });
+  }
+  byId("loginForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if(!sb) return;
+    var email = byId("loginEmail").value.trim();
+    var password = byId("loginPassword").value;
+    byId("loginError").textContent = "";
+    sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
+      if(res.error){ byId("loginError").textContent = "Feil e-post eller passord."; return; }
+      byId("loginPassword").value = "";
+    });
+  });
+  byId("logoutBtn").addEventListener("click", function(){
+    if(!sb) return;
+    sb.auth.signOut().then(function(){ window.location.reload(); });
+  });
+
+  // ---------- boot ----------
+  renderAll();
+
+  if(!sb){
+    showError("Denne siden er ikke koblet til en database ennå (SUPABASE_URL/SUPABASE_ANON_KEY mangler i koden).");
+  } else {
+    sb.auth.getSession().then(function(res){ handleSession(res.data.session); });
+    sb.auth.onAuthStateChange(function(event, session){
+      if(event === "SIGNED_OUT"){ window.location.reload(); return; }
+      handleSession(session);
+    });
   }
 })();
 </script>
