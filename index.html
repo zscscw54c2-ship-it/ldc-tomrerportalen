@@ -614,11 +614,6 @@
       </div>
       <div class="gantt-wrap"><div class="gantt" id="kontaktBehovGrid"></div></div>
     </div>
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Andre behov</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Behov som ikke hører til et bestemt fag.</p>
-      <div id="kontaktExtraBehovList"></div>
-    </div>
   </div>
 </div>
 
@@ -912,11 +907,8 @@
         <div id="userAccountsList"></div>
       </div>
       <div class="peoplecard">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
-          <h2 style="font-size:16px; margin:0;">Fag i dette prosjektet</h2>
-          <button type="button" class="btn small" id="fagWholeProjectBtn">Tilgjengelig hele prosjektet</button>
-        </div>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver.</p>
+        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
         <div id="projectFagList"></div>
       </div>
     </div>
@@ -929,16 +921,10 @@
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Klikk på en dag for å markere at det trengs noen. Menighetskontakten fyller inn navn på de markerte dagene.</p>
       </div>
       <div class="gantt-wrap"><div class="gantt" id="behovGrid"></div></div>
-    </div>
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Andre behov</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Behov som ikke hører til et bestemt fag, f.eks. praktisk hjelp.</p>
-      <form class="inline-add" id="addExtraBehovForm">
-        <input type="text" id="newExtraDesc" placeholder="Hva trengs? F.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:180px;" />
-        <input type="date" id="newExtraDay" title="Dato (valgfritt)" />
-        <button class="btn primary" type="submit">Legg til</button>
+      <form class="inline-add" id="addExtraBehovForm" style="padding:10px 14px; border-top:1px solid var(--border);">
+        <input type="text" id="newExtraDesc" placeholder="Nytt behov utenfor fagene, f.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:220px;" />
+        <button class="btn small primary" type="submit">+ Legg til rad</button>
       </form>
-      <div id="extraBehovList" style="margin-top:12px;"></div>
     </div>
   </section>
 
@@ -1162,7 +1148,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], behovExtra: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -3083,6 +3069,7 @@
         '<input type="checkbox" data-fagactive="'+f+'" '+(active?'checked':'')+' /> <span>'+FAG_LABELS[f]+'</span></label>' +
         '<input type="date" data-fagstart="'+f+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
         '<input type="date" data-fagend="'+f+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '<button type="button" class="btn small" data-fagwhole="'+f+'">Hele prosjektet</button>' +
         '</div>';
     }).join("");
     byId("projectFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
@@ -3118,21 +3105,17 @@
         upsertProjectFag(fag, { end_date: this.value || null });
       });
     });
+    byId("projectFagList").querySelectorAll("[data-fagwhole]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var fag = this.dataset.fagwhole;
+        var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+        if(!cur || !cur.start || !cur.end){ showError("Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt."); return; }
+        var locked = fagIsLocked(fag);
+        if(locked && (locked.start !== cur.start || locked.end !== cur.end) && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Vil du sette den til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") i stedet?")) return;
+        upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
+      });
+    });
   }
-  byId("fagWholeProjectBtn").addEventListener("click", function(){
-    var pid = currentProjectId();
-    var cur = state.projects.find(function(p){ return p.id === pid; });
-    if(!cur || !cur.start || !cur.end){ showError("Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt."); return; }
-    var pfList = projectFagsForCurrentProject();
-    var toOverwrite = FAG_LIST.filter(function(f){
-      var pf = pfList.find(function(x){ return x.fag === f; });
-      return pf && pf.active && pf.start && pf.end && (pf.start !== cur.start || pf.end !== cur.end);
-    });
-    if(toOverwrite.length && !confirm("Disse fagene har allerede egne datoer satt: "+toOverwrite.map(function(f){ return FAG_LABELS[f]; }).join(", ")+". Vil du overskrive dem til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") også?")) return;
-    FAG_LIST.forEach(function(f){
-      upsertProjectFag(f, { active: true, start_date: cur.start, end_date: cur.end });
-    });
-  });
 
   // ---------- Behov (dag-for-dag-rutenett) ----------
   function behovProjectRange(project){
@@ -3152,7 +3135,7 @@
     return state.behovDays.filter(function(d){ return d.slot_id === slotId; });
   }
   function rowToBehovSlot(row){
-    return { id: row.id, project_id: row.project_id, fag: row.fag, slotIndex: row.slot_index, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, fag: row.fag, label: row.label || "", slotIndex: row.slot_index, createdAt: row.created_at };
   }
   function rowToBehovDay(row){
     return { id: row.id, slot_id: row.slot_id, day: row.day, personId: row.person_id, createdAt: row.created_at };
@@ -3232,67 +3215,23 @@
     });
   }
 
-  // ---------- Andre behov (ikke fag-spesifikke) ----------
-  function rowToBehovExtra(row){
-    return { id: row.id, project_id: row.project_id, description: row.description, day: row.day || "", personId: row.person_id, createdAt: row.created_at };
-  }
-  function behovExtraForProject(pid){
-    return state.behovExtra.filter(function(x){ return x.project_id === pid; });
-  }
-  function refetchBehovExtra(){
-    sb.from("behov_extra").select("*").order("day").then(function(res){
-      if(res.error){ return; }
-      state.behovExtra = res.data.map(rowToBehovExtra);
-      renderAll();
-    });
-  }
-  function addBehovExtra(description, day){
+  // ---------- Andre behov (egne rader uten fag, i samme rutenett) ----------
+  function addCustomBehovSlot(label){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("behov_extra").insert({ project_id: pid, description: description.slice(0,160), day: day || null }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("behov_extra") !== -1 ? "Databasen mangler tabellen for andre behov. Kjør sql/20-behov-extra.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
-      refetchBehovExtra();
+    sb.from("behov_slot").insert({ project_id: pid, fag: null, label: label.slice(0,160), slot_index: 1 }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("behov_slot") !== -1 ? "Databasen mangler kolonnene for andre behov. Kjør sql/21-behov-custom-rader.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchBehovSlots();
     });
   }
-  function deleteBehovExtra(id){
+  function deleteCustomBehovSlot(id){
     if(!sb) return;
-    sb.from("behov_extra").delete().eq("id", id).then(function(res){
+    if(!confirm("Slette denne raden? Eventuelt utfylte navn på den forsvinner også.")) return;
+    sb.from("behov_slot").delete().eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke slette: "+res.error.message); return; }
-      refetchBehovExtra();
-    });
-  }
-  function fillExtra(id, personId){
-    if(!sb) return;
-    sb.from("behov_extra").update({ person_id: personId || null }).eq("id", id).then(function(res){
-      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
-      refetchBehovExtra();
-    });
-  }
-  function addPersonAndFillExtra(id, name){
-    if(!sb) return;
-    sb.from("people").insert({ name: name.slice(0,60) }).select().single().then(function(res){
-      if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
-      fillExtra(id, res.data.id);
-      refetchPeople();
-    });
-  }
-  function extraBehovRowHtml(item, mode){
-    return '<div class="shoprow">' +
-      '<span class="sname">'+escapeHtml(item.description)+'</span>' +
-      (item.day ? '<span class="sqty">'+fmtRange(item.day,item.day)+'</span>' : '') +
-      (item.personId ? '<span class="fag-badge" style="background:var(--good);">'+escapeHtml(personName(item.personId))+'</span>' : '<span class="empty-note" style="font-size:12px;">Ikke tildelt</span>') +
-      (mode === "admin"
-        ? '<button type="button" class="btn small danger" data-delextra="'+item.id+'">Slett</button>'
-        : '<button type="button" class="btn small" data-fillextra="'+item.id+'">'+(item.personId?'Endre':'Tildel')+'</button>') +
-      '</div>';
-  }
-  function renderExtraBehovList(){
-    if(!isByggeleder()) return;
-    var list = behovExtraForProject(currentProjectId());
-    byId("extraBehovList").innerHTML = list.length ? list.map(function(item){ return extraBehovRowHtml(item, "admin"); }).join("") : '<p class="empty-note">Ingen andre behov lagt til ennå.</p>';
-    byId("extraBehovList").querySelectorAll("[data-delextra]").forEach(function(btn){
-      btn.addEventListener("click", function(){ if(confirm("Slette dette behovet?")) deleteBehovExtra(this.dataset.delextra); });
+      refetchBehovSlots();
+      refetchBehovDays();
     });
   }
   byId("addExtraBehovForm").addEventListener("submit", function(ev){
@@ -3300,18 +3239,9 @@
     var descInput = byId("newExtraDesc");
     var desc = descInput.value.trim();
     if(!desc) return;
-    addBehovExtra(desc, byId("newExtraDay").value);
+    addCustomBehovSlot(desc);
     descInput.value = "";
-    byId("newExtraDay").value = "";
   });
-  function renderKontaktExtraBehovList(){
-    if(myRole() !== "kontakt") return;
-    var list = behovExtraForProject(homeProjectId());
-    byId("kontaktExtraBehovList").innerHTML = list.length ? list.map(function(item){ return extraBehovRowHtml(item, "kontakt"); }).join("") : '<p class="empty-note">Ingen andre behov lagt til ennå.</p>';
-    byId("kontaktExtraBehovList").querySelectorAll("[data-fillextra]").forEach(function(btn){
-      btn.addEventListener("click", function(){ openExtraFillDialog(this.dataset.fillextra); });
-    });
-  }
   var behovDw = 40;
   function buildBehovGridHtml(project, mode){
     if(!project || !project.start || !project.end){
@@ -3353,8 +3283,9 @@
     var projectFagRows = {};
     state.projectFags.filter(function(pf){ return pf.project_id === project.id; }).forEach(function(pf){ projectFagRows[pf.fag] = pf; });
     var fagsToShow = FAG_LIST.filter(function(f){ return projectFagRows[f] && projectFagRows[f].active; });
+    var customSlots = slots.filter(function(s){ return !s.fag; }).sort(function(a,b){ return (a.createdAt||"") < (b.createdAt||"") ? -1 : 1; });
 
-    if(!fagsToShow.length){
+    if(!fagsToShow.length && !customSlots.length){
       html += '</div>';
       return html + '<p class="empty-note" style="margin-top:10px;">Ingen fag er markert som aktive i dette prosjektet ennå'+(mode==="admin"?" – sett dette på ACGO-siden.":".")+'</p>';
     }
@@ -3399,6 +3330,38 @@
       });
     });
 
+    if(customSlots.length){
+      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span>Andre behov</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      customSlots.forEach(function(slot){
+        var days = behovDaysForSlot(slot.id);
+        var cells = "";
+        for(var i=0;i<range.workdays;i++){
+          var d = workdayDate(range, i);
+          var iso = toISODate(d);
+          var dayRow = days.find(function(x){ return x.day === iso; });
+          var cls = "behov-cell";
+          var content = "";
+          var attrs = "";
+          if(dayRow){
+            if(dayRow.personId){
+              cls += " filled";
+              content = '<span class="who">'+escapeHtml(personName(dayRow.personId))+'</span>';
+            } else {
+              cls += " needed";
+            }
+            attrs = mode === "admin" ? ' data-toggleneed="'+slot.id+'|'+iso+'"' : ' data-fillday="'+dayRow.id+'"';
+          } else if(mode === "admin"){
+            cls += " clickable-empty";
+            attrs = ' data-toggleneed="'+slot.id+'|'+iso+'"';
+          }
+          cells += '<div class="'+cls+'"'+attrs+' title="'+fmtRange(iso,iso)+'">'+content+'</div>';
+        }
+        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12px; color:var(--text); display:flex; align-items:center; gap:6px;"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'+escapeHtml(slot.label)+'</span>' +
+          (mode === "admin" ? '<button type="button" class="icon-btn" data-delcustomslot="'+slot.id+'" title="Slett rad" style="flex:none; padding:0 4px; font-size:14px; line-height:1; color:var(--muted); background:none; border:none; cursor:pointer;">×</button>' : '') +
+          '</div><div class="behov-track">'+cells+'</div></div>';
+      });
+    }
+
     html += '</div>';
     return html;
   }
@@ -3424,6 +3387,11 @@
           if(n>0) setBehovSlotCount(fag, n-1);
         });
       });
+      box.querySelectorAll("[data-delcustomslot]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          deleteCustomBehovSlot(this.dataset.delcustomslot);
+        });
+      });
     } else {
       box.querySelectorAll("[data-fillday]").forEach(function(el){
         el.addEventListener("click", function(){ openBehovFillDialog(this.dataset.fillday); });
@@ -3436,7 +3404,6 @@
     byId("behovLabel").textContent = cur ? cur.name : "";
     byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
     wireBehovGridEvents("behovGrid", "admin");
-    renderExtraBehovList();
   }
   function updateBehovTabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="behov"]');
@@ -3449,47 +3416,27 @@
     byId("kontaktBehovLabel").textContent = cur ? cur.name : "";
     byId("kontaktBehovGrid").innerHTML = buildBehovGridHtml(cur, "kontakt");
     wireBehovGridEvents("kontaktBehovGrid", "kontakt");
-    renderKontaktExtraBehovList();
   }
   var behovFillDialog = byId("behovFillDialog");
   function openBehovFillDialog(dayRowId){
     var d = state.behovDays.find(function(x){ return x.id === dayRowId; });
     if(!d) return;
     var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
-    behovFillDialog.dataset.targetType = "day";
     behovFillDialog.dataset.targetId = dayRowId;
-    byId("behovFillMeta").textContent = (slot ? FAG_LABELS[slot.fag] : "") + " · " + fmtRange(d.day, d.day);
+    byId("behovFillMeta").textContent = (slot ? (slot.fag ? FAG_LABELS[slot.fag] : slot.label) : "") + " · " + fmtRange(d.day, d.day);
     byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + state.people.map(function(p){
       return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
     }).join("");
     byId("behovFillNewName").value = "";
     behovFillDialog.showModal();
   }
-  function openExtraFillDialog(extraId){
-    var e = state.behovExtra.find(function(x){ return x.id === extraId; });
-    if(!e) return;
-    behovFillDialog.dataset.targetType = "extra";
-    behovFillDialog.dataset.targetId = extraId;
-    byId("behovFillMeta").textContent = e.description + (e.day ? " · "+fmtRange(e.day, e.day) : "");
-    byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + state.people.map(function(p){
-      return '<option value="'+p.id+'"'+(p.id===e.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
-    }).join("");
-    byId("behovFillNewName").value = "";
-    behovFillDialog.showModal();
-  }
   byId("behovFillForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var targetType = behovFillDialog.dataset.targetType;
     var targetId = behovFillDialog.dataset.targetId;
     var newName = byId("behovFillNewName").value.trim();
     var personId = byId("behovFillSelect").value || null;
-    if(targetType === "extra"){
-      if(newName){ addPersonAndFillExtra(targetId, newName); }
-      else { fillExtra(targetId, personId); }
-    } else {
-      if(newName){ addPersonAndFillBehovDay(targetId, newName); }
-      else { fillBehovDay(targetId, personId); }
-    }
+    if(newName){ addPersonAndFillBehovDay(targetId, newName); }
+    else { fillBehovDay(targetId, personId); }
     behovFillDialog.close();
   });
   byId("behovFillCancel").addEventListener("click", function(){ behovFillDialog.close(); });
@@ -3962,7 +3909,6 @@
     refetchUserAccounts();
     refetchBehovSlots();
     refetchBehovDays();
-    refetchBehovExtra();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3983,7 +3929,6 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
-      .on("postgres_changes", { event: "*", schema: "public", table: "behov_extra" }, refetchBehovExtra)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
