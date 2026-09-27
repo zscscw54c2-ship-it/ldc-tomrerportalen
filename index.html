@@ -534,6 +534,8 @@
   .behov-cell.filled{ cursor:pointer; background:var(--good-soft); }
   .behov-cell.clickable-empty{ cursor:pointer; }
   .behov-cell.clickable-empty:hover{ background:var(--surface-alt); }
+  .behov-cell.out-of-range{ background-image:repeating-linear-gradient(45deg, var(--surface-alt) 0 5px, var(--surface) 5px 10px); }
+  .behov-cell.out-of-range:not(.needed):not(.filled){ cursor:not-allowed; }
   .behov-cell .who{ font-size:9px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; color:var(--good-ink); font-weight:700; }
   .behov-fag-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 10px; }
   .behov-fag-head .stepper{ display:flex; align-items:center; gap:6px; }
@@ -3206,8 +3208,9 @@
     html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Fag</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
 
     var slots = behovSlotsForProject(project.id);
-    var activeFagsForProject = state.projectFags.filter(function(pf){ return pf.project_id === project.id && pf.active; }).map(function(pf){ return pf.fag; });
-    var fagsToShow = FAG_LIST.filter(function(f){ return activeFagsForProject.indexOf(f) !== -1; });
+    var projectFagRows = {};
+    state.projectFags.filter(function(pf){ return pf.project_id === project.id; }).forEach(function(pf){ projectFagRows[pf.fag] = pf; });
+    var fagsToShow = FAG_LIST.filter(function(f){ return projectFagRows[f] && projectFagRows[f].active; });
 
     if(!fagsToShow.length){
       html += '</div>';
@@ -3216,7 +3219,8 @@
 
     fagsToShow.forEach(function(fag){
       var fagSlots = slots.filter(function(s){ return s.fag === fag; }).sort(function(a,b){ return a.slotIndex - b.slotIndex; });
-      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+'</span>' +
+      var pf = projectFagRows[fag];
+      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+(pf.start && pf.end ? ' <span style="font-weight:400; color:var(--muted); font-size:11px;">('+fmtRange(pf.start,pf.end)+')</span>' : '')+'</span>' +
         (mode === "admin" ? '<span class="stepper"><button type="button" data-behovslotminus="'+fag+'">–</button><span>'+fagSlots.length+'</span><button type="button" data-behovslotplus="'+fag+'">+</button></span>' : '') +
         '</div><div class="g-track">'+bg+todayLine+'</div></div>';
 
@@ -3227,6 +3231,7 @@
           var d = workdayDate(range, i);
           var iso = toISODate(d);
           var dayRow = days.find(function(x){ return x.day === iso; });
+          var inFagRange = !pf.start || !pf.end || (iso >= pf.start && iso <= pf.end);
           var cls = "behov-cell";
           var content = "";
           var attrs = "";
@@ -3237,12 +3242,16 @@
             } else {
               cls += " needed";
             }
+            if(!inFagRange) cls += " out-of-range";
             attrs = mode === "admin" ? ' data-toggleneed="'+slot.id+'|'+iso+'"' : ' data-fillday="'+dayRow.id+'"';
-          } else if(mode === "admin"){
+          } else if(mode === "admin" && inFagRange){
             cls += " clickable-empty";
             attrs = ' data-toggleneed="'+slot.id+'|'+iso+'"';
+          } else if(!inFagRange){
+            cls += " out-of-range";
           }
-          cells += '<div class="'+cls+'"'+attrs+' title="'+fmtRange(iso,iso)+'">'+content+'</div>';
+          var title = inFagRange ? fmtRange(iso,iso) : fmtRange(iso,iso)+" – utenfor "+FAG_LABELS[fag]+"s periode ("+fmtRange(pf.start,pf.end)+")";
+          cells += '<div class="'+cls+'"'+attrs+' title="'+title+'">'+content+'</div>';
         }
         html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12px; color:var(--muted);">Plass '+(idx+1)+'</div><div class="behov-track">'+cells+'</div></div>';
       });
