@@ -2961,9 +2961,11 @@
       refetchProjectFags();
     });
   }
+  var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
-    byId("userAccountsList").innerHTML = state.userAccounts.length ? state.userAccounts.map(function(u){
+    var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
+    byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
     }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
 
