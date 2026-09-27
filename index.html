@@ -3059,17 +3059,19 @@
     }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
 
     var pfList = projectFagsForCurrentProject();
+    var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
     byId("projectFagList").innerHTML = FAG_LIST.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f; });
       var active = pf ? pf.active : false;
       var start = pf ? pf.start : "";
       var end = pf ? pf.end : "";
+      var isWholeProject = active && curProj && curProj.start && curProj.end && start === curProj.start && end === curProj.end;
       return '<div class="taskrow" style="flex-wrap:wrap;">' +
         '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:140px; cursor:pointer;">' +
         '<input type="checkbox" data-fagactive="'+f+'" '+(active?'checked':'')+' /> <span>'+FAG_LABELS[f]+'</span></label>' +
         '<input type="date" data-fagstart="'+f+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
         '<input type="date" data-fagend="'+f+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
-        '<button type="button" class="btn small" data-fagwhole="'+f+'">Hele prosjektet</button>' +
+        '<button type="button" class="btn small'+(isWholeProject?' primary':'')+'" data-fagwhole="'+f+'">Hele prosjektet</button>' +
         '</div>';
     }).join("");
     byId("projectFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
@@ -3331,7 +3333,6 @@
     });
 
     if(customSlots.length){
-      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span>Andre behov</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
       customSlots.forEach(function(slot){
         var days = behovDaysForSlot(slot.id);
         var cells = "";
@@ -3356,9 +3357,10 @@
           }
           cells += '<div class="'+cls+'"'+attrs+' title="'+fmtRange(iso,iso)+'">'+content+'</div>';
         }
-        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12px; color:var(--text); display:flex; align-items:center; gap:6px;"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'+escapeHtml(slot.label)+'</span>' +
+        html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'+escapeHtml(slot.label)+'</span>' +
           (mode === "admin" ? '<button type="button" class="icon-btn" data-delcustomslot="'+slot.id+'" title="Slett rad" style="flex:none; padding:0 4px; font-size:14px; line-height:1; color:var(--muted); background:none; border:none; cursor:pointer;">×</button>' : '') +
-          '</div><div class="behov-track">'+cells+'</div></div>';
+          '</div><div class="g-track">'+bg+todayLine+'</div></div>';
+        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12px; color:var(--muted);">Plass 1</div><div class="behov-track">'+cells+'</div></div>';
       });
     }
 
