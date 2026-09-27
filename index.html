@@ -50,6 +50,8 @@
     --fag-landscape:#5fa84a;
     --fag-murer:#8a6d4f;
     --fag-ventilasjon:#6f8fd1;
+    --fag-stillas:#9b6bd6;
+    --fag-audio-video:#d6568f;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -809,10 +811,17 @@
 
   <section id="panel-personer" class="panel">
     <div class="peoplecard">
-      <h2 style="font-size:16px; margin-bottom:4px;">Personer</h2>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
+        <h2 style="font-size:16px; margin:0;">Personer</h2>
+        <div id="peopleViewToggle" hidden style="display:flex; gap:4px; background:var(--surface-2, var(--surface)); border:1px solid var(--border); border-radius:8px; padding:2px;">
+          <button type="button" class="btn small" data-peopleview="list">Liste</button>
+          <button type="button" class="btn small" data-peopleview="byfag">Etter fag</button>
+        </div>
+      </div>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
       <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); width:100%; margin-bottom:10px;" />
       <div id="peopleList"></div>
+      <div id="peopleByFag" hidden></div>
       <form class="inline-add" id="addPersonForm">
         <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
         <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
@@ -1165,11 +1174,13 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
-  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", byggeleder:"ACGO" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)" };
+  var OVERVIEW_ONLY_FAGS = ["stillas","audio_video"];
+  var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", byggeleder:"ACGO" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)" };
   function myRole(){ return state.me && state.me.role; }
   function isByggeleder(){ return myRole() === "byggeleder"; }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
@@ -1872,7 +1883,7 @@
         pick.dataset.wired = "1";
         pick.addEventListener("change", function(){ personDatesDialog.dataset.fag = this.value; renderPersonDates(); });
       }
-      pick.innerHTML = '<option value="">— Velg fag —</option>' + FAG_LIST.map(function(f){
+      pick.innerHTML = '<option value="">— Velg fag —</option>' + OVERVIEW_FAG_LIST.map(function(f){
         return '<option value="'+f+'"'+(f===personDatesFag()?' selected':'')+'>'+FAG_LABELS[f]+'</option>';
       }).join("");
     }
@@ -2338,35 +2349,24 @@
   });
 
   // ---------- people tab ----------
-  function renderPeopleTab(){
-    var box = byId("peopleList");
-    if(state.people.length === 0){
-      box.innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
-      return;
-    }
-    var q = (view.peopleSearch || "").trim().toLowerCase();
-    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
-    if(list.length === 0){
-      box.innerHTML = '<p class="empty-note">Ingen personer matcher søket.</p>';
-      return;
-    }
-    box.innerHTML = list.map(function(p){
-      var days = new Set();
-      state.elements.forEach(function(e){
-        Object.keys(e.assignments||{}).forEach(function(iso){
-          if((e.assignments[iso]||[]).indexOf(p.id)!==-1) days.add(iso);
-        });
+  function personRowHtml(p){
+    var days = new Set();
+    state.elements.forEach(function(e){
+      Object.keys(e.assignments||{}).forEach(function(iso){
+        if((e.assignments[iso]||[]).indexOf(p.id)!==-1) days.add(iso);
       });
-      var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
-      return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+'</span>' +
-        '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
-        '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
-        '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button></span></div>';
-    }).join("");
-    document.querySelectorAll("[data-persondates]").forEach(function(b){
+    });
+    var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
+    return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+'</span>' +
+      '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
+      '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
+      '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button></span></div>';
+  }
+  function wirePersonRowButtons(root){
+    root.querySelectorAll("[data-persondates]").forEach(function(b){
       b.addEventListener("click", function(){ openPersonDates(this.dataset.persondates); });
     });
-    document.querySelectorAll("[data-delperson]").forEach(function(b){
+    root.querySelectorAll("[data-delperson]").forEach(function(b){
       b.addEventListener("click", function(){
         if(confirm("Fjerne denne personen? De fjernes også fra alle dager de er satt opp på.")){
           deletePerson(this.dataset.delperson);
@@ -2374,6 +2374,65 @@
       });
     });
   }
+  function renderPeopleTab(){
+    var toggle = byId("peopleViewToggle");
+    toggle.hidden = !isByggeleder();
+    if(!isByggeleder()) view.peopleView = "list";
+    toggle.querySelectorAll("[data-peopleview]").forEach(function(b){
+      b.classList.toggle("primary", b.dataset.peopleview === view.peopleView);
+    });
+    byId("peopleList").hidden = view.peopleView !== "list";
+    byId("peopleByFag").hidden = view.peopleView !== "byfag";
+
+    if(state.people.length === 0){
+      byId("peopleList").hidden = false;
+      byId("peopleByFag").hidden = true;
+      byId("peopleList").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
+      return;
+    }
+    var q = (view.peopleSearch || "").trim().toLowerCase();
+    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
+
+    if(view.peopleView === "byfag"){
+      var pid = currentProjectId();
+      var byPerson = {};
+      state.attendance.filter(function(a){ return a.project_id === pid; }).forEach(function(a){
+        if(!byPerson[a.person_id]) byPerson[a.person_id] = {};
+        byPerson[a.person_id][a.fag] = (byPerson[a.person_id][a.fag] || 0) + 1;
+      });
+      var seen = {};
+      var cards = OVERVIEW_FAG_LIST.map(function(fag){
+        var rows = list.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; });
+        if(!rows.length) return "";
+        rows.forEach(function(p){ seen[p.id] = true; });
+        return '<div class="peoplecard" style="margin-bottom:14px;"><h2 style="font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">' +
+          '<i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:9px; height:9px; border-radius:3px;"></i>'+FAG_LABELS[fag]+
+          ' <span class="badge group">'+rows.length+'</span></h2>' +
+          rows.map(function(p){
+            return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+'</span>' +
+              '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+byPerson[p.id][fag]+' dag(er)</span>' +
+              '<button type="button" class="btn small primary" data-persondates="'+p.id+'">Datoer</button></span></div>';
+          }).join("") + '</div>';
+      }).join("");
+      var rest = list.filter(function(p){ return !seen[p.id]; });
+      var restHtml = rest.length ? '<div class="peoplecard"><h2 style="font-size:15px; margin-bottom:8px;">Ikke satt opp på noe fag ennå <span class="badge group">'+rest.length+'</span></h2>' +
+        rest.map(personRowHtml).join("") + '</div>' : "";
+      byId("peopleByFag").innerHTML = (cards || restHtml) ? (cards + restHtml) : '<p class="empty-note">Ingen personer matcher søket.</p>';
+      wirePersonRowButtons(byId("peopleByFag"));
+      return;
+    }
+
+    var box = byId("peopleList");
+    if(list.length === 0){
+      box.innerHTML = '<p class="empty-note">Ingen personer matcher søket.</p>';
+      return;
+    }
+    box.innerHTML = list.map(personRowHtml).join("");
+    wirePersonRowButtons(box);
+  }
+  byId("peopleViewToggle").querySelectorAll("[data-peopleview]").forEach(function(b){
+    b.addEventListener("click", function(){ view.peopleView = this.dataset.peopleview; renderPeopleTab(); });
+  });
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
