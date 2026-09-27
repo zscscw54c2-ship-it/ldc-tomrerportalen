@@ -606,7 +606,10 @@
       <h1 style="font-size:19px;"><span class="ldc">LDC</span> CG1</h1>
       <span class="tag" style="font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;">Behov for hjelp</span>
     </div>
-    <button class="btn small ghost" id="kontaktLogoutBtn">Logg ut</button>
+    <span style="display:flex; gap:8px;">
+      <button class="btn small ghost" id="kontaktRefreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
+      <button class="btn small ghost" id="kontaktLogoutBtn">Logg ut</button>
+    </span>
   </div>
   <div class="kontakt-wrap">
     <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Klikk på en markert dag for å fylle inn hvem som kan hjelpe.</p>
@@ -654,6 +657,7 @@
         <button type="button" class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
         <button type="button" class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
+      <button class="btn small ghost" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
       <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
@@ -3576,6 +3580,7 @@
     if(!sb) return;
     sb.auth.signOut().then(function(){ window.location.reload(); });
   });
+  byId("kontaktRefreshBtn").addEventListener("click", function(){ window.location.reload(); });
 
   function refetchOverview(){
     sb.from("spiritual_overview").select("*").order("sort_order").order("created_at").then(function(res){
@@ -4119,6 +4124,7 @@
     if(!sb) return;
     sb.auth.signOut().then(function(){ window.location.reload(); });
   });
+  byId("refreshBtn").addEventListener("click", function(){ window.location.reload(); });
 
   // ---------- boot ----------
   renderAll();
