@@ -614,6 +614,11 @@
       </div>
       <div class="gantt-wrap"><div class="gantt" id="kontaktBehovGrid"></div></div>
     </div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Andre behov</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Behov som ikke hører til et bestemt fag.</p>
+      <div id="kontaktExtraBehovList"></div>
+    </div>
   </div>
 </div>
 
@@ -907,7 +912,10 @@
         <div id="userAccountsList"></div>
       </div>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+          <h2 style="font-size:16px; margin:0;">Fag i dette prosjektet</h2>
+          <button type="button" class="btn small" id="fagWholeProjectBtn">Tilgjengelig hele prosjektet</button>
+        </div>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver.</p>
         <div id="projectFagList"></div>
       </div>
@@ -921,6 +929,16 @@
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Klikk på en dag for å markere at det trengs noen. Menighetskontakten fyller inn navn på de markerte dagene.</p>
       </div>
       <div class="gantt-wrap"><div class="gantt" id="behovGrid"></div></div>
+    </div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Andre behov</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Behov som ikke hører til et bestemt fag, f.eks. praktisk hjelp.</p>
+      <form class="inline-add" id="addExtraBehovForm">
+        <input type="text" id="newExtraDesc" placeholder="Hva trengs? F.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:180px;" />
+        <input type="date" id="newExtraDay" title="Dato (valgfritt)" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+      <div id="extraBehovList" style="margin-top:12px;"></div>
     </div>
   </section>
 
@@ -1144,7 +1162,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], behovExtra: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -3101,6 +3119,20 @@
       });
     });
   }
+  byId("fagWholeProjectBtn").addEventListener("click", function(){
+    var pid = currentProjectId();
+    var cur = state.projects.find(function(p){ return p.id === pid; });
+    if(!cur || !cur.start || !cur.end){ showError("Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt."); return; }
+    var pfList = projectFagsForCurrentProject();
+    var toOverwrite = FAG_LIST.filter(function(f){
+      var pf = pfList.find(function(x){ return x.fag === f; });
+      return pf && pf.active && pf.start && pf.end && (pf.start !== cur.start || pf.end !== cur.end);
+    });
+    if(toOverwrite.length && !confirm("Disse fagene har allerede egne datoer satt: "+toOverwrite.map(function(f){ return FAG_LABELS[f]; }).join(", ")+". Vil du overskrive dem til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") også?")) return;
+    FAG_LIST.forEach(function(f){
+      upsertProjectFag(f, { active: true, start_date: cur.start, end_date: cur.end });
+    });
+  });
 
   // ---------- Behov (dag-for-dag-rutenett) ----------
   function behovProjectRange(project){
@@ -3197,6 +3229,87 @@
       if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
       fillBehovDay(dayRowId, res.data.id);
       refetchPeople();
+    });
+  }
+
+  // ---------- Andre behov (ikke fag-spesifikke) ----------
+  function rowToBehovExtra(row){
+    return { id: row.id, project_id: row.project_id, description: row.description, day: row.day || "", personId: row.person_id, createdAt: row.created_at };
+  }
+  function behovExtraForProject(pid){
+    return state.behovExtra.filter(function(x){ return x.project_id === pid; });
+  }
+  function refetchBehovExtra(){
+    sb.from("behov_extra").select("*").order("day").then(function(res){
+      if(res.error){ return; }
+      state.behovExtra = res.data.map(rowToBehovExtra);
+      renderAll();
+    });
+  }
+  function addBehovExtra(description, day){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("behov_extra").insert({ project_id: pid, description: description.slice(0,160), day: day || null }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("behov_extra") !== -1 ? "Databasen mangler tabellen for andre behov. Kjør sql/20-behov-extra.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchBehovExtra();
+    });
+  }
+  function deleteBehovExtra(id){
+    if(!sb) return;
+    sb.from("behov_extra").delete().eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke slette: "+res.error.message); return; }
+      refetchBehovExtra();
+    });
+  }
+  function fillExtra(id, personId){
+    if(!sb) return;
+    sb.from("behov_extra").update({ person_id: personId || null }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchBehovExtra();
+    });
+  }
+  function addPersonAndFillExtra(id, name){
+    if(!sb) return;
+    sb.from("people").insert({ name: name.slice(0,60) }).select().single().then(function(res){
+      if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
+      fillExtra(id, res.data.id);
+      refetchPeople();
+    });
+  }
+  function extraBehovRowHtml(item, mode){
+    return '<div class="shoprow">' +
+      '<span class="sname">'+escapeHtml(item.description)+'</span>' +
+      (item.day ? '<span class="sqty">'+fmtRange(item.day,item.day)+'</span>' : '') +
+      (item.personId ? '<span class="fag-badge" style="background:var(--good);">'+escapeHtml(personName(item.personId))+'</span>' : '<span class="empty-note" style="font-size:12px;">Ikke tildelt</span>') +
+      (mode === "admin"
+        ? '<button type="button" class="btn small danger" data-delextra="'+item.id+'">Slett</button>'
+        : '<button type="button" class="btn small" data-fillextra="'+item.id+'">'+(item.personId?'Endre':'Tildel')+'</button>') +
+      '</div>';
+  }
+  function renderExtraBehovList(){
+    if(!isByggeleder()) return;
+    var list = behovExtraForProject(currentProjectId());
+    byId("extraBehovList").innerHTML = list.length ? list.map(function(item){ return extraBehovRowHtml(item, "admin"); }).join("") : '<p class="empty-note">Ingen andre behov lagt til ennå.</p>';
+    byId("extraBehovList").querySelectorAll("[data-delextra]").forEach(function(btn){
+      btn.addEventListener("click", function(){ if(confirm("Slette dette behovet?")) deleteBehovExtra(this.dataset.delextra); });
+    });
+  }
+  byId("addExtraBehovForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var descInput = byId("newExtraDesc");
+    var desc = descInput.value.trim();
+    if(!desc) return;
+    addBehovExtra(desc, byId("newExtraDay").value);
+    descInput.value = "";
+    byId("newExtraDay").value = "";
+  });
+  function renderKontaktExtraBehovList(){
+    if(myRole() !== "kontakt") return;
+    var list = behovExtraForProject(homeProjectId());
+    byId("kontaktExtraBehovList").innerHTML = list.length ? list.map(function(item){ return extraBehovRowHtml(item, "kontakt"); }).join("") : '<p class="empty-note">Ingen andre behov lagt til ennå.</p>';
+    byId("kontaktExtraBehovList").querySelectorAll("[data-fillextra]").forEach(function(btn){
+      btn.addEventListener("click", function(){ openExtraFillDialog(this.dataset.fillextra); });
     });
   }
   var behovDw = 40;
@@ -3323,6 +3436,7 @@
     byId("behovLabel").textContent = cur ? cur.name : "";
     byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
     wireBehovGridEvents("behovGrid", "admin");
+    renderExtraBehovList();
   }
   function updateBehovTabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="behov"]');
@@ -3335,13 +3449,15 @@
     byId("kontaktBehovLabel").textContent = cur ? cur.name : "";
     byId("kontaktBehovGrid").innerHTML = buildBehovGridHtml(cur, "kontakt");
     wireBehovGridEvents("kontaktBehovGrid", "kontakt");
+    renderKontaktExtraBehovList();
   }
   var behovFillDialog = byId("behovFillDialog");
   function openBehovFillDialog(dayRowId){
     var d = state.behovDays.find(function(x){ return x.id === dayRowId; });
     if(!d) return;
     var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
-    behovFillDialog.dataset.dayId = dayRowId;
+    behovFillDialog.dataset.targetType = "day";
+    behovFillDialog.dataset.targetId = dayRowId;
     byId("behovFillMeta").textContent = (slot ? FAG_LABELS[slot.fag] : "") + " · " + fmtRange(d.day, d.day);
     byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + state.people.map(function(p){
       return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
@@ -3349,12 +3465,31 @@
     byId("behovFillNewName").value = "";
     behovFillDialog.showModal();
   }
+  function openExtraFillDialog(extraId){
+    var e = state.behovExtra.find(function(x){ return x.id === extraId; });
+    if(!e) return;
+    behovFillDialog.dataset.targetType = "extra";
+    behovFillDialog.dataset.targetId = extraId;
+    byId("behovFillMeta").textContent = e.description + (e.day ? " · "+fmtRange(e.day, e.day) : "");
+    byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + state.people.map(function(p){
+      return '<option value="'+p.id+'"'+(p.id===e.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
+    }).join("");
+    byId("behovFillNewName").value = "";
+    behovFillDialog.showModal();
+  }
   byId("behovFillForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var dayId = behovFillDialog.dataset.dayId;
+    var targetType = behovFillDialog.dataset.targetType;
+    var targetId = behovFillDialog.dataset.targetId;
     var newName = byId("behovFillNewName").value.trim();
-    if(newName){ addPersonAndFillBehovDay(dayId, newName); }
-    else { fillBehovDay(dayId, byId("behovFillSelect").value || null); }
+    var personId = byId("behovFillSelect").value || null;
+    if(targetType === "extra"){
+      if(newName){ addPersonAndFillExtra(targetId, newName); }
+      else { fillExtra(targetId, personId); }
+    } else {
+      if(newName){ addPersonAndFillBehovDay(targetId, newName); }
+      else { fillBehovDay(targetId, personId); }
+    }
     behovFillDialog.close();
   });
   byId("behovFillCancel").addEventListener("click", function(){ behovFillDialog.close(); });
@@ -3827,6 +3962,7 @@
     refetchUserAccounts();
     refetchBehovSlots();
     refetchBehovDays();
+    refetchBehovExtra();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3847,6 +3983,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
+      .on("postgres_changes", { event: "*", schema: "public", table: "behov_extra" }, refetchBehovExtra)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
