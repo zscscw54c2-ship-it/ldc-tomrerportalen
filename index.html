@@ -594,6 +594,7 @@
         <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
+        <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
       </nav>
     </div>
     <div class="project-bar">
@@ -857,7 +858,22 @@
     </div>
   </section>
 
-  <p class="foot-note">Endringer lagres delt og live for alle som har denne siden åpen. Ingen innlogging kreves &ndash; hvem som helst med lenken kan se og redigere planen.</p>
+  <section id="panel-acgo" class="panel">
+    <div class="cols2">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer og hvilket fag de tilhører.</p>
+        <div id="userAccountsList"></div>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver.</p>
+        <div id="projectFagList"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot-note">Endringer lagres delt og live for alle som er logget inn.</p>
 </div>
 
 <dialog id="projectDialog">
@@ -1058,7 +1074,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {} };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2635,7 +2651,9 @@
     { tab:"rom", name:"To-do", color:"var(--rose)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
     { tab:"andelig", name:"Åndelig", color:"var(--warn)",
-      icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' }
+      icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' },
+    { tab:"acgo", name:"ACGO", color:"var(--bad)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' }
   ];
   function homeTileStatus(tab){
     if(tab === "elementer"){
@@ -2674,6 +2692,9 @@
       var open2 = duties.filter(function(d){ return !pwDutyStatus(curWeek.id, d.id).done; }).length;
       return { badge: open2, text: open2 > 0 ? open2+" ansvarspunkter igjen" : "Alt gjort denne uken" };
     }
+    if(tab === "acgo"){
+      return { badge: 0, text: state.userAccounts.length+" kontoer" };
+    }
     return { badge: 0, text: "" };
   }
   function renderMiniCalendar(){
@@ -2690,7 +2711,11 @@
   }
   function renderMobileHome(){
     var grid = byId("mhGrid");
-    grid.innerHTML = HOME_TILES.filter(function(t){ return t.tab !== "andelig" || andeligVisibleForMe(); }).map(function(t){
+    grid.innerHTML = HOME_TILES.filter(function(t){
+      if(t.tab === "andelig") return andeligVisibleForMe();
+      if(t.tab === "acgo") return isByggeleder();
+      return true;
+    }).map(function(t){
       var body;
       if(t.tab === "kalender"){
         body = '<div class="mh-name">'+t.name+'</div><div class="mh-mini">'+renderMiniCalendar()+'</div>';
@@ -2714,6 +2739,7 @@
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAndeligTabVisibility();
+    updateAcgoTabVisibility();
     renderProjectBar();
     renderCalView();
     renderElementsTab();
@@ -2726,6 +2752,7 @@
     renderPeopleTab();
     renderRoomTab();
     renderSpiritualTab();
+    renderAcgoTab();
     renderMobileHome();
   }
   function updateAndeligTabVisibility(){
@@ -2733,6 +2760,11 @@
     var btn = document.querySelector('nav.tabs button[data-tab="andelig"]');
     if(btn) btn.hidden = !visible;
     if(!visible && view.tab === "andelig") switchTab("kalender");
+  }
+  function updateAcgoTabVisibility(){
+    var btn = document.querySelector('nav.tabs button[data-tab="acgo"]');
+    if(btn) btn.hidden = !isByggeleder();
+    if(!isByggeleder() && view.tab === "acgo") switchTab("kalender");
   }
 
   function goToWeek(newStart){
@@ -2887,6 +2919,75 @@
     renderAll();
     sb.from("andelig_visibility").update({ visible: visible }).eq("fag", fag).then(function(res){
       if(res.error){ showError("Kunne ikke oppdatere synlighet: "+res.error.message); refetchAndeligVisibility(); return; }
+    });
+  }
+
+  // ---------- ACGO-siden ----------
+  function refetchUserAccounts(){
+    if(!isByggeleder()) return;
+    sb.from("user_accounts").select("*").then(function(res){
+      if(res.error){ return; }
+      state.userAccounts = res.data;
+      renderAll();
+    });
+  }
+  function rowToProjectFag(row){
+    return { id: row.id, project_id: row.project_id, fag: row.fag, active: !!row.active, start: row.start_date || "", end: row.end_date || "" };
+  }
+  function projectFagsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.projectFags.filter(function(x){ return x.project_id === pid; });
+  }
+  function refetchProjectFags(){
+    sb.from("project_fags").select("*").then(function(res){
+      if(res.error){ return; }
+      state.projectFags = res.data.map(rowToProjectFag);
+      renderAll();
+    });
+  }
+  function upsertProjectFag(fag, patch){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var existing = state.projectFags.find(function(x){ return x.project_id === pid && x.fag === fag; });
+    var body = Object.assign({
+      project_id: pid, fag: fag,
+      active: existing ? existing.active : false,
+      start_date: existing ? (existing.start || null) : null,
+      end_date: existing ? (existing.end || null) : null
+    }, patch);
+    sb.from("project_fags").upsert(body, { onConflict: "project_id,fag" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("project_fags") !== -1 ? "Databasen mangler tabellen for fag i prosjekt. Kjør sql/17-acgo-side.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchProjectFags();
+    });
+  }
+  function renderAcgoTab(){
+    if(!isByggeleder()) return;
+    byId("userAccountsList").innerHTML = state.userAccounts.length ? state.userAccounts.map(function(u){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
+    }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
+
+    var pfList = projectFagsForCurrentProject();
+    byId("projectFagList").innerHTML = FAG_LIST.map(function(f){
+      var pf = pfList.find(function(x){ return x.fag === f; });
+      var active = pf ? pf.active : false;
+      var start = pf ? pf.start : "";
+      var end = pf ? pf.end : "";
+      return '<div class="taskrow" style="flex-wrap:wrap;">' +
+        '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:140px; cursor:pointer;">' +
+        '<input type="checkbox" data-fagactive="'+f+'" '+(active?'checked':'')+' /> <span>'+FAG_LABELS[f]+'</span></label>' +
+        '<input type="date" data-fagstart="'+f+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '<input type="date" data-fagend="'+f+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '</div>';
+    }).join("");
+    byId("projectFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
+      cb.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagactive, { active: this.checked }); });
+    });
+    byId("projectFagList").querySelectorAll("[data-fagstart]").forEach(function(inp){
+      inp.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagstart, { start_date: this.value || null }); });
+    });
+    byId("projectFagList").querySelectorAll("[data-fagend]").forEach(function(inp){
+      inp.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagend, { end_date: this.value || null }); });
     });
   }
   function refetchOverview(){
@@ -3348,6 +3449,8 @@
     refetchRoomTodos();
     refetchDokuPhotos();
     refetchAndeligVisibility();
+    refetchProjectFags();
+    refetchUserAccounts();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3365,6 +3468,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "room_todos" }, refetchRoomTodos)
       .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
       .on("postgres_changes", { event: "*", schema: "public", table: "andelig_visibility" }, refetchAndeligVisibility)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
