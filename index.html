@@ -3025,6 +3025,11 @@
       renderAll();
     });
   }
+  function fagIsLocked(fag){
+    var pid = currentProjectId();
+    var existing = state.projectFags.find(function(x){ return x.project_id === pid && x.fag === fag; });
+    return (existing && existing.active && existing.start && existing.end) ? existing : null;
+  }
   function upsertProjectFag(fag, patch){
     if(!sb) return;
     var pid = currentProjectId();
@@ -3063,13 +3068,37 @@
         '</div>';
     }).join("");
     byId("projectFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
-      cb.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagactive, { active: this.checked }); });
+      cb.addEventListener("change", function(){
+        var fag = this.dataset.fagactive;
+        var locked = !this.checked && fagIsLocked(fag);
+        if(locked && !confirm(FAG_LABELS[fag]+" er satt aktivt fra "+fmtRange(locked.start,locked.end)+" i dette prosjektet. Fjerner du avkrysningen forsvinner faget fra Behov-siden – ingenting slettes, men det blir utilgjengelig helt til du krysser av igjen. Fortsette?")){
+          this.checked = true;
+          return;
+        }
+        upsertProjectFag(fag, { active: this.checked });
+      });
     });
     byId("projectFagList").querySelectorAll("[data-fagstart]").forEach(function(inp){
-      inp.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagstart, { start_date: this.value || null }); });
+      inp.addEventListener("change", function(){
+        var fag = this.dataset.fagstart;
+        var locked = fagIsLocked(fag);
+        if(locked && this.value !== locked.start && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du startdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
+          this.value = locked.start;
+          return;
+        }
+        upsertProjectFag(fag, { start_date: this.value || null });
+      });
     });
     byId("projectFagList").querySelectorAll("[data-fagend]").forEach(function(inp){
-      inp.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagend, { end_date: this.value || null }); });
+      inp.addEventListener("change", function(){
+        var fag = this.dataset.fagend;
+        var locked = fagIsLocked(fag);
+        if(locked && this.value !== locked.end && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du sluttdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
+          this.value = locked.end;
+          return;
+        }
+        upsertProjectFag(fag, { end_date: this.value || null });
+      });
     });
   }
 
