@@ -46,7 +46,10 @@
     --fag-tomrer:#2f7fd9;
     --fag-maler:#e6a623;
     --fag-elektriker:#e5634f;
-    --fag-rorlegger:#1fa38e;
+    --fag-vvs:#1fa38e;
+    --fag-landscape:#5fa84a;
+    --fag-murer:#8a6d4f;
+    --fag-ventilasjon:#6f8fd1;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -1058,9 +1061,9 @@
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {} };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
-  var FAG_LIST = ["tomrer","maler","elektriker","rorlegger"];
-  var FAG_LABELS = { tomrer:"Tømrer", maler:"Maler", elektriker:"Elektriker", rorlegger:"Rørlegger", byggeleder:"ACGO" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", rorlegger:"var(--fag-rorlegger)" };
+  var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", byggeleder:"ACGO" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)" };
   function myRole(){ return state.me && state.me.role; }
   function isByggeleder(){ return myRole() === "byggeleder"; }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
