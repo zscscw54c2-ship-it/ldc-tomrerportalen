@@ -915,6 +915,15 @@
         <div id="projectFagList"></div>
       </div>
     </div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+      <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addPortalSuggestionForm" style="margin-top:10px;">
+        <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
   </section>
 
   <section id="panel-behov" class="panel">
@@ -1151,7 +1160,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2949,6 +2958,9 @@
     var pid = currentProjectId();
     return state.toAgenda.filter(function(a){ return a.project_id === pid; });
   }
+  function rowToPortalSuggestion(row){
+    return { id: row.id, text: row.text, createdAt: row.created_at };
+  }
   function rowToRoomTodo(row){
     return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, assignedPersonId: row.assigned_person_id || null, createdAt: row.created_at };
   }
@@ -3124,7 +3136,25 @@
         upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
       });
     });
+
+    var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+    byId("portalSuggestionList").innerHTML = suggestions.length ? suggestions.map(function(s){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
+    byId("portalSuggestionList").querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
+      b.addEventListener("click", function(){
+        if(confirm("Slette dette forslaget?")) deletePortalSuggestion(this.dataset.delportalsuggestion);
+      });
+    });
   }
+  byId("addPortalSuggestionForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = byId("newPortalSuggestionText");
+    var text = input.value.trim();
+    if(!text) return;
+    addPortalSuggestion(text);
+    input.value = "";
+  });
 
   // ---------- Behov (dag-for-dag-rutenett) ----------
   function behovProjectRange(project){
@@ -3490,6 +3520,13 @@
       renderAll();
     });
   }
+  function refetchPortalSuggestions(){
+    sb.from("portal_suggestions").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.portalSuggestions = res.data.map(rowToPortalSuggestion);
+      renderAll();
+    });
+  }
   function refetchRoomTodos(){
     sb.from("room_todos").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -3644,6 +3681,17 @@
   function deleteToAgenda(id){
     if(!sb) return;
     sb.from("to_agenda_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchToAgenda(); });
+  }
+  function addPortalSuggestion(text){
+    if(!sb) return;
+    sb.from("portal_suggestions").insert({ text: text.slice(0,300) }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("portal_suggestions") !== -1 ? "Databasen mangler tabellen for portal-forslag. Kjør sql/22-portal-forslag.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchPortalSuggestions();
+    });
+  }
+  function deletePortalSuggestion(id){
+    if(!sb) return;
+    sb.from("portal_suggestions").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchPortalSuggestions(); });
   }
   function addRoomTodo(room, text){
     if(!sb) return;
@@ -3918,6 +3966,7 @@
     refetchUserAccounts();
     refetchBehovSlots();
     refetchBehovDays();
+    refetchPortalSuggestions();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3938,6 +3987,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
+      .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
