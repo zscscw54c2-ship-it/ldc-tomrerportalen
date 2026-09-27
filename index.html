@@ -1348,33 +1348,36 @@
     for(var i=0;i<5;i++) out.push(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()+i));
     return out;
   }
-  function setPresence(personId, iso, on, fagOverride){
-    if(!sb) return;
+  function setPresence(personId, iso, on, fagOverride, skipRefetch){
+    if(!sb) return Promise.resolve();
     var pid = currentProjectId();
-    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return Promise.resolve(); }
     var fag = fagOverride || activeFag();
-    if(fag === "alle"){ showError("Velg et bestemt fag for å registrere oppmøte."); return; }
+    if(fag === "alle"){ showError("Velg et bestemt fag for å registrere oppmøte."); return Promise.resolve(); }
     var has = isPresentForFag(personId, iso, fag);
-    if(on === has) return;
+    if(on === has) return Promise.resolve();
     if(on){
       state.attendance.push({ id: "tmp-"+Math.random(), project_id: pid, person_id: personId, day: iso, fag: fag });
       renderAll();
-      sb.from("attendance").upsert({ project_id: pid, person_id: personId, day: iso, fag: fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
+      return sb.from("attendance").upsert({ project_id: pid, person_id: personId, day: iso, fag: fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
         if(res.error){ showError(String(res.error.message).indexOf("attendance") !== -1 ? "Databasen mangler oppmøte-tabellen. Kjør sql/06-oppmote.sql i Supabase." : "Kunne ikke lagre oppmøte: "+res.error.message); }
-        refetchAttendance();
+        if(!skipRefetch) refetchAttendance();
       });
     } else {
       state.attendance = state.attendance.filter(function(a){ return !(a.project_id === pid && a.person_id === personId && a.day === iso && a.fag === fag); });
       renderAll();
-      sb.from("attendance").delete().eq("project_id", pid).eq("person_id", personId).eq("day", iso).eq("fag", fag).then(function(res){
+      return sb.from("attendance").delete().eq("project_id", pid).eq("person_id", personId).eq("day", iso).eq("fag", fag).then(function(res){
         if(res.error) showError("Kunne ikke fjerne oppmøte: "+res.error.message);
-        refetchAttendance();
+        if(!skipRefetch) refetchAttendance();
       });
     }
   }
+  var attendanceFetchSeq = 0;
   function refetchAttendance(){
+    var seq = ++attendanceFetchSeq;
     sb.from("attendance").select("*").then(function(res){
       if(res.error){ return; }   // tabellen finnes kanskje ikke ennå
+      if(seq !== attendanceFetchSeq) return; // en nyere forespørsel er allerede underveis/ferdig – ikke overskriv med utdatert data
       state.attendance = res.data.map(function(r){ return { id: r.id, project_id: r.project_id, person_id: r.person_id, day: r.day, fag: r.fag || "tomrer" }; });
       renderAll();
     });
@@ -1833,7 +1836,7 @@
       b.addEventListener("click", function(){
         var pid = this.dataset.attall;
         var allOn = days.every(function(iso){ return isPresent(pid, iso); });
-        days.forEach(function(iso){ setPresence(pid, iso, !allOn); });
+        Promise.all(days.map(function(iso){ return setPresence(pid, iso, !allOn, null, true); })).then(refetchAttendance);
       });
     });
   }
@@ -1848,7 +1851,7 @@
     var pid = byId("wvAddSel").value;
     if(!pid) return;
     var monday = new Date(Number(weekVolDialog.dataset.monday));
-    weekDays(monday).forEach(function(d){ setPresence(pid, toISODate(d), true); });
+    Promise.all(weekDays(monday).map(function(d){ return setPresence(pid, toISODate(d), true, null, true); })).then(refetchAttendance);
   });
   byId("wvClose").addEventListener("click", function(){ weekVolDialog.close(); });
   weekVolDialog.addEventListener("click", function(ev){ if(ev.target === weekVolDialog) weekVolDialog.close(); });
@@ -1915,7 +1918,7 @@
       b.addEventListener("click", function(){
         var days = this.dataset.pdweek.split(",");
         var allOn = days.every(function(iso){ return isPresentForFag(pid, iso, fag); });
-        days.forEach(function(iso){ setPresence(pid, iso, !allOn, fag); });
+        Promise.all(days.map(function(iso){ return setPresence(pid, iso, !allOn, fag, true); })).then(refetchAttendance);
       });
     });
   }
