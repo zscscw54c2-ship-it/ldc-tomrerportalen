@@ -885,7 +885,10 @@
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
-        <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); margin-bottom:14px; max-width:100%;"></select>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
+          <button type="button" class="btn small" id="mwWeekEditBtn">Rediger uke</button>
+        </div>
         <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
       </div>
     </div>
@@ -2532,6 +2535,10 @@
     nameInput.value = ""; timeInput.value = ""; ansvarligInput.value = "";
   });
   byId("mwWeekSelect").addEventListener("change", function(){ view.mwWeekId = this.value; renderSpiritualTab(); });
+  byId("mwWeekEditBtn").addEventListener("click", function(){
+    if(!view.mwWeekId){ showError("Ingen privilege-uke å redigere ennå."); return; }
+    openPwDialog(view.mwWeekId);
+  });
 
   var pwDialog = byId("pwDialog");
   byId("pwNewBtn").addEventListener("click", function(){
