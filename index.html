@@ -1359,8 +1359,8 @@
     if(on){
       state.attendance.push({ id: "tmp-"+Math.random(), project_id: pid, person_id: personId, day: iso, fag: fag });
       renderAll();
-      sb.from("attendance").insert({ project_id: pid, person_id: personId, day: iso, fag: fag }).then(function(res){
-        if(res.error && String(res.error.message).indexOf("duplicate") === -1){ showError(String(res.error.message).indexOf("attendance") !== -1 ? "Databasen mangler oppmøte-tabellen. Kjør sql/06-oppmote.sql i Supabase." : "Kunne ikke lagre oppmøte: "+res.error.message); }
+      sb.from("attendance").upsert({ project_id: pid, person_id: personId, day: iso, fag: fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
+        if(res.error){ showError(String(res.error.message).indexOf("attendance") !== -1 ? "Databasen mangler oppmøte-tabellen. Kjør sql/06-oppmote.sql i Supabase." : "Kunne ikke lagre oppmøte: "+res.error.message); }
         refetchAttendance();
       });
     } else {
@@ -3336,8 +3336,10 @@
     sb.from("behov_day").update({ person_id: personId || null }).eq("id", dayRowId).then(function(res){
       if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
       refetchBehovDays();
-      if(personId && slot){
-        sb.from("attendance").insert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: slot.fag }).then(function(){});
+      if(personId && slot && slot.fag){
+        sb.from("attendance").upsert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: slot.fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
+          if(res.error) showError("Kunne ikke registrere oppmøte: "+res.error.message);
+        });
       }
     });
   }
