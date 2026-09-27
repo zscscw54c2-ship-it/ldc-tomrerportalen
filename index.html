@@ -521,6 +521,21 @@
 
   .fag-badge{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#fff; border-radius:99px; padding:2px 8px; flex:none; }
 
+  /* ---------- kontakt (menighetskontakt) – egen forenklet side ---------- */
+  #kontaktView{ display:none; min-height:100vh; }
+  body.kontakt-mode #kontaktView{ display:block; }
+  body.kontakt-mode .wrap{ display:none; }
+  .kontakt-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .kontakt-wrap{ max-width:720px; margin:0 auto; padding:20px 16px 60px; }
+  .behov-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:14px 16px; margin-bottom:14px; }
+  .behov-card .behov-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .behov-card .behov-desc{ font-weight:600; font-size:14px; }
+  .behov-card .behov-dates{ font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",monospace; margin-top:2px; }
+  .behov-people{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .behov-people .pchip{ display:inline-flex; align-items:center; gap:5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:3px 9px; font-size:12px; }
+  .behov-add-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .behov-add-row select, .behov-add-row input[type=text]{ border:1px solid var(--border); border-radius:7px; padding:6px 8px; font-size:12.5px; background:var(--surface); }
+
   /* ---------- mobil hjemskjerm ---------- */
   #mobileHome{ display:none; }
   #mobileBackHome{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:11px 4px; margin-bottom:2px; font-size:15px; font-weight:700; color:var(--accent); border:none; background:none; text-decoration:none; }
@@ -574,6 +589,20 @@
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
     <p class="err" id="loginError"></p>
+  </div>
+</div>
+
+<div id="kontaktView">
+  <div class="kontakt-top">
+    <div>
+      <h1 style="font-size:19px;"><span class="ldc">LDC</span> CG1</h1>
+      <span class="tag" style="font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;">Behov for hjelp</span>
+    </div>
+    <button class="btn small ghost" id="kontaktLogoutBtn">Logg ut</button>
+  </div>
+  <div class="kontakt-wrap">
+    <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Her er behovene byggeleder har lagt inn. Foreslå personer som kan hjelpe til.</p>
+    <div id="kontaktBehovList"></div>
   </div>
 </div>
 
@@ -871,6 +900,20 @@
         <div id="projectFagList"></div>
       </div>
     </div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Behov</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Legg inn behov for hjelp i dette prosjektet. Menighetskontakten foreslår personer som kan bidra.</p>
+      <form class="inline-add" id="addBehovForm">
+        <select id="newBehovFag">
+          <option value="">Ikke fag-spesifikt</option>
+        </select>
+        <input type="text" id="newBehovDesc" placeholder="Hva trengs? F.eks. Trenger maler" required maxlength="160" style="flex:1; min-width:180px;" />
+        <input type="date" id="newBehovStart" title="Fra dato" />
+        <input type="date" id="newBehovEnd" title="Til dato (valgfritt)" />
+        <button class="btn primary" type="submit">Legg til behov</button>
+      </form>
+      <div id="behovAdminList" style="margin-top:14px;"></div>
+    </div>
   </section>
 
   <p class="foot-note">Endringer lagres delt og live for alle som er logget inn.</p>
@@ -1074,7 +1117,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behov: [], behovForslag: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2753,6 +2796,7 @@
     renderRoomTab();
     renderSpiritualTab();
     renderAcgoTab();
+    renderKontaktView();
     renderMobileHome();
   }
   function updateAndeligTabVisibility(){
@@ -2991,7 +3035,188 @@
     byId("projectFagList").querySelectorAll("[data-fagend]").forEach(function(inp){
       inp.addEventListener("change", function(){ upsertProjectFag(this.dataset.fagend, { end_date: this.value || null }); });
     });
+
+    renderBehovAdminList();
   }
+
+  // ---------- Behov ----------
+  function behovForCurrentProject(){
+    var pid = currentProjectId();
+    return state.behov.filter(function(b){ return b.project_id === pid; });
+  }
+  function behovForslagFor(behovId){
+    return state.behovForslag.filter(function(x){ return x.behov_id === behovId; });
+  }
+  function behovFagBadge(fag){
+    if(!fag) return "";
+    return ' <span class="fag-badge" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[fag]||fag)+'</span>';
+  }
+  function rowToBehov(row){
+    return { id: row.id, project_id: row.project_id, fag: row.fag || "", description: row.description, start: row.start_date || "", end: row.end_date || "", status: row.status, createdAt: row.created_at };
+  }
+  function rowToBehovForslag(row){
+    return { id: row.id, behov_id: row.behov_id, person_id: row.person_id, createdAt: row.created_at };
+  }
+  function refetchBehov(){
+    sb.from("behov").select("*").order("start_date").then(function(res){
+      if(res.error){ return; }
+      state.behov = res.data.map(rowToBehov);
+      renderAll();
+    });
+  }
+  function refetchBehovForslag(){
+    sb.from("behov_forslag").select("*").then(function(res){
+      if(res.error){ return; }
+      state.behovForslag = res.data.map(rowToBehovForslag);
+      renderAll();
+    });
+  }
+  function addBehov(fag, description, start, end){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("behov").insert({ project_id: pid, fag: fag || null, description: description.slice(0,160), start_date: start || null, end_date: end || null }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("behov") !== -1 ? "Databasen mangler tabellen for behov. Kjør sql/18-behov-kontakt.sql i Supabase." : "Kunne ikke lagre behovet: "+res.error.message); return; }
+      refetchBehov();
+    });
+  }
+  function setBehovStatus(id, status){
+    if(!sb) return;
+    sb.from("behov").update({ status: status }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; }
+      refetchBehov();
+    });
+  }
+  function deleteBehov(id){
+    if(!sb) return;
+    sb.from("behov").delete().eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke slette: "+res.error.message); return; }
+      refetchBehov();
+    });
+  }
+  function proposePerson(behovId, personId){
+    if(!sb) return;
+    sb.from("behov_forslag").insert({ behov_id: behovId, person_id: personId }).then(function(res){
+      if(res.error && String(res.error.message).indexOf("duplicate") === -1){ showError("Kunne ikke legge til: "+res.error.message); return; }
+      refetchBehovForslag();
+    });
+  }
+  function removeProposal(id){
+    if(!sb) return;
+    sb.from("behov_forslag").delete().eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; }
+      refetchBehovForslag();
+    });
+  }
+  function addPersonAndPropose(behovId, name){
+    if(!sb) return;
+    sb.from("people").insert({ name: name.slice(0,60) }).select().single().then(function(res){
+      if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
+      proposePerson(behovId, res.data.id);
+      refetchPeople();
+    });
+  }
+  function behovStatusBadge(b){
+    var dekket = b.status === "dekket";
+    return '<span class="badge" style="background:'+(dekket?"var(--good-soft)":"var(--warn-soft)")+'; color:'+(dekket?"var(--good-ink)":"var(--warn-ink)")+';">'+(dekket?"Dekket":"Åpen")+'</span>';
+  }
+  function behovPeopleHtml(behovId, removable){
+    var proposed = behovForslagFor(behovId);
+    if(!proposed.length) return '<span class="empty-note" style="font-size:12px;">Ingen foreslått ennå</span>';
+    return proposed.map(function(p){
+      return '<span class="pchip">'+escapeHtml(personName(p.person_id))+(removable ? '<button type="button" data-removeproposal="'+p.id+'" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;">×</button>' : '')+'</span>';
+    }).join("");
+  }
+  function renderBehovAdminList(){
+    if(!isByggeleder()) return;
+    var list = behovForCurrentProject().slice().sort(function(a,b){ return (a.start||"") < (b.start||"") ? -1 : 1; });
+    byId("behovAdminList").innerHTML = list.length ? list.map(function(b){
+      return '<div class="behov-card">' +
+        '<div class="behov-top"><div><div class="behov-desc">'+escapeHtml(b.description)+behovFagBadge(b.fag)+'</div>' +
+        '<div class="behov-dates">'+(b.start ? fmtRange(b.start, b.end||b.start) : "Ingen dato satt")+'</div></div>' +
+        behovStatusBadge(b) +
+        '</div>' +
+        '<div class="behov-people">'+behovPeopleHtml(b.id, true)+'</div>' +
+        '<div style="display:flex; gap:8px; margin-top:10px;">' +
+          '<button type="button" class="btn small" data-togglebehov="'+b.id+'">'+(b.status==="dekket"?"Åpne igjen":"Marker dekket")+'</button>' +
+          '<button type="button" class="btn small danger" data-delbehov="'+b.id+'">Slett</button>' +
+        '</div>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen behov lagt til ennå.</p>';
+    byId("behovAdminList").querySelectorAll("[data-togglebehov]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = this.dataset.togglebehov;
+        var b = state.behov.find(function(x){ return x.id === id; });
+        setBehovStatus(id, b && b.status === "dekket" ? "apen" : "dekket");
+      });
+    });
+    byId("behovAdminList").querySelectorAll("[data-delbehov]").forEach(function(btn){
+      btn.addEventListener("click", function(){ if(confirm("Slette dette behovet?")) deleteBehov(this.dataset.delbehov); });
+    });
+    byId("behovAdminList").querySelectorAll("[data-removeproposal]").forEach(function(btn){
+      btn.addEventListener("click", function(){ removeProposal(this.dataset.removeproposal); });
+    });
+  }
+  byId("newBehovFag").innerHTML = '<option value="">Ikke fag-spesifikt</option>' + FAG_LIST.map(function(f){
+    return '<option value="'+f+'">'+FAG_LABELS[f]+'</option>';
+  }).join("");
+  byId("addBehovForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var descInput = byId("newBehovDesc");
+    var desc = descInput.value.trim();
+    if(!desc) return;
+    addBehov(byId("newBehovFag").value, desc, byId("newBehovStart").value, byId("newBehovEnd").value);
+    descInput.value = "";
+    byId("newBehovStart").value = "";
+    byId("newBehovEnd").value = "";
+    byId("newBehovFag").value = "";
+  });
+  function renderKontaktView(){
+    if(myRole() !== "kontakt") return;
+    var pid = homeProjectId();
+    var list = state.behov.filter(function(b){ return b.project_id === pid && b.status === "apen"; })
+      .sort(function(a,b){ return (a.start||"") < (b.start||"") ? -1 : 1; });
+    byId("kontaktBehovList").innerHTML = list.length ? list.map(function(b){
+      var proposedIds = behovForslagFor(b.id).map(function(p){ return p.person_id; });
+      var pickable = state.people.filter(function(p){ return proposedIds.indexOf(p.id) === -1; });
+      return '<div class="behov-card">' +
+        '<div class="behov-top"><div><div class="behov-desc">'+escapeHtml(b.description)+behovFagBadge(b.fag)+'</div>' +
+        '<div class="behov-dates">'+(b.start ? fmtRange(b.start, b.end||b.start) : "Ingen dato satt")+'</div></div></div>' +
+        '<div class="behov-people">'+behovPeopleHtml(b.id, true)+'</div>' +
+        '<div class="behov-add-row">' +
+          '<select data-proposeexisting="'+b.id+'"><option value="">+ Velg person …</option>' +
+            pickable.map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+'</option>'; }).join("") +
+          '</select>' +
+          '<input type="text" data-newpersonname="'+b.id+'" placeholder="Eller skriv nytt navn" maxlength="60" />' +
+          '<button type="button" class="btn small" data-addnewperson="'+b.id+'">Legg til</button>' +
+        '</div>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen åpne behov akkurat nå.</p>';
+    byId("kontaktBehovList").querySelectorAll("[data-removeproposal]").forEach(function(btn){
+      btn.addEventListener("click", function(){ removeProposal(this.dataset.removeproposal); });
+    });
+    byId("kontaktBehovList").querySelectorAll("[data-proposeexisting]").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        if(this.value) proposePerson(this.dataset.proposeexisting, this.value);
+        this.value = "";
+      });
+    });
+    byId("kontaktBehovList").querySelectorAll("[data-addnewperson]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var behovId = this.dataset.addnewperson;
+        var input = byId("kontaktBehovList").querySelector('[data-newpersonname="'+behovId+'"]');
+        var name = input.value.trim();
+        if(!name) return;
+        addPersonAndPropose(behovId, name);
+        input.value = "";
+      });
+    });
+  }
+  byId("kontaktLogoutBtn").addEventListener("click", function(){
+    if(!sb) return;
+    sb.auth.signOut().then(function(){ window.location.reload(); });
+  });
+
   function refetchOverview(){
     sb.from("spiritual_overview").select("*").order("sort_order").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -3453,6 +3678,8 @@
     refetchAndeligVisibility();
     refetchProjectFags();
     refetchUserAccounts();
+    refetchBehov();
+    refetchBehovForslag();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -3471,6 +3698,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
       .on("postgres_changes", { event: "*", schema: "public", table: "andelig_visibility" }, refetchAndeligVisibility)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
+      .on("postgres_changes", { event: "*", schema: "public", table: "behov" }, refetchBehov)
+      .on("postgres_changes", { event: "*", schema: "public", table: "behov_forslag" }, refetchBehovForslag)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
@@ -3490,6 +3719,7 @@
       }
       state.me = { id: session.user.id, email: session.user.email, role: res.data.role };
       document.body.classList.add("authed");
+      document.body.classList.toggle("kontakt-mode", state.me.role === "kontakt");
       renderAll();
       startDataLayer();
     });
