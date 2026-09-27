@@ -1012,6 +1012,10 @@
   <div class="dlg-body">
     <h3 id="pdTitle">Datoer</h3>
     <div class="det-meta" id="pdMeta"></div>
+    <div id="pdFagPickWrap" hidden style="margin-bottom:10px;">
+      <label style="font-size:12.5px; color:var(--muted); display:block; margin-bottom:4px;">Hvilket fag skal dette registreres for?</label>
+      <select id="pdFagPick" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface);"></select>
+    </div>
     <div class="att-scroll" id="pdWeeks"></div>
     <div class="dlg-actions">
       <button type="button" class="btn primary" id="pdClose">Ferdig</button>
@@ -1311,6 +1315,10 @@
     var pid = currentProjectId();
     return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso && matchesFag(a); });
   }
+  function isPresentForFag(personId, iso, fag){
+    var pid = currentProjectId();
+    return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso && a.fag === fag; });
+  }
   function assignedAnywhereOn(iso){
     var set = new Set();
     elementsForCurrentProject().forEach(function(e){ ((e.assignments && e.assignments[iso]) || []).forEach(function(id){ set.add(id); }); });
@@ -1325,13 +1333,13 @@
     for(var i=0;i<5;i++) out.push(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()+i));
     return out;
   }
-  function setPresence(personId, iso, on){
+  function setPresence(personId, iso, on, fagOverride){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    var fag = activeFag();
+    var fag = fagOverride || activeFag();
     if(fag === "alle"){ showError("Velg et bestemt fag for å registrere oppmøte."); return; }
-    var has = isPresent(personId, iso);
+    var has = isPresentForFag(personId, iso, fag);
     if(on === has) return;
     if(on){
       state.attendance.push({ id: "tmp-"+Math.random(), project_id: pid, person_id: personId, day: iso, fag: fag });
@@ -1842,6 +1850,10 @@
     for(var m = new Date(start); m <= end; m = new Date(m.getFullYear(), m.getMonth(), m.getDate()+7)) weeks.push(new Date(m));
     return weeks;
   }
+  function personDatesFag(){
+    if(activeFag() !== "alle") return activeFag();
+    return personDatesDialog.dataset.fag || "";
+  }
   function renderPersonDates(){
     var pid = personDatesDialog.dataset.person;
     var p = state.people.find(function(x){ return x.id === pid; });
@@ -1850,31 +1862,52 @@
     var total = attendanceForCurrentProject().filter(function(a){ return a.person_id === pid; }).length;
     byId("pdTitle").textContent = "Datoer – " + p.name;
     byId("pdMeta").innerHTML = '<span>'+escapeHtml(cur ? cur.name : "")+'</span><span><b>'+total+'</b> dag(er) valgt</span>';
+
+    var pickWrap = byId("pdFagPickWrap");
+    var overview = activeFag() === "alle";
+    pickWrap.hidden = !overview;
+    if(overview){
+      var pick = byId("pdFagPick");
+      if(!pick.dataset.wired){
+        pick.dataset.wired = "1";
+        pick.addEventListener("change", function(){ personDatesDialog.dataset.fag = this.value; renderPersonDates(); });
+      }
+      pick.innerHTML = '<option value="">— Velg fag —</option>' + FAG_LIST.map(function(f){
+        return '<option value="'+f+'"'+(f===personDatesFag()?' selected':'')+'>'+FAG_LABELS[f]+'</option>';
+      }).join("");
+    }
+    var fag = personDatesFag();
+    if(overview && !fag){
+      byId("pdWeeks").innerHTML = '<p class="empty-note">Velg hvilket fag denne personen skal settes tilgjengelig for, over.</p>';
+      return;
+    }
+
     var todayMon = mondayOf(new Date()).getTime();
     byId("pdWeeks").innerHTML = datesRangeWeeks().map(function(mon){
       var days = weekDays(mon).map(toISODate);
-      var allOn = days.every(function(iso){ return isPresent(pid, iso); });
+      var allOn = days.every(function(iso){ return isPresentForFag(pid, iso, fag); });
       return '<div class="att-week"'+(mon.getTime()===todayMon?' style="background:var(--accent-soft); border-radius:8px; padding-left:6px"':'')+'><div class="wl">Uke '+isoWeekInfo(mon).week+'<small>'+fmtRange(days[0], days[4])+'</small></div>' +
         days.map(function(iso,i){
-          var on = isPresent(pid, iso);
+          var on = isPresentForFag(pid, iso, fag);
           return '<div class="dcol">'+DAY_ABBR[i]+'<button type="button" class="att-cell'+(on?' on assigned':'')+'" data-pd="'+iso+'">'+(on?'✓':'')+'</button></div>';
         }).join("") +
         '<button type="button" class="att-cell all" data-pdweek="'+days.join(",")+'" style="margin-left:4px">'+(allOn?'Fjern uka':'Hele uka')+'</button></div>';
     }).join("");
     byId("pdWeeks").querySelectorAll("[data-pd]").forEach(function(b){
-      b.addEventListener("click", function(){ setPresence(pid, this.dataset.pd, !isPresent(pid, this.dataset.pd)); });
+      b.addEventListener("click", function(){ setPresence(pid, this.dataset.pd, !isPresentForFag(pid, this.dataset.pd, fag), fag); });
     });
     byId("pdWeeks").querySelectorAll("[data-pdweek]").forEach(function(b){
       b.addEventListener("click", function(){
         var days = this.dataset.pdweek.split(",");
-        var allOn = days.every(function(iso){ return isPresent(pid, iso); });
-        days.forEach(function(iso){ setPresence(pid, iso, !allOn); });
+        var allOn = days.every(function(iso){ return isPresentForFag(pid, iso, fag); });
+        days.forEach(function(iso){ setPresence(pid, iso, !allOn, fag); });
       });
     });
   }
   function openPersonDates(pid){
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     personDatesDialog.dataset.person = pid;
+    personDatesDialog.dataset.fag = "";
     renderPersonDates();
     personDatesDialog.showModal();
     var curWk = byId("pdWeeks").querySelector('.att-week[style]');
