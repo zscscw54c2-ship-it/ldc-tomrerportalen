@@ -673,7 +673,7 @@
 
   <section id="panel-elementer" class="panel">
     <div class="filterbar" id="elFilterBar"></div>
-    <div class="cols2">
+    <div class="cols2" id="elSectionedCols">
       <div class="seccard">
         <div class="sechead">
           <h2><i class="sec-dot" style="background:var(--innvendig)"></i> Innvendig tømring</h2>
@@ -690,6 +690,14 @@
         <div class="progress" id="progress-utvendig"></div>
         <div class="seclist" id="list-utvendig"></div>
       </div>
+    </div>
+    <div class="seccard" id="elGenericCard" hidden>
+      <div class="sechead">
+        <h2 id="elGenericTitle">Oppgaver</h2>
+        <button class="btn small primary" data-newel="generic">+ Ny oppgave</button>
+      </div>
+      <div class="progress" id="progress-generic"></div>
+      <div class="seclist" id="list-generic"></div>
     </div>
   </section>
 
@@ -948,7 +956,7 @@
       <label for="elName">Navn på oppgave</label>
       <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" />
     </div>
-    <div class="field">
+    <div class="field" id="elSectionField">
       <label for="elSection">Seksjon</label>
       <select id="elSection">
         <option value="innvendig">Innvendig tømring</option>
@@ -1315,7 +1323,7 @@
       } else {
         els.forEach(function(e){
           var ids = (e.assignments && e.assignments[iso]) || [];
-          var fagStripe = activeFag() === "alle" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
+          var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
           html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
             '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
             '<div class="ppl">' + (ids.length ? ids.map(function(pid){
@@ -1545,22 +1553,28 @@
     }
     var html = '<div class="g-row g-head" style="height:40px"><div class="g-name">Oppgave</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
 
-    ["innvendig","utvendig"].forEach(function(sec){
-      var list = planned.filter(function(e){ return e.section === sec; }).sort(function(a,b){
-        if(a.start !== b.start) return a.start < b.start ? -1 : 1;
-        var da = fromISODate(a.end) - fromISODate(a.start), db = fromISODate(b.end) - fromISODate(b.start);
-        return da - db;
+    function ganttSort(a,b){
+      if(a.start !== b.start) return a.start < b.start ? -1 : 1;
+      var da = fromISODate(a.end) - fromISODate(a.start), db = fromISODate(b.end) - fromISODate(b.start);
+      return da - db;
+    }
+    function ganttRow(e){
+      var a = workdayIndex(range, e.start), b = workdayIndex(range, e.end);
+      var fagStripe = e.fag !== "tomrer" ? ' border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';' : '';
+      var fagTitle = activeFag() === "alle" ? (FAG_LABELS[e.fag]||e.fag)+' · ' : '';
+      return '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
+        '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
+    }
+    if(activeFag() === "tomrer"){
+      ["innvendig","utvendig"].forEach(function(sec){
+        var list = planned.filter(function(e){ return e.section === sec; }).sort(ganttSort);
+        if(!list.length) return;
+        html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
+        list.forEach(function(e){ html += ganttRow(e); });
       });
-      if(!list.length) return;
-      html += '<div class="g-row g-group"><div class="g-name"><i class="dot" style="background:var(--'+sec+'); width:8px; height:8px; border-radius:3px;"></i>'+(sec==="innvendig"?"Innvendig":"Utvendig")+' tømring</div><div class="g-track">'+bg+'</div></div>';
-      list.forEach(function(e){
-        var a = workdayIndex(range, e.start), b = workdayIndex(range, e.end);
-        var fagStripe = activeFag() === "alle" ? ' border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';' : '';
-        var fagTitle = activeFag() === "alle" ? (FAG_LABELS[e.fag]||e.fag)+' · ' : '';
-        html += '<div class="g-row"><div class="g-name" data-detail="'+e.id+'" title="'+escapeHtml(e.name)+'"><span>'+escapeHtml(e.name)+'</span></div>' +
-          '<div class="g-track">'+bg+'<div class="g-bar s-'+e.status+(isLate(e)?' late':'')+'" data-detail="'+e.id+'" style="left:'+(a*dw+2)+'px; width:'+((b-a+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(e.name)+' · '+fmtRange(e.start,e.end)+' · '+STATUS_LABEL[e.status]+'">'+escapeHtml(e.name)+'</div></div></div>';
-      });
-    });
+    } else {
+      planned.slice().sort(ganttSort).forEach(function(e){ html += ganttRow(e); });
+    }
     box.innerHTML = html;
     bindDetail(box);
     // rull slik at i dag er synlig
@@ -1572,6 +1586,8 @@
     byId("weekView").hidden = view.calView !== "uke";
     byId("ganttView").hidden = view.calView !== "prosjekt";
     document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
+    byId("calSecSeg").hidden = activeFag() !== "tomrer";
+    if(activeFag() !== "tomrer") view.calSec = "alle";
     document.querySelectorAll("#calSecSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calsec===view.calSec ? "true":"false"); });
     if(view.calView === "uke"){ renderWeekLabel(); renderWeekGrid(); renderConflictBanner(); }
     else { renderGantt(); byId("conflictBanner").hidden = true; }
@@ -1600,12 +1616,21 @@
     return out;
   }
   function dayLabel(d){ return '<div class="dl">'+DAY_SHORT[d.getDay()].replace(/^./, function(c){return c.toUpperCase();})+'<small>'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</small></div>'; }
+  function sectionOrFagBadge(e){
+    if(e.fag === "tomrer"){
+      return '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>';
+    }
+    if(activeFag() === "alle"){
+      return '<span><i class="dot" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'; border-radius:3px;"></i> '+(FAG_LABELS[e.fag]||e.fag)+'</span>';
+    }
+    return "";
+  }
   function openDetail(id){
     var e = state.elements.find(function(x){ return x.id === id; });
     if(!e) return;
     detailDialog.dataset.id = id;
     byId("detTitle").textContent = e.name;
-    byId("detMeta").innerHTML = statusPill(e) + '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>' +
+    byId("detMeta").innerHTML = statusPill(e) + sectionOrFagBadge(e) +
       '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
     byId("detStatusPicker").querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.detstatus === e.status); });
     byId("detNotes").innerHTML = e.notes ? '<div class="det-notes">'+escapeHtml(e.notes)+'</div>' : '';
@@ -1623,7 +1648,7 @@
       setElementStatus(id, this.dataset.detstatus);
       byId("detStatusPicker").querySelectorAll("button").forEach(function(x){ x.classList.toggle("active", x===b); });
       var e = state.elements.find(function(x){ return x.id === id; });
-      if(e) byId("detMeta").innerHTML = statusPill(e) + '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>' +
+      if(e) byId("detMeta").innerHTML = statusPill(e) + sectionOrFagBadge(e) +
         '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
     });
   });
@@ -1953,17 +1978,16 @@
     });
     var filter = FILTERS.find(function(f){ return f.key===view.elFilter; }) || FILTERS[0];
 
-    ["innvendig","utvendig"].forEach(function(sec){
-      var secEls = projectEls.filter(function(e){ return e.section===sec; });
+    function renderElList(progressId, listId, secEls){
       var counts = {mangler:0,pabegynt:0,ferdig:0};
       secEls.forEach(function(e){ counts[e.status]++; });
       var tot = secEls.length || 1;
-      byId("progress-"+sec).innerHTML = secEls.length === 0 ? "" :
+      byId(progressId).innerHTML = secEls.length === 0 ? "" :
         counts.ferdig+' av '+secEls.length+' ferdig · '+counts.pabegynt+' påbegynt · '+counts.mangler+' mangler' +
         '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>';
 
       var list = secEls.filter(filter.test).slice().sort(elSort);
-      var box = byId("list-"+sec);
+      var box = byId(listId);
       if(list.length === 0){
         box.innerHTML = '<p class="empty-note">'+(secEls.length===0 ? 'Ingen oppgaver ennå.' : 'Ingen oppgaver med dette filteret.')+'</p>';
         return;
@@ -2000,7 +2024,19 @@
             '<button class="btn small danger" data-delel="'+e.id+'">Slett</button>' +
           '</div></div></div>';
       }).join("");
-    });
+    }
+
+    var sectionedView = activeFag() === "tomrer";
+    byId("elSectionedCols").hidden = !sectionedView;
+    byId("elGenericCard").hidden = sectionedView;
+    if(sectionedView){
+      ["innvendig","utvendig"].forEach(function(sec){
+        renderElList("progress-"+sec, "list-"+sec, projectEls.filter(function(e){ return e.section===sec; }));
+      });
+    } else {
+      byId("elGenericTitle").textContent = activeFag() === "alle" ? "Oppgaver (alle fag)" : (FAG_LABELS[activeFag()]||"")+"-oppgaver";
+      renderElList("progress-generic", "list-generic", projectEls);
+    }
 
     var panel = byId("panel-elementer");
     panel.querySelectorAll("[data-elstatus]").forEach(function(b){
@@ -2514,6 +2550,7 @@
       if(!e){ showError("Fant ikke oppgaven – den kan ha blitt slettet."); return; }
       byId("elDlgTitle").textContent = planNow ? "Legg oppgave i planen" : "Rediger oppgave";
       fillElForm(e);
+      byId("elSectionField").hidden = e.fag !== "tomrer";
       byId("elStart").value = e.start || "";
       byId("elEnd").value = e.end || "";
       byId("elPlanned").checked = isPlanned(e) || !!planNow;
@@ -2521,18 +2558,20 @@
       byId("elDlgTitle").textContent = "Ny oppgave";
       byId("elName").value = "";
       byId("elNotes").value = "";
-      byId("elSection").value = prefillSection || view.section || "innvendig";
+      byId("elSectionField").hidden = activeFag() !== "tomrer";
+      byId("elSection").value = (prefillSection === "innvendig" || prefillSection === "utvendig") ? prefillSection : "innvendig";
       setDlgStatus("mangler");
       byId("elStart").value = prefillDate || "";
       byId("elEnd").value = prefillDate || "";
       byId("elPlanned").checked = !!prefillDate;
       if(prefillDate){
         var sec = byId("elSection").value;
+        var showSection = activeFag() === "tomrer";
         var unplanned = elementsForCurrentProject().filter(function(x){ return !isPlanned(x) && x.status !== "ferdig"; })
           .sort(function(a,b){ return a.section===sec ? (b.section===sec ? 0 : -1) : (b.section===sec ? 1 : 0); });
         if(unplanned.length > 0){
           byId("elPick").innerHTML = '<option value="">— Ny oppgave —</option>' + unplanned.map(function(x){
-            return '<option value="'+x.id+'">'+escapeHtml(x.name)+' ('+x.section+', '+STATUS_LABEL[x.status].toLowerCase()+')</option>';
+            return '<option value="'+x.id+'">'+escapeHtml(x.name)+' ('+(showSection ? x.section+', ' : '')+STATUS_LABEL[x.status].toLowerCase()+')</option>';
           }).join("");
           byId("elPickWrap").hidden = false;
         }
