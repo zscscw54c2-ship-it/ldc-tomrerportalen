@@ -1001,8 +1001,11 @@
       </div>
 
       <div class="peoplecard" style="margin-top:16px;">
-        <h2 style="font-size:16px; margin-bottom:8px;">Status per fag</h2>
-        <div id="toFagStatusList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+          <h2 style="font-size:16px; margin:0;">Status per fag</h2>
+          <button type="button" class="btn small" id="toFagStatusModeBtn">Hele prosjektet</button>
+        </div>
+        <div id="toFagStatusList" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
 
       <div class="peoplecard" style="margin-top:16px;">
@@ -1243,7 +1246,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video"];
@@ -1421,6 +1424,61 @@
   function presentWithoutTask(iso){
     var assigned = assignedAnywhereOn(iso);
     return Array.from(presentOn(iso)).filter(function(id){ return !assigned.has(id); });
+  }
+
+  // ---------- ukevisning uavhengig av byggeleders fag-bryter (brukes i TO-møte) ----------
+  function elementsOnForFag(dateIso, fag, section){
+    return state.elements.filter(function(e){
+      return inCurrentProject(e) && isPlanned(e) && e.start <= dateIso && dateIso <= e.end &&
+        (!fag || e.fag === fag) && (!section || e.section === section);
+    });
+  }
+  function presentOnForFag(iso, fag){
+    var pid = currentProjectId();
+    var set = new Set();
+    state.attendance.forEach(function(a){ if(a.project_id === pid && a.day === iso && (!fag || a.fag === fag)) set.add(a.person_id); });
+    return set;
+  }
+  function buildFagWeekCardsHtml(weekStartDate, fag, section){
+    var todayIso = toISODate(new Date());
+    var html = '<div class="cal-card"><div class="wk">';
+    for(var i=0;i<5;i++){
+      var d = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate()+i);
+      var iso = toISODate(d);
+      var els = elementsOnForFag(iso, fag, section);
+      var ppl = peopleAssignedOn(iso, els);
+      var present = presentOnForFag(iso, fag);
+      var status = dayStatus(els.length, ppl.size);
+      html += '<div class="wkday'+(iso===todayIso?' today':'')+'">' +
+        '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
+        (els.length ? '<span class="staff"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+        '</div><div class="wkday-body">';
+      if(els.length === 0){
+        html += '<div class="none">Ingenting planlagt</div>';
+      } else {
+        els.forEach(function(e){
+          var ids = (e.assignments && e.assignments[iso]) || [];
+          var fagStripe = (!fag && e.fag !== "tomrer") ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+'>' +
+            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>' +
+            (!fag ? '<span class="fag-badge" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[e.fag]||e.fag)+'</span>' : '') +
+            statusPill(e)+'</div>' +
+            '<div class="ppl">' + (ids.length ? ids.map(function(pid){
+              return '<span class="pchip">'+escapeHtml(personName(pid))+'</span>';
+            }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
+        });
+      }
+      if(present.size){
+        var missingCount = Array.from(present).filter(function(id){ return !ppl.has(id); }).length;
+        html += '<div class="present">'+present.size+' til stede' +
+          '<div class="miss"'+(missingCount ? '' : ' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
+            (missingCount ? '<b>Mangler oppgave ('+missingCount+')</b>' : '<b>Alle har oppgave</b>') + '</div>' +
+          '</div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+    return html;
   }
   function weekDays(monday){
     var out = [];
@@ -3777,22 +3835,36 @@
       b.addEventListener("click", function(){ deleteToTopic(this.dataset.deltopic); });
     });
 
+    var modeBtn = byId("toFagStatusModeBtn");
+    var heleMode = view.toFagStatusMode === "hele";
+    modeBtn.textContent = heleMode ? "Per fag" : "Hele prosjektet";
+    var weekStartDate = fromISODate(meeting.weekStart);
     var sections = toMeetingFagSections();
-    byId("toFagStatusList").innerHTML = sections.map(function(s){
-      var note = toFagStatusFor(meeting.id, s.fag, s.section);
-      var openTasks = state.elements.filter(inCurrentProject).filter(function(e){
-        return e.fag === s.fag && e.status !== "ferdig" && (!s.section || e.section === s.section);
-      });
-      var taskList = openTasks.length ? ('<div style="font-size:11.5px; color:var(--muted); margin-top:4px;">Åpne oppgaver: '+openTasks.map(function(e){ return escapeHtml(e.name); }).join(", ")+'</div>') : '';
-      return '<div>' +
-        '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
-        '<b style="font-size:13px; display:flex; align-items:center; gap:6px;"><i class="dot" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+escapeHtml(s.label)+'</b>' +
-        '<button type="button" class="btn small" data-gotoelements="'+s.fag+'">Gå til oppgaver</button>' +
-        '</div>' +
-        '<textarea data-fagnote="'+s.fag+'" data-fagsection="'+(s.section||"")+'" rows="2" placeholder="Status denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
-        taskList +
+    if(heleMode){
+      byId("toFagStatusList").innerHTML = '<div>' +
+        '<div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Viser alle fag for uken, samlet – som i Kalender.</div>' +
+        buildFagWeekCardsHtml(weekStartDate, null, null) +
         '</div>';
-    }).join("");
+    } else {
+      byId("toFagStatusList").innerHTML = sections.map(function(s){
+        var note = toFagStatusFor(meeting.id, s.fag, s.section);
+        return '<div>' +
+          '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
+          '<b style="font-size:13px; display:flex; align-items:center; gap:6px;"><i class="dot" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+escapeHtml(s.label)+'</b>' +
+          '<button type="button" class="btn small" data-gotoelements="'+s.fag+'">Gå til oppgaver</button>' +
+          '</div>' +
+          '<textarea data-fagnote="'+s.fag+'" data-fagsection="'+(s.section||"")+'" rows="2" placeholder="Status denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
+          '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(weekStartDate, s.fag, s.section) + '</div>' +
+          '</div>';
+      }).join("");
+    }
+    if(!modeBtn.dataset.bound){
+      modeBtn.dataset.bound = "1";
+      modeBtn.addEventListener("click", function(){
+        view.toFagStatusMode = view.toFagStatusMode === "hele" ? "perfag" : "hele";
+        renderToMoteTab();
+      });
+    }
     byId("toFagStatusList").querySelectorAll("[data-fagnote]").forEach(function(ta){
       ta.addEventListener("change", function(){ setToFagStatus(meeting.id, this.dataset.fagnote, this.dataset.fagsection || null, this.value.trim()); });
     });
