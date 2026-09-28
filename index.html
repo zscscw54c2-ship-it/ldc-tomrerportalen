@@ -96,13 +96,9 @@
   .project-bar{
     max-width:1080px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
-  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:2px 10px 2px 10px; }
-  .project-pill select{
-    border:none; background:none; padding:6px 0; font-size:14px; font-weight:700; max-width:200px; cursor:pointer;
-  }
-  .project-pill .chevron{ font-size:11px; color:var(--muted); pointer-events:none; }
+  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:6px 10px; }
+  .project-pill span{ font-size:14px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .project-dates{font-size:11.5px; color:var(--muted);}
-  #projectMoreMenu{ display:flex; gap:6px; flex-wrap:wrap; width:100%; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
 
   .status-banner{
     margin-top:14px; padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:8px;
@@ -647,18 +643,10 @@
     </div>
     <div class="project-bar">
       <select id="fagSwitcher" title="Vis byggegruppe" hidden></select>
-      <div class="project-pill">
-        <select id="projectSelect" title="Velg prosjekt"></select>
-        <span class="chevron">⌄</span>
+      <div class="project-pill" title="Bytt prosjekt under ACGO">
+        <span id="projectCurrentLabel"></span>
       </div>
       <span id="projectDates" class="mono project-dates"></span>
-      <button class="btn small ghost" id="projectMoreBtn" title="Flere valg" aria-label="Flere valg" aria-expanded="false" hidden>⋯</button>
-      <div id="projectMoreMenu" hidden>
-        <button type="button" class="btn small" id="projectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
-        <button type="button" class="btn small" id="projectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
-        <button type="button" class="btn small primary" id="projectNewBtn">+ Nytt prosjekt</button>
-        <button type="button" class="btn small ghost danger" id="projectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
-      </div>
       <button class="btn small ghost" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
       <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
     </div>
@@ -961,6 +949,20 @@
   </section>
 
   <section id="panel-acgo" class="panel">
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:8px;">Prosjekt</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Velg hvilket prosjekt portalen viser. "★" markerer prosjektet som er satt som standard ved innlogging.</p>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        <select id="acgoProjectSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); min-width:200px;"></select>
+        <span id="acgoProjectDates" class="mono" style="color:var(--muted); font-size:12.5px;"></span>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn small" id="acgoProjectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
+        <button type="button" class="btn small" id="acgoProjectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
+        <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
+        <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
+      </div>
+    </div>
     <div class="cols2">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
@@ -2360,9 +2362,6 @@
   }
 
   function renderProjectBar(){
-    var sel = byId("projectSelect");
-    var datesEl = byId("projectDates");
-    byId("projectMoreBtn").hidden = !isByggeleder();
     var fagSel = byId("fagSwitcher");
     if(isByggeleder()){
       fagSel.hidden = false;
@@ -2376,25 +2375,29 @@
     if(state.me){
       brandTag.textContent = FAG_LABELS[myRole()] || "";
     }
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    byId("projectCurrentLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
+    byId("projectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
+
+    if(!isByggeleder()) return;
+    var acgoSel = byId("acgoProjectSelect");
     if(state.projects.length === 0){
-      sel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
-      datesEl.textContent = "";
+      acgoSel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
+      byId("acgoProjectDates").textContent = "";
       return;
     }
-    sel.innerHTML = state.projects.map(function(p){
+    acgoSel.innerHTML = state.projects.map(function(p){
       return '<option value="'+p.id+'"'+(p.id===state.currentProjectId?' selected':'')+'>'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</option>';
     }).join("");
-    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    datesEl.textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
+    byId("acgoProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
   }
   byId("fagSwitcher").addEventListener("change", function(){
     view.byggeleiderFag = this.value;
     renderAll();
   });
 
-  byId("projectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
-  byId("projectDelete").addEventListener("click", function(){
-    byId("projectMoreMenu").hidden = true;
+  byId("acgoProjectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
+  byId("acgoProjectDelete").addEventListener("click", function(){
     var pid = state.currentProjectId;
     var p = state.projects.find(function(x){ return x.id === pid; });
     if(!p){ showError("Ingen prosjekt er valgt."); return; }
@@ -2406,19 +2409,11 @@
     if(!confirm(msg)) return;
     deleteProject(pid);
   });
-  byId("projectMoreBtn").addEventListener("click", function(){
-    var open = byId("projectMoreMenu").hidden;
-    byId("projectMoreMenu").hidden = !open;
-    this.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  byId("projectSetActive").addEventListener("click", function(){
+  byId("acgoProjectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
-    byId("projectMoreMenu").hidden = true;
-    byId("projectMoreBtn").setAttribute("aria-expanded", "false");
   });
   var projectDialog = byId("projectDialog");
-  byId("projectNewBtn").addEventListener("click", function(){
-    byId("projectMoreMenu").hidden = true;
+  byId("acgoProjectNewBtn").addEventListener("click", function(){
     byId("projDlgTitle").textContent = "Nytt prosjekt";
     byId("projSubmitBtn").textContent = "Opprett";
     byId("projId").value = "";
@@ -2428,8 +2423,7 @@
     byId("projCloseOut").value = "";
     projectDialog.showModal();
   });
-  byId("projectEditBtn").addEventListener("click", function(){
-    byId("projectMoreMenu").hidden = true;
+  byId("acgoProjectEditBtn").addEventListener("click", function(){
     var p = state.projects.find(function(x){ return x.id === state.currentProjectId; });
     if(!p){ showError("Ingen prosjekt er valgt."); return; }
     byId("projDlgTitle").textContent = "Rediger prosjekt";
