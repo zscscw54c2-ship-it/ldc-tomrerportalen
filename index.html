@@ -1116,6 +1116,17 @@
   </div>
 </dialog>
 
+<dialog id="confirmDialog">
+  <div class="dlg-body">
+    <h3 id="confirmTitle">Bekreft</h3>
+    <p id="confirmMsg" style="font-size:13.5px; color:var(--muted); line-height:1.5; margin:0 0 4px;"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="confirmCancel">Avbryt</button>
+      <button type="button" class="btn danger" id="confirmOk">Slett</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="elDialog">
   <form class="dlg-body" id="elForm" method="dialog">
     <h3 id="elDlgTitle">Ny oppgave</h3>
@@ -1460,7 +1471,7 @@
         els.forEach(function(e){
           var ids = (e.assignments && e.assignments[iso]) || [];
           var fagStripe = (!fag && e.fag !== "tomrer") ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+'>' +
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-staffel="'+e.id+'" role="button" tabindex="0" title="Trykk for å se/legge til bemanning">' +
             '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>' +
             (!fag ? '<span class="fag-badge" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[e.fag]||e.fag)+'</span>' : '') +
             statusPill(e)+'</div>' +
@@ -1732,6 +1743,32 @@
       el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openDetail(this.dataset.detail); });
     });
   }
+  function bindStaffOpen(root){
+    root.querySelectorAll("[data-staffel]").forEach(function(el){
+      el.addEventListener("click", function(){ openStaff(this.dataset.staffel); });
+      el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openStaff(this.dataset.staffel); });
+    });
+  }
+
+  // ---------- egen bekreftelsesdialog (i stedet for window.confirm, som er upålitelig i enkelte nettlesere/PWA) ----------
+  var confirmDialog = byId("confirmDialog");
+  var confirmOkHandler = null;
+  function askConfirm(message, onConfirm, opts){
+    opts = opts || {};
+    byId("confirmTitle").textContent = opts.title || "Bekreft";
+    byId("confirmMsg").textContent = message;
+    byId("confirmOk").textContent = opts.confirmLabel || "Slett";
+    confirmOkHandler = onConfirm;
+    confirmDialog.showModal();
+  }
+  byId("confirmCancel").addEventListener("click", function(){ confirmDialog.close(); confirmOkHandler = null; });
+  confirmDialog.addEventListener("click", function(ev){ if(ev.target === confirmDialog){ confirmDialog.close(); confirmOkHandler = null; } });
+  byId("confirmOk").addEventListener("click", function(){
+    var fn = confirmOkHandler;
+    confirmDialog.close();
+    confirmOkHandler = null;
+    if(fn) fn();
+  });
 
   function projectRange(){
     var els = elementsForCurrentProject().filter(isPlanned);
@@ -1813,8 +1850,8 @@
       var ai = workdayIndex(range, el.start), bi = workdayIndex(range, el.end);
       var fagStripe = (opts.showFag && el.fag !== "tomrer") ? ' border-left:4px solid '+(FAG_COLORS[el.fag]||"var(--muted)")+';' : '';
       var fagTitle = opts.showFag ? (FAG_LABELS[el.fag]||el.fag)+' · ' : '';
-      rows += '<div class="g-row"><div class="g-name" data-detail="'+el.id+'" title="'+escapeHtml(el.name)+'"><span>'+escapeHtml(el.name)+'</span></div>' +
-        '<div class="g-track">'+bg+'<div class="g-bar s-'+el.status+(isLate(el)?' late':'')+'" data-detail="'+el.id+'" style="left:'+(ai*dw+2)+'px; width:'+((bi-ai+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(el.name)+' · '+fmtRange(el.start,el.end)+' · '+STATUS_LABEL[el.status]+'">'+escapeHtml(el.name)+'</div></div></div>';
+      rows += '<div class="g-row"><div class="g-name" data-staffel="'+el.id+'" title="Trykk for å se/legge til bemanning – '+escapeHtml(el.name)+'"><span>'+escapeHtml(el.name)+'</span></div>' +
+        '<div class="g-track">'+bg+'<div class="g-bar s-'+el.status+(isLate(el)?' late':'')+'" data-staffel="'+el.id+'" style="left:'+(ai*dw+2)+'px; width:'+((bi-ai+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(el.name)+' · '+fmtRange(el.start,el.end)+' · '+STATUS_LABEL[el.status]+' · trykk for bemanning">'+escapeHtml(el.name)+'</div></div></div>';
     });
     return '<div class="gantt-wrap"><div class="gantt" style="--days:'+range.workdays+'">'+rows+'</div></div>';
   }
@@ -3910,7 +3947,7 @@
         '<div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Hele prosjektets tidslinje, alle fag – som i Oppgaver-fanens prosjektvisning.</div>' +
         buildGanttHtml(allPlanned, { showFag: true }) +
         '</div>';
-      bindDetail(fagStatusBox);
+      bindStaffOpen(fagStatusBox);
     } else {
       fagStatusBox.innerHTML = sections.map(function(s){
         var note = toFagStatusFor(meeting.id, s.fag, s.section);
@@ -3926,6 +3963,7 @@
           '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(fromISODate(meeting.weekStart), s.fag, s.section) + '</div>' +
           '</div>';
       }).join("");
+      bindStaffOpen(fagStatusBox);
     }
     if(!modeBtn.dataset.bound){
       modeBtn.dataset.bound = "1";
@@ -4283,12 +4321,19 @@
   }
   function deleteToMeeting(id){
     if(!sb) return;
-    if(!confirm("Slette dette møtet? Deltakerliste, saksnotater og fag-status for denne uken forsvinner. Sikkerhetsnotater og saker å følge opp beholdes.")) return;
-    sb.from("to_meetings").delete().eq("id", id).then(function(res){
-      if(res.error){ showError("Kunne ikke slette møtet: "+res.error.message); return; }
-      view.toMeetingId = null;
-      refetchToMeetings();
-    });
+    var m = state.toMeetings.find(function(x){ return x.id === id; });
+    var weekTxt = m ? "uke "+isoWeekInfo(fromISODate(m.weekStart)).week : "dette møtet";
+    askConfirm(
+      "Sletter møtet for "+weekTxt+". Deltakerliste, saksnotater og fag-status for denne uken forsvinner for godt. Sikkerhetsnotater og saker å følge opp beholdes uavhengig av møtet.",
+      function(){
+        sb.from("to_meetings").delete().eq("id", id).then(function(res){
+          if(res.error){ showError("Kunne ikke slette møtet: "+res.error.message); return; }
+          view.toMeetingId = null;
+          refetchToMeetings();
+        });
+      },
+      { title: "Slette "+weekTxt+"?", confirmLabel: "Ja, slett møtet" }
+    );
   }
   function setToAttendance(meetingId, roleKey, patch){
     if(!sb) return;
