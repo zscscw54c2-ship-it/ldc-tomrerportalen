@@ -641,6 +641,7 @@
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
         <button role="tab" data-tab="behov" aria-selected="false" hidden>Behov</button>
+        <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
       </nav>
     </div>
     <div class="project-bar">
@@ -953,6 +954,70 @@
     </div>
   </section>
 
+  <section id="panel-tomote" class="panel">
+    <div class="peoplecard">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+        <h2 style="font-size:16px; margin:0;">TO-møte</h2>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <select id="toMeetingSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface);"></select>
+          <button type="button" class="btn small primary" id="toMeetingNewBtn">+ Møte denne uken</button>
+        </div>
+      </div>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Ukentlig møte mellom byggeleder og fag-representantene.</p>
+      <div id="toMeetingEmpty" class="empty-note" hidden>Ingen møter registrert ennå. Trykk "+ Møte denne uken" for å opprette det første.</div>
+      <div id="toMeetingBody" hidden>
+        <div class="field" style="max-width:420px;">
+          <label>Tid, sted</label>
+          <input type="text" id="toMeetingInfo" placeholder="F.eks. Tirsdag 13:00, Gvarv" maxlength="120" />
+        </div>
+      </div>
+    </div>
+
+    <div id="toMeetingSections" hidden>
+      <div class="cols2" style="margin-top:16px;">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Deltakere</h2>
+          <div id="toAttendanceList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Sikkerhetslogg</h2>
+          <div id="toSafetyList"></div>
+          <form class="inline-add" id="addSafetyForm" style="margin-top:8px;">
+            <input type="text" id="newSafetyText" placeholder="Ny sikkerhetsnotat" required maxlength="200" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="peoplecard" style="margin-top:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+          <h2 style="font-size:16px; margin:0;">Generelle saker</h2>
+        </div>
+        <div id="toTopicsList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <form class="inline-add" id="addTopicForm" data-editonly style="margin-top:10px;">
+          <input type="text" id="newTopicText" placeholder="Ny sak, f.eks. Parkering" required maxlength="120" />
+          <button class="btn primary" type="submit">Legg til sak</button>
+        </form>
+      </div>
+
+      <div class="peoplecard" style="margin-top:16px;">
+        <h2 style="font-size:16px; margin-bottom:8px;">Status per fag</h2>
+        <div id="toFagStatusList" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="peoplecard" style="margin-top:16px;">
+        <h2 style="font-size:16px; margin-bottom:8px;">Følge opp</h2>
+        <div id="toFollowupList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <form class="inline-add" id="addFollowupForm" style="margin-top:10px;">
+          <input type="text" id="newFollowupText" placeholder="Hva skal følges opp?" required maxlength="160" style="flex:1; min-width:180px;" />
+          <input type="text" id="newFollowupAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:140px;" />
+          <input type="date" id="newFollowupFrist" title="Frist (valgfritt)" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <p class="foot-note">Endringer lagres delt og live for alle som er logget inn.</p>
 </div>
 
@@ -1177,14 +1242,28 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle" };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [] };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video"];
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
   var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", byggeleder:"ACGO" };
   var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)" };
+  var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
+  var TO_ROLE_LABELS = Object.assign({ prosjektleder:"Prosjektleder", arbeidsleder:"Arbeidsleder" }, FAG_LABELS);
+  function toMeetingFagSections(){
+    var out = [];
+    FAG_LIST.forEach(function(f){
+      if(f === "tomrer"){
+        out.push({ fag:"tomrer", section:"innvendig", label:"Tømrer – innvendig" });
+        out.push({ fag:"tomrer", section:"utvendig", label:"Tømrer – utvendig" });
+      } else {
+        out.push({ fag:f, section:null, label:FAG_LABELS[f] });
+      }
+    });
+    return out;
+  }
   function myRole(){ return state.me && state.me.role; }
   function isByggeleder(){ return myRole() === "byggeleder"; }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
@@ -2828,7 +2907,9 @@
     { tab:"acgo", name:"ACGO", color:"var(--bad)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' },
     { tab:"behov", name:"Behov", color:"var(--rose)",
-      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg>' }
+      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg>' },
+    { tab:"tomote", name:"TO-møte", color:"var(--cyan)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' }
   ];
   function homeTileStatus(tab){
     if(tab === "elementer"){
@@ -2874,6 +2955,10 @@
       var open3 = state.behovDays.filter(function(d){ return slotIds.indexOf(d.slot_id) !== -1 && !d.personId; }).length;
       return { badge: open3, text: open3 > 0 ? open3+" ufylte dager" : "Alt dekket" };
     }
+    if(tab === "tomote"){
+      var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
+      return { badge: openF, text: openF > 0 ? openF+" å følge opp" : "Ingen åpne saker" };
+    }
     return { badge: 0, text: "" };
   }
   function renderMiniCalendar(){
@@ -2892,7 +2977,7 @@
     var grid = byId("mhGrid");
     grid.innerHTML = HOME_TILES.filter(function(t){
       if(t.tab === "andelig") return andeligVisibleForMe();
-      if(t.tab === "acgo" || t.tab === "behov") return isByggeleder();
+      if(t.tab === "acgo" || t.tab === "behov" || t.tab === "tomote") return isByggeleder();
       return true;
     }).map(function(t){
       var body;
@@ -2920,6 +3005,7 @@
     updateAndeligTabVisibility();
     updateAcgoTabVisibility();
     updateBehovTabVisibility();
+    updateToMoteTabVisibility();
     renderProjectBar();
     renderCalView();
     renderElementsTab();
@@ -2934,6 +3020,7 @@
     renderSpiritualTab();
     renderAcgoTab();
     renderBehovTab();
+    renderToMoteTab();
     renderKontaktView();
     renderMobileHome();
   }
@@ -3039,6 +3126,58 @@
   }
   function rowToPortalSuggestion(row){
     return { id: row.id, text: row.text, createdAt: row.created_at };
+  }
+  // ---------- TO-møte ----------
+  function rowToToTopic(row){
+    return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  function rowToToMeeting(row){
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, meetingInfo: row.meeting_info || "", createdAt: row.created_at };
+  }
+  function rowToToAttendance(row){
+    return { id: row.id, meetingId: row.meeting_id, roleKey: row.role_key, personName: row.person_name || "", present: !!row.present };
+  }
+  function rowToToTopicNote(row){
+    return { id: row.id, meetingId: row.meeting_id, topicId: row.topic_id, note: row.note || "" };
+  }
+  function rowToToFagStatus(row){
+    return { id: row.id, meetingId: row.meeting_id, fag: row.fag, section: row.section, note: row.note || "" };
+  }
+  function rowToToSafety(row){
+    return { id: row.id, project_id: row.project_id, meetingId: row.meeting_id, day: row.day, text: row.text, createdAt: row.created_at };
+  }
+  function rowToToFollowup(row){
+    return { id: row.id, project_id: row.project_id, meetingId: row.meeting_id, text: row.text, ansvarlig: row.ansvarlig || "", frist: row.frist, done: !!row.done, createdAt: row.created_at };
+  }
+  function toTopicsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.toTopics.filter(function(t){ return t.project_id === pid; }).sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
+  }
+  function toMeetingsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.toMeetings.filter(function(m){ return m.project_id === pid; }).sort(function(a,b){ return a.weekStart < b.weekStart ? 1 : -1; });
+  }
+  function currentToMeeting(){
+    return state.toMeetings.find(function(m){ return m.id === view.toMeetingId; }) || null;
+  }
+  function toAttendanceFor(meetingId, roleKey){
+    return state.toAttendance.find(function(a){ return a.meetingId === meetingId && a.roleKey === roleKey; }) || { personName:"", present:false };
+  }
+  function toTopicNoteFor(meetingId, topicId){
+    var n = state.toTopicNotes.find(function(x){ return x.meetingId === meetingId && x.topicId === topicId; });
+    return n ? n.note : "";
+  }
+  function toFagStatusFor(meetingId, fag, section){
+    var s = state.toFagStatus.find(function(x){ return x.meetingId === meetingId && x.fag === fag && x.section === section; });
+    return s ? s.note : "";
+  }
+  function toSafetyForCurrentProject(){
+    var pid = currentProjectId();
+    return state.toSafetyLog.filter(function(s){ return s.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+  }
+  function toFollowupsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.toFollowups.filter(function(f){ return f.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
   }
   function rowToRoomTodo(row){
     return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, assignedPersonId: row.assigned_person_id || null, createdAt: row.created_at };
@@ -3233,6 +3372,37 @@
     if(!text) return;
     addPortalSuggestion(text);
     input.value = "";
+  });
+
+  byId("toMeetingSelect").addEventListener("change", function(){ view.toMeetingId = this.value; renderToMoteTab(); });
+  byId("toMeetingNewBtn").addEventListener("click", function(){ createToMeeting(toISODate(mondayOf(new Date()))); });
+  byId("toMeetingInfo").addEventListener("change", function(){
+    var m = currentToMeeting();
+    if(m) updateToMeetingInfo(m.id, this.value.trim());
+  });
+  byId("addTopicForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = byId("newTopicText");
+    var text = input.value.trim();
+    if(!text) return;
+    addToTopic(text);
+    input.value = "";
+  });
+  byId("addSafetyForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = byId("newSafetyText");
+    var text = input.value.trim();
+    if(!text) return;
+    addSafetyLogEntry(text);
+    input.value = "";
+  });
+  byId("addFollowupForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var textInput = byId("newFollowupText"), ansvarligInput = byId("newFollowupAnsvarlig"), fristInput = byId("newFollowupFrist");
+    var text = textInput.value.trim();
+    if(!text) return;
+    addFollowup(text, ansvarligInput.value.trim(), fristInput.value);
+    textInput.value = ""; ansvarligInput.value = ""; fristInput.value = "";
   });
 
   // ---------- Behov (dag-for-dag-rutenett) ----------
@@ -3530,6 +3700,124 @@
     if(btn) btn.hidden = !isByggeleder();
     if(!isByggeleder() && view.tab === "behov") switchTab("kalender");
   }
+  function updateToMoteTabVisibility(){
+    var btn = document.querySelector('nav.tabs button[data-tab="tomote"]');
+    if(btn) btn.hidden = !isByggeleder();
+    if(!isByggeleder() && view.tab === "tomote") switchTab("kalender");
+  }
+  function renderToMoteTab(){
+    if(!isByggeleder()) return;
+    var meetings = toMeetingsForCurrentProject();
+    var sel = byId("toMeetingSelect");
+    var todayMon = toISODate(mondayOf(new Date()));
+
+    if(!view.toMeetingId || !meetings.some(function(m){ return m.id === view.toMeetingId; })){
+      var thisWeek = meetings.find(function(m){ return m.weekStart === todayMon; });
+      view.toMeetingId = thisWeek ? thisWeek.id : (meetings[0] ? meetings[0].id : null);
+    }
+
+    sel.hidden = !meetings.length;
+    sel.innerHTML = meetings.map(function(m){
+      var info = isoWeekInfo(fromISODate(m.weekStart));
+      var end = new Date(fromISODate(m.weekStart).getFullYear(), fromISODate(m.weekStart).getMonth(), fromISODate(m.weekStart).getDate()+4);
+      return '<option value="'+m.id+'"'+(m.id===view.toMeetingId?' selected':'')+'>Uke '+info.week+' · '+fmtRange(m.weekStart, toISODate(end))+'</option>';
+    }).join("");
+
+    var hasThisWeek = meetings.some(function(m){ return m.weekStart === todayMon; });
+    var newBtn = byId("toMeetingNewBtn");
+    newBtn.textContent = hasThisWeek ? "Møte denne uken er opprettet" : "+ Møte denne uken";
+    newBtn.disabled = hasThisWeek;
+
+    var meeting = currentToMeeting();
+    byId("toMeetingEmpty").hidden = !!meetings.length;
+    byId("toMeetingBody").hidden = !meeting;
+    byId("toMeetingSections").hidden = !meeting;
+    if(!meeting) return;
+
+    var infoInput = byId("toMeetingInfo");
+    if(document.activeElement !== infoInput) infoInput.value = meeting.meetingInfo;
+
+    byId("toAttendanceList").innerHTML = TO_ROLE_LIST.map(function(role){
+      var a = toAttendanceFor(meeting.id, role);
+      return '<div class="taskrow" style="flex-wrap:wrap;">' +
+        '<label style="display:flex; align-items:center; gap:8px; min-width:130px; cursor:pointer;"><input type="checkbox" data-topresent="'+role+'" '+(a.present?'checked':'')+' /> <span>'+TO_ROLE_LABELS[role]+'</span></label>' +
+        '<input type="text" data-toname="'+role+'" value="'+escapeHtml(a.personName)+'" placeholder="Navn" style="flex:1; min-width:140px; border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '</div>';
+    }).join("");
+    byId("toAttendanceList").querySelectorAll("[data-topresent]").forEach(function(cb){
+      cb.addEventListener("change", function(){ setToAttendance(meeting.id, this.dataset.topresent, { present: this.checked }); });
+    });
+    byId("toAttendanceList").querySelectorAll("[data-toname]").forEach(function(inp){
+      inp.addEventListener("change", function(){ setToAttendance(meeting.id, this.dataset.toname, { personName: this.value.trim() }); });
+    });
+
+    var safety = toSafetyForCurrentProject();
+    byId("toSafetyList").innerHTML = safety.length ? safety.slice(0,20).map(function(s){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><span class="sqty">'+fmtRange(s.day,s.day)+'</span><button class="del" data-delsafety="'+s.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen sikkerhetsnotater ennå.</p>';
+    byId("toSafetyList").querySelectorAll("[data-delsafety]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Slette dette sikkerhetsnotatet?")) deleteSafetyLogEntry(this.dataset.delsafety); });
+    });
+
+    var topics = toTopicsForCurrentProject();
+    byId("toTopicsList").innerHTML = topics.length ? topics.map(function(t){
+      var note = toTopicNoteFor(meeting.id, t.id);
+      return '<div>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">' +
+        '<b style="font-size:13px;">'+escapeHtml(t.text)+'</b>' +
+        '<button type="button" class="btn small danger" data-editonly data-deltopic="'+t.id+'" title="Fjern sak">×</button>' +
+        '</div>' +
+        '<textarea data-topicnote="'+t.id+'" rows="2" placeholder="Notat for denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen saker lagt til ennå.</p>';
+    byId("toTopicsList").querySelectorAll("[data-topicnote]").forEach(function(ta){
+      ta.addEventListener("change", function(){ setToTopicNote(meeting.id, this.dataset.topicnote, this.value.trim()); });
+    });
+    byId("toTopicsList").querySelectorAll("[data-deltopic]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteToTopic(this.dataset.deltopic); });
+    });
+
+    var sections = toMeetingFagSections();
+    byId("toFagStatusList").innerHTML = sections.map(function(s){
+      var note = toFagStatusFor(meeting.id, s.fag, s.section);
+      var openTasks = state.elements.filter(inCurrentProject).filter(function(e){
+        return e.fag === s.fag && e.status !== "ferdig" && (!s.section || e.section === s.section);
+      });
+      var taskList = openTasks.length ? ('<div style="font-size:11.5px; color:var(--muted); margin-top:4px;">Åpne oppgaver: '+openTasks.map(function(e){ return escapeHtml(e.name); }).join(", ")+'</div>') : '';
+      return '<div>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
+        '<b style="font-size:13px; display:flex; align-items:center; gap:6px;"><i class="dot" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+escapeHtml(s.label)+'</b>' +
+        '<button type="button" class="btn small" data-gotoelements="'+s.fag+'">Gå til oppgaver</button>' +
+        '</div>' +
+        '<textarea data-fagnote="'+s.fag+'" data-fagsection="'+(s.section||"")+'" rows="2" placeholder="Status denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
+        taskList +
+        '</div>';
+    }).join("");
+    byId("toFagStatusList").querySelectorAll("[data-fagnote]").forEach(function(ta){
+      ta.addEventListener("change", function(){ setToFagStatus(meeting.id, this.dataset.fagnote, this.dataset.fagsection || null, this.value.trim()); });
+    });
+    byId("toFagStatusList").querySelectorAll("[data-gotoelements]").forEach(function(b){
+      b.addEventListener("click", function(){ view.byggeleiderFag = this.dataset.gotoelements; switchTab("elementer"); });
+    });
+
+    var followups = toFollowupsForCurrentProject();
+    byId("toFollowupList").innerHTML = followups.length ? followups.map(function(f){
+      return '<div class="taskrow" style="flex-wrap:wrap;'+(f.done?' opacity:.6;':'')+'">' +
+        '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:160px; cursor:pointer;">' +
+        '<input type="checkbox" data-followdone="'+f.id+'" '+(f.done?'checked':'')+' />' +
+        '<span'+(f.done?' style="text-decoration:line-through; color:var(--muted);"':'')+'>'+escapeHtml(f.text)+'</span></label>' +
+        (f.ansvarlig ? '<span class="badge group">'+escapeHtml(f.ansvarlig)+'</span>' : '') +
+        (f.frist ? '<span class="mono" style="font-size:12px; color:var(--muted);">'+fmtRange(f.frist,f.frist)+'</span>' : '') +
+        '<button type="button" class="btn small danger" data-delfollow="'+f.id+'" title="Fjern">×</button>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen saker å følge opp.</p>';
+    byId("toFollowupList").querySelectorAll("[data-followdone]").forEach(function(cb){
+      cb.addEventListener("change", function(){ toggleFollowupDone(this.dataset.followdone, this.checked); });
+    });
+    byId("toFollowupList").querySelectorAll("[data-delfollow]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteFollowup(this.dataset.delfollow); });
+    });
+  }
   function renderKontaktView(){
     if(myRole() !== "kontakt") return;
     var cur = state.projects.find(function(p){ return p.id === homeProjectId(); });
@@ -3606,6 +3894,55 @@
     sb.from("portal_suggestions").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.portalSuggestions = res.data.map(rowToPortalSuggestion);
+      renderAll();
+    });
+  }
+  function refetchToTopics(){
+    sb.from("to_topics").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.toTopics = res.data.map(rowToToTopic);
+      renderAll();
+    });
+  }
+  function refetchToMeetings(){
+    sb.from("to_meetings").select("*").order("week_start").then(function(res){
+      if(res.error){ return; }
+      state.toMeetings = res.data.map(rowToToMeeting);
+      renderAll();
+    });
+  }
+  function refetchToAttendance(){
+    sb.from("to_meeting_attendance").select("*").then(function(res){
+      if(res.error){ return; }
+      state.toAttendance = res.data.map(rowToToAttendance);
+      renderAll();
+    });
+  }
+  function refetchToTopicNotes(){
+    sb.from("to_meeting_topic_notes").select("*").then(function(res){
+      if(res.error){ return; }
+      state.toTopicNotes = res.data.map(rowToToTopicNote);
+      renderAll();
+    });
+  }
+  function refetchToFagStatus(){
+    sb.from("to_meeting_fag_status").select("*").then(function(res){
+      if(res.error){ return; }
+      state.toFagStatus = res.data.map(rowToToFagStatus);
+      renderAll();
+    });
+  }
+  function refetchToSafetyLog(){
+    sb.from("to_safety_log").select("*").order("day", { ascending:false }).then(function(res){
+      if(res.error){ return; }
+      state.toSafetyLog = res.data.map(rowToToSafety);
+      renderAll();
+    });
+  }
+  function refetchToFollowups(){
+    sb.from("to_followups").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.toFollowups = res.data.map(rowToToFollowup);
       renderAll();
     });
   }
@@ -3764,6 +4101,95 @@
   function deletePortalSuggestion(id){
     if(!sb) return;
     sb.from("portal_suggestions").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchPortalSuggestions(); });
+  }
+  function addToTopic(text){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var n = toTopicsForCurrentProject().length;
+    sb.from("to_topics").insert({ project_id: pid, text: text.slice(0,120), sort_order: n+1 }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("to_topics") !== -1 ? "Databasen mangler tabellen for TO-møte. Kjør sql/23-to-mote.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchToTopics();
+    });
+  }
+  function deleteToTopic(id){
+    if(!sb) return;
+    if(!confirm("Slette denne saken? Notater fra tidligere møter på denne saken forsvinner også.")) return;
+    sb.from("to_topics").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchToTopics(); });
+  }
+  function createToMeeting(weekStartIso){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("to_meetings").insert({ project_id: pid, week_start: weekStartIso }).select().single().then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("to_meetings") !== -1 ? "Databasen mangler tabellen for TO-møte. Kjør sql/23-to-mote.sql i Supabase." : "Kunne ikke opprette møte: "+res.error.message); return; }
+      view.toMeetingId = res.data.id;
+      refetchToMeetings();
+    });
+  }
+  function updateToMeetingInfo(id, info){
+    if(!sb) return;
+    sb.from("to_meetings").update({ meeting_info: info || null }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToMeetings();
+    });
+  }
+  function setToAttendance(meetingId, roleKey, patch){
+    if(!sb) return;
+    var existing = toAttendanceFor(meetingId, roleKey);
+    var payload = { meeting_id: meetingId, role_key: roleKey, person_name: existing.personName || null, present: existing.present };
+    if("personName" in patch) payload.person_name = patch.personName || null;
+    if("present" in patch) payload.present = patch.present;
+    sb.from("to_meeting_attendance").upsert(payload, { onConflict: "meeting_id,role_key" }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToAttendance();
+    });
+  }
+  function setToTopicNote(meetingId, topicId, note){
+    if(!sb) return;
+    sb.from("to_meeting_topic_notes").upsert({ meeting_id: meetingId, topic_id: topicId, note: note || null }, { onConflict: "meeting_id,topic_id" }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToTopicNotes();
+    });
+  }
+  function setToFagStatus(meetingId, fag, section, note){
+    if(!sb) return;
+    sb.from("to_meeting_fag_status").upsert({ meeting_id: meetingId, fag: fag, section: section, note: note || null }, { onConflict: "meeting_id,fag,section" }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToFagStatus();
+    });
+  }
+  function addSafetyLogEntry(text){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var meeting = currentToMeeting();
+    sb.from("to_safety_log").insert({ project_id: pid, meeting_id: meeting ? meeting.id : null, text: text.slice(0,200) }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToSafetyLog();
+    });
+  }
+  function deleteSafetyLogEntry(id){
+    if(!sb) return;
+    sb.from("to_safety_log").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchToSafetyLog(); });
+  }
+  function addFollowup(text, ansvarlig, frist){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var meeting = currentToMeeting();
+    sb.from("to_followups").insert({ project_id: pid, meeting_id: meeting ? meeting.id : null, text: text.slice(0,160), ansvarlig: ansvarlig ? ansvarlig.slice(0,60) : null, frist: frist || null }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToFollowups();
+    });
+  }
+  function toggleFollowupDone(id, done){
+    if(!sb) return;
+    sb.from("to_followups").update({ done: done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchToFollowups(); });
+  }
+  function deleteFollowup(id){
+    if(!sb) return;
+    sb.from("to_followups").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchToFollowups(); });
   }
   function addRoomTodo(room, text){
     if(!sb) return;
@@ -4039,6 +4465,13 @@
     refetchBehovSlots();
     refetchBehovDays();
     refetchPortalSuggestions();
+    refetchToTopics();
+    refetchToMeetings();
+    refetchToAttendance();
+    refetchToTopicNotes();
+    refetchToFagStatus();
+    refetchToSafetyLog();
+    refetchToFollowups();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -4060,6 +4493,13 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
       .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_topics" }, refetchToTopics)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_meetings" }, refetchToMeetings)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_meeting_attendance" }, refetchToAttendance)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_meeting_topic_notes" }, refetchToTopicNotes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_meeting_fag_status" }, refetchToFagStatus)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_safety_log" }, refetchToSafetyLog)
+      .on("postgres_changes", { event: "*", schema: "public", table: "to_followups" }, refetchToFollowups)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
