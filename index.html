@@ -671,57 +671,45 @@
   </div>
 
   <section id="panel-dashbord" class="panel">
-    <div class="peoplecard">
-      <h2 style="font-size:16px; margin-bottom:8px;">Oppgaver (alle fag)</h2>
-      <div class="progress" id="dashProgress"></div>
+    <div class="kpi-row" id="dashKpiRow" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;"></div>
+
+    <div class="peoplecard" style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button type="button" class="btn primary" id="dashCreateMeetingBtn"></button>
+      <label class="btn" id="dashDokuTrigger" for="dashDokuFile" style="margin:0; cursor:pointer;">+ Last opp dokumentasjonsbilde</label>
+      <input type="file" id="dashDokuFile" accept="image/*" capture="environment" multiple style="display:none;" />
+      <span class="empty-note" id="dashDokuStatus"></span>
     </div>
 
-    <div class="cols2" style="margin-top:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">TO-møte</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Opprett eller åpne referatet for denne uken.</p>
-        <button type="button" class="btn primary" id="dashCreateMeetingBtn"></button>
-      </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Møtetider</h2>
+    <div class="peoplecard" id="dashDokuFormWrap" style="margin-top:12px;" hidden>
+      <div class="fieldrow">
         <div class="field">
-          <label for="dashTeamMeetingTime">Teammøte</label>
-          <input type="text" id="dashTeamMeetingTime" placeholder="F.eks. Mandag kl 07:00" maxlength="80" />
+          <label for="dashDokuFag">Hvilket fag gjelder det?</label>
+          <select id="dashDokuFag"></select>
         </div>
-        <div class="field" style="margin-top:8px;">
-          <label for="dashToMeetingTime">TO-møte</label>
-          <input type="text" id="dashToMeetingTime" placeholder="F.eks. Tirsdag kl 13:00, brakka" maxlength="80" />
+        <div class="field" style="flex:1;">
+          <label for="dashDokuCaption">Beskrivelse</label>
+          <input type="text" id="dashDokuCaption" maxlength="160" placeholder="Hva viser bildet?" />
         </div>
+      </div>
+      <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+        <button type="button" class="btn primary" id="dashDokuUploadBtn">Last opp</button>
       </div>
     </div>
 
     <div class="cols2" style="margin-top:16px;">
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Handleliste – mangler å kjøpe</h2>
-        <div id="dashShopList"></div>
+        <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
+        <div id="dashMoteList"></div>
       </div>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Dokumentasjonsbilde</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ta bilde eller last opp, velg hvilket fag det gjelder og skriv en kort beskrivelse.</p>
-        <input type="file" id="dashDokuFile" accept="image/*" capture="environment" multiple style="display:block; margin-bottom:8px;" />
-        <div id="dashDokuFormWrap" hidden>
-          <div class="field">
-            <label for="dashDokuFag">Hvilket fag gjelder det?</label>
-            <select id="dashDokuFag"></select>
-          </div>
-          <div class="field" style="margin-top:8px;">
-            <label for="dashDokuCaption">Beskrivelse</label>
-            <input type="text" id="dashDokuCaption" maxlength="160" placeholder="Hva viser bildet?" />
-          </div>
-          <button type="button" class="btn primary" id="dashDokuUploadBtn" style="margin-top:8px;">Last opp</button>
-        </div>
-        <p class="empty-note" id="dashDokuStatus" style="margin-top:6px;"></p>
+        <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
+        <div id="dashProgramList"></div>
       </div>
     </div>
 
     <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program denne uken</h2>
-      <div id="dashAndeligBox"></div>
+      <h2 style="font-size:16px; margin-bottom:8px;">Handleliste – mangler å kjøpe</h2>
+      <div id="dashShopList"></div>
     </div>
   </section>
 
@@ -3370,7 +3358,7 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", teamMeetingTime: row.team_meeting_time || "", toMeetingTime: row.to_meeting_time || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", createdAt: row.created_at };
   }
   function rowToDuty(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -4206,6 +4194,13 @@
   }
   byId("referatMeetingSelect").addEventListener("change", function(){ view.referatMeetingId = this.value; renderReferatTab(); });
 
+  function dashKpiHtml(opts){
+    return '<div class="kpi'+(opts.cls?' '+opts.cls:'')+'"'+(opts.nav?' data-dashnav="'+opts.nav+'" role="button" tabindex="0"':'')+'>' +
+      '<div class="num">'+opts.num+'</div>' +
+      '<div class="lbl">'+opts.lbl+'</div>' +
+      (opts.bar || '') +
+      '</div>';
+  }
   function renderDashboardTab(){
     if(!isByggeleder()) return;
 
@@ -4213,22 +4208,30 @@
     var counts = {mangler:0,pabegynt:0,ferdig:0};
     allEls.forEach(function(e){ counts[e.status]++; });
     var tot = allEls.length || 1;
-    byId("dashProgress").innerHTML = allEls.length === 0 ? '<p class="empty-note">Ingen oppgaver ennå.</p>' :
-      counts.ferdig+' av '+allEls.length+' ferdig · '+counts.pabegynt+' påbegynt · '+counts.mangler+' mangler' +
-      '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>';
+    var missingShop = state.shopItems.filter(inCurrentProject).filter(function(s){ return !s.bought; });
+    var openFollowups = toFollowupsForCurrentProject().filter(function(f){ return !f.done; });
+    var slotIds = behovSlotsForCurrentProject().map(function(s){ return s.id; });
+    var openBehov = state.behovDays.filter(function(d){ return slotIds.indexOf(d.slot_id) !== -1 && !d.personId; });
+
+    byId("dashKpiRow").innerHTML = [
+      dashKpiHtml({
+        num: allEls.length ? (counts.ferdig+'<small>/'+allEls.length+'</small>') : '0',
+        lbl: "oppgaver ferdig", nav: "elementer",
+        bar: allEls.length ? '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>' : ""
+      }),
+      dashKpiHtml({ num: missingShop.length, lbl: "mangler å kjøpe inn", cls: missingShop.length?"warn":"", nav: "handleliste" }),
+      dashKpiHtml({ num: openFollowups.length, lbl: "å følge opp fra TO-møte", cls: openFollowups.length?"warn":"", nav: "tomote" }),
+      dashKpiHtml({ num: openBehov.length, lbl: "ufylte dager i behov", cls: openBehov.length?"warn":"", nav: "behov" })
+    ].join("");
+    byId("dashKpiRow").querySelectorAll("[data-dashnav]").forEach(function(el){
+      el.addEventListener("click", function(){ switchTab(this.dataset.dashnav); });
+    });
 
     var meetings = toMeetingsForCurrentProject();
     var todayMon = toISODate(mondayOf(new Date()));
     var thisWeekMeeting = meetings.find(function(m){ return m.weekStart === todayMon; });
     byId("dashCreateMeetingBtn").textContent = thisWeekMeeting ? "Åpne TO-møte for denne uken" : "+ Opprett TO-møte for denne uken";
 
-    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    var teamInput = byId("dashTeamMeetingTime");
-    if(document.activeElement !== teamInput) teamInput.value = (cur && cur.teamMeetingTime) || "";
-    var toInput = byId("dashToMeetingTime");
-    if(document.activeElement !== toInput) toInput.value = (cur && cur.toMeetingTime) || "";
-
-    var missingShop = state.shopItems.filter(inCurrentProject).filter(function(s){ return !s.bought; });
     byId("dashShopList").innerHTML = missingShop.length ? missingShop.map(function(s){
       return '<div class="shoprow">' +
         '<input type="checkbox" data-dashtoggleshop="'+s.id+'" />' +
@@ -4241,13 +4244,15 @@
       cb.addEventListener("change", function(){ toggleBought(this.dataset.dashtoggleshop, this.checked); });
     });
 
-    var curWeek = currentPrivilegeWeek();
-    var duties = dutiesForCurrentProject();
-    var weekTxt = curWeek ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" — "+curWeek.responsible+" har Privilege Week") : "Ingen aktiv privilege-uke akkurat nå.";
-    byId("dashAndeligBox").innerHTML = '<p style="font-size:13px; margin:0 0 8px;">'+escapeHtml(weekTxt)+'</p>' +
-      (duties.length ? duties.map(function(d){
-        return '<div class="taskrow" style="flex-wrap:wrap;"><span>'+escapeHtml(d.text)+'</span></div>';
-      }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>');
+    var mote = overviewForCurrentProject("mote");
+    byId("dashMoteList").innerHTML = mote.length ? mote.map(function(o){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span></div>';
+    }).join("") : '<p class="empty-note">Ingen møter lagt til ennå. Legg til under Åndelig.</p>';
+
+    var prog = overviewForCurrentProject("program");
+    byId("dashProgramList").innerHTML = prog.length ? prog.map(function(o){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'</div>';
+    }).join("") : '<p class="empty-note">Ingen rader lagt til ennå. Legg til under Åndelig.</p>';
   }
   byId("dashCreateMeetingBtn").addEventListener("click", function(){
     var meetings = toMeetingsForCurrentProject();
@@ -4255,12 +4260,6 @@
     var existing = meetings.find(function(m){ return m.weekStart === mon; });
     if(existing){ view.toMeetingId = existing.id; } else { createToMeeting(mon); }
     switchTab("tomote");
-  });
-  byId("dashTeamMeetingTime").addEventListener("change", function(){
-    if(state.currentProjectId) updateProjectMeetingTimes(state.currentProjectId, { teamMeetingTime: this.value.trim() });
-  });
-  byId("dashToMeetingTime").addEventListener("change", function(){
-    if(state.currentProjectId) updateProjectMeetingTimes(state.currentProjectId, { toMeetingTime: this.value.trim() });
   });
   byId("dashDokuFile").addEventListener("change", function(){
     var has = this.files && this.files.length > 0;
@@ -4449,16 +4448,6 @@
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
         refetchProjects();
       });
-  }
-  function updateProjectMeetingTimes(id, patch){
-    if(!sb) return;
-    var payload = {};
-    if("teamMeetingTime" in patch) payload.team_meeting_time = patch.teamMeetingTime ? patch.teamMeetingTime.slice(0,80) : null;
-    if("toMeetingTime" in patch) payload.to_meeting_time = patch.toMeetingTime ? patch.toMeetingTime.slice(0,80) : null;
-    sb.from("projects").update(payload).eq("id", id).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("team_meeting_time") !== -1 || res.error.message.indexOf("to_meeting_time") !== -1 ? "Databasen mangler kolonnene for møtetider. Kjør sql/24-dashbord-motetider.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
-      refetchProjects();
-    });
   }
   function deleteProject(id){
     if(!sb) return;
