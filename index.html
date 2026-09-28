@@ -633,11 +633,10 @@
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
         <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
         <button role="tab" data-tab="dokumentasjon" aria-selected="false">Dokumentasjon</button>
-        <button role="tab" data-tab="personer" aria-selected="false">Personer</button>
+        <button role="tab" data-tab="personer" aria-selected="false">Frivillige</button>
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
-        <button role="tab" data-tab="behov" aria-selected="false" hidden>Behov</button>
         <button role="tab" data-tab="tomote" aria-selected="false">TO-møte</button>
       </nav>
     </div>
@@ -849,7 +848,7 @@
   <section id="panel-personer" class="panel">
     <div class="peoplecard">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
-        <h2 style="font-size:16px; margin:0;">Personer</h2>
+        <h2 style="font-size:16px; margin:0;">Frivillige</h2>
         <div id="peopleViewToggle" hidden style="display:flex; gap:4px; background:var(--surface-2, var(--surface)); border:1px solid var(--border); border-radius:8px; padding:2px;">
           <button type="button" class="btn small" data-peopleview="list">Liste</button>
           <button type="button" class="btn small" data-peopleview="byfag">Etter fag</button>
@@ -864,6 +863,20 @@
         <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
         <button class="btn primary" type="submit">Legg til</button>
       </form>
+    </div>
+
+    <div id="personerBehovBox" hidden style="margin-top:16px;">
+      <div class="cal-card">
+        <div class="cal-head">
+          <div class="mo">Behov fra menigheten – <span id="behovLabel"></span></div>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Klikk på en dag for å markere at det trengs noen. Menighetskontakten fyller inn navn på de markerte dagene.</p>
+        </div>
+        <div class="gantt-wrap"><div class="gantt" id="behovGrid"></div></div>
+        <form class="inline-add" id="addExtraBehovForm" style="padding:10px 14px; border-top:1px solid var(--border);">
+          <input type="text" id="newExtraDesc" placeholder="Nytt behov utenfor fagene, f.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:220px;" />
+          <button class="btn small primary" type="submit">+ Legg til rad</button>
+        </form>
+      </div>
     </div>
   </section>
 
@@ -982,20 +995,6 @@
       <form class="inline-add" id="addPortalSuggestionForm" style="margin-top:10px;">
         <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
         <button class="btn primary" type="submit">Legg til</button>
-      </form>
-    </div>
-  </section>
-
-  <section id="panel-behov" class="panel">
-    <div class="cal-card">
-      <div class="cal-head">
-        <div class="mo" id="behovLabel"></div>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Klikk på en dag for å markere at det trengs noen. Menighetskontakten fyller inn navn på de markerte dagene.</p>
-      </div>
-      <div class="gantt-wrap"><div class="gantt" id="behovGrid"></div></div>
-      <form class="inline-add" id="addExtraBehovForm" style="padding:10px 14px; border-top:1px solid var(--border);">
-        <input type="text" id="newExtraDesc" placeholder="Nytt behov utenfor fagene, f.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:220px;" />
-        <button class="btn small primary" type="submit">+ Legg til rad</button>
       </form>
     </div>
   </section>
@@ -2725,6 +2724,14 @@
     });
   }
   function renderPeopleTab(){
+    var behovBox = byId("personerBehovBox");
+    behovBox.hidden = !isByggeleder();
+    if(isByggeleder()){
+      var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+      byId("behovLabel").textContent = cur ? cur.name : "";
+      byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
+      wireBehovGridEvents("behovGrid", "admin");
+    }
     var toggle = byId("peopleViewToggle");
     toggle.hidden = !isByggeleder();
     if(!isByggeleder()) view.peopleView = "list";
@@ -3162,7 +3169,7 @@
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>' },
     { tab:"dokumentasjon", name:"Dokumentasjon", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4Z"/><circle cx="12" cy="13" r="3.2"/></svg>' },
-    { tab:"personer", name:"Personer", color:"var(--utvendig)",
+    { tab:"personer", name:"Frivillige", color:"var(--utvendig)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>' },
     { tab:"rom", name:"To-do", color:"var(--rose)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
@@ -3170,8 +3177,6 @@
       icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' },
     { tab:"acgo", name:"ACGO", color:"var(--bad)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' },
-    { tab:"behov", name:"Behov", color:"var(--rose)",
-      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg>' },
     { tab:"tomote", name:"TO-møte", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' }
   ];
@@ -3198,7 +3203,12 @@
       return { badge: 0, text: np === 0 ? "Ingen bilder ennå" : (np+" bilde"+(np===1?"":"r")) };
     }
     if(tab === "personer"){
-      return { badge: 0, text: state.people.length+" personer" };
+      if(isByggeleder()){
+        var slotIds2 = behovSlotsForCurrentProject().map(function(s){ return s.id; });
+        var openBehovTile = state.behovDays.filter(function(d){ return slotIds2.indexOf(d.slot_id) !== -1 && !d.personId; }).length;
+        return { badge: openBehovTile, text: openBehovTile > 0 ? openBehovTile+" ufylte behov-dager" : state.people.length+" frivillige" };
+      }
+      return { badge: 0, text: state.people.length+" frivillige" };
     }
     if(tab === "rom"){
       var todos = roomTodosForCurrentProject();
@@ -3213,11 +3223,6 @@
     }
     if(tab === "acgo"){
       return { badge: 0, text: state.userAccounts.length+" kontoer" };
-    }
-    if(tab === "behov"){
-      var slotIds = behovSlotsForCurrentProject().map(function(s){ return s.id; });
-      var open3 = state.behovDays.filter(function(d){ return slotIds.indexOf(d.slot_id) !== -1 && !d.personId; }).length;
-      return { badge: open3, text: open3 > 0 ? open3+" ufylte dager" : "Alt dekket" };
     }
     if(tab === "tomote"){
       if(isByggeleder()){
@@ -3247,7 +3252,7 @@
     var grid = byId("mhGrid");
     grid.innerHTML = HOME_TILES.filter(function(t){
       if(t.tab === "andelig") return andeligVisibleForMe();
-      if(t.tab === "acgo" || t.tab === "behov") return isByggeleder();
+      if(t.tab === "acgo") return isByggeleder();
       return true;
     }).map(function(t){
       var body;
@@ -3274,7 +3279,6 @@
     if(view.dragging){ view.pendingRender = true; return; }
     updateAndeligTabVisibility();
     updateAcgoTabVisibility();
-    updateBehovTabVisibility();
     updateDashboardTabVisibility();
     renderProjectBar();
     renderCalView();
@@ -3289,7 +3293,6 @@
     renderRoomTab();
     renderSpiritualTab();
     renderAcgoTab();
-    renderBehovTab();
     renderToMoteTab();
     renderDashboardTab();
     renderKontaktView();
@@ -3960,18 +3963,6 @@
       });
     }
   }
-  function renderBehovTab(){
-    if(!isByggeleder()) return;
-    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    byId("behovLabel").textContent = cur ? cur.name : "";
-    byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
-    wireBehovGridEvents("behovGrid", "admin");
-  }
-  function updateBehovTabVisibility(){
-    var btn = document.querySelector('nav.tabs button[data-tab="behov"]');
-    if(btn) btn.hidden = !isByggeleder();
-    if(!isByggeleder() && view.tab === "behov") switchTab("kalender");
-  }
   function updateDashboardTabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="dashbord"]');
     if(btn) btn.hidden = !isByggeleder();
@@ -4211,7 +4202,7 @@
       }),
       dashKpiHtml({ num: missingShop.length, lbl: "mangler å kjøpe inn", cls: missingShop.length?"warn":"", nav: "handleliste" }),
       dashKpiHtml({ num: openFollowups.length, lbl: "å følge opp fra TO-møte", cls: openFollowups.length?"warn":"", nav: "tomote" }),
-      dashKpiHtml({ num: openBehov.length, lbl: "ufylte dager i behov", cls: openBehov.length?"warn":"", nav: "behov" })
+      dashKpiHtml({ num: openBehov.length, lbl: "ufylte dager i behov", cls: openBehov.length?"warn":"", nav: "personer" })
     ].join("");
     byId("dashKpiRow").querySelectorAll("[data-dashnav]").forEach(function(el){
       el.addEventListener("click", function(){ switchTab(this.dataset.dashnav); });
