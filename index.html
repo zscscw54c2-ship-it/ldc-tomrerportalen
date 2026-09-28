@@ -1451,6 +1451,17 @@
     state.attendance.forEach(function(a){ if(a.project_id === pid && a.day === iso && (!fag || a.fag === fag)) set.add(a.person_id); });
     return set;
   }
+  function assignedAnywhereOnForFag(iso, fag){
+    var set = new Set();
+    state.elements.filter(inCurrentProject).filter(function(e){ return !fag || e.fag === fag; }).forEach(function(e){
+      ((e.assignments && e.assignments[iso]) || []).forEach(function(id){ set.add(id); });
+    });
+    return set;
+  }
+  function presentWithoutTaskForFag(iso, fag){
+    var assigned = assignedAnywhereOnForFag(iso, fag);
+    return Array.from(presentOnForFag(iso, fag)).filter(function(id){ return !assigned.has(id); });
+  }
   function buildFagWeekCardsHtml(weekStartDate, fag, section){
     var todayIso = toISODate(new Date());
     var html = '<div class="cal-card"><div class="wk">';
@@ -1471,20 +1482,26 @@
         els.forEach(function(e){
           var ids = (e.assignments && e.assignments[iso]) || [];
           var fagStripe = (!fag && e.fag !== "tomrer") ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-staffel="'+e.id+'" role="button" tabindex="0" title="Trykk for å se/legge til bemanning">' +
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-staffel="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0" title="Trykk for å se/legge til bemanning, eller dra en person hit">' +
             '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>' +
             (!fag ? '<span class="fag-badge" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[e.fag]||e.fag)+'</span>' : '') +
             statusPill(e)+'</div>' +
             '<div class="ppl">' + (ids.length ? ids.map(function(pid){
-              return '<span class="pchip">'+escapeHtml(personName(pid))+'</span>';
+              var sel = view.sel && view.sel.zone === "tomote" && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
+              return '<span class="pchip'+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="Dra til en annen oppgave, eller ned i «Ledige»-listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
             }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
         });
       }
       if(present.size){
-        var missingCount = Array.from(present).filter(function(id){ return !ppl.has(id); }).length;
+        var missing = presentWithoutTaskForFag(iso, fag);
         html += '<div class="present">'+present.size+' til stede' +
-          '<div class="miss"'+(missingCount ? '' : ' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-            (missingCount ? '<b>Mangler oppgave ('+missingCount+')</b>' : '<b>Alle har oppgave</b>') + '</div>' +
+          '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
+            (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
+              missing.map(function(id){
+                var sel = view.sel && view.sel.zone === "tomote" && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
+                return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
+              }).join("")
+            : '<b>Alle har oppgave</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
           '</div>';
       }
       html += '</div></div>';
@@ -1635,15 +1652,15 @@
   // ---------- dra og slipp / trykk-for-å-velge: sett personer på elementer ----------
   var drag = null;
   function markDroppable(iso, from){
-    document.querySelectorAll('#weekGrid [data-drop-el]').forEach(function(el){
+    document.querySelectorAll('[data-drop-el]').forEach(function(el){
       el.classList.toggle("droppable", el.dataset.iso === iso && el.dataset.dropEl !== from);
     });
-    document.querySelectorAll('#weekGrid [data-drop-unassign]').forEach(function(el){
+    document.querySelectorAll('[data-drop-unassign]').forEach(function(el){
       el.classList.toggle("droppable", !!from && el.dataset.dropUnassign === iso);
     });
   }
   function clearDroppable(){
-    document.querySelectorAll('#weekGrid .droppable, #weekGrid .drop-hover').forEach(function(el){ el.classList.remove("droppable","drop-hover"); });
+    document.querySelectorAll('.droppable, .drop-hover').forEach(function(el){ el.classList.remove("droppable","drop-hover"); });
   }
   function dropTargetAt(x, y, iso, from){
     var el = document.elementFromPoint(x, y);
@@ -1663,24 +1680,44 @@
       unassignPerson(from, iso, pid);
     }
   }
+  // Både Kalender-uken (#weekGrid) og TO-møtets ukekort (#toFagStatusList) bruker samme
+  // dra-og-slipp-/trykk-for-å-velge-system; "sone" bestemmer hvilken av dem som rerendres etterpå.
+  function rerenderDragZone(zone){
+    if(zone === "tomote") renderToMoteTab(); else renderWeekGrid();
+  }
   function setSel(sel){
     view.sel = sel;
+    if(sel) view.selZone = sel.zone;
     var bar = byId("selBar");
     if(sel){
       byId("selText").innerHTML = 'Trykk på en oppgave for å sette på <b>'+escapeHtml(personName(sel.pid))+'</b>' + (sel.from ? ' (eller på listen «Ledige» for å ta av)' : '');
       bar.hidden = false;
     } else { bar.hidden = true; }
-    renderWeekGrid();
+    rerenderDragZone(view.selZone);
   }
   byId("selCancel").addEventListener("click", function(){ setSel(null); });
   document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && view.sel) setSel(null); });
 
-  byId("weekGrid").addEventListener("pointerdown", function(ev){
-    var chip = ev.target.closest("[data-drag-person]");
-    if(!chip || (ev.pointerType === "mouse" && ev.button !== 0)) return;
-    ev.preventDefault();
-    drag = { pid: chip.dataset.dragPerson, iso: chip.dataset.iso, from: chip.dataset.from || "", x0: ev.clientX, y0: ev.clientY, started: false, ghost: null, hover: null };
-  });
+  function bindWeekDragZone(container, zone){
+    container.addEventListener("pointerdown", function(ev){
+      var chip = ev.target.closest("[data-drag-person]");
+      if(!chip || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+      ev.preventDefault();
+      drag = { pid: chip.dataset.dragPerson, iso: chip.dataset.iso, from: chip.dataset.from || "", zone: zone, x0: ev.clientX, y0: ev.clientY, started: false, ghost: null, hover: null };
+    });
+    container.addEventListener("click", function(ev){
+      if(view.suppressClick){ ev.stopPropagation(); ev.preventDefault(); return; }
+      if(!view.sel) return;
+      var t = ev.target.closest("[data-drop-el]") || ev.target.closest("[data-drop-unassign]");
+      if(!t) return;
+      var target = t.dataset.dropEl ? { type:"el", id:t.dataset.dropEl } : { type:"unassign" };
+      var iso = t.dataset.iso || t.dataset.dropUnassign;
+      if(iso !== view.sel.iso || (target.type==="el" && target.id === view.sel.from) || (target.type==="unassign" && !view.sel.from)){ return; }
+      ev.stopPropagation(); ev.preventDefault();
+      var s0 = view.sel; view.sel = null; byId("selBar").hidden = true;
+      applyDrop(s0.pid, s0.iso, s0.from, target);
+    }, true);
+  }
   document.addEventListener("pointermove", function(ev){
     if(!drag) return;
     if(!drag.started){
@@ -1713,29 +1750,19 @@
       clearDroppable();
       if(!cancelled) applyDrop(d.pid, d.iso, d.from, dropTargetAt(ev.clientX, ev.clientY, d.iso, d.from));
       if(view.pendingRender){ view.pendingRender = false; renderAll(); }
-      else renderWeekGrid();
+      else rerenderDragZone(d.zone);
       view.suppressClick = true; setTimeout(function(){ view.suppressClick = false; }, 50);
     } else if(!cancelled){
       // vanlig trykk = velg personen (så trykk på et element)
       var same = view.sel && view.sel.pid === d.pid && view.sel.iso === d.iso && view.sel.from === d.from;
-      setSel(same ? null : { pid: d.pid, iso: d.iso, from: d.from });
+      setSel(same ? null : { pid: d.pid, iso: d.iso, from: d.from, zone: d.zone });
       view.suppressClick = true; setTimeout(function(){ view.suppressClick = false; }, 50);
     }
   }
   document.addEventListener("pointerup", function(ev){ endDrag(ev, false); });
   document.addEventListener("pointercancel", function(ev){ endDrag(ev, true); });
-  byId("weekGrid").addEventListener("click", function(ev){
-    if(view.suppressClick){ ev.stopPropagation(); ev.preventDefault(); return; }
-    if(!view.sel) return;
-    var t = ev.target.closest("[data-drop-el]") || ev.target.closest("[data-drop-unassign]");
-    if(!t) return;
-    var target = t.dataset.dropEl ? { type:"el", id:t.dataset.dropEl } : { type:"unassign" };
-    var iso = t.dataset.iso || t.dataset.dropUnassign;
-    if(iso !== view.sel.iso || (target.type==="el" && target.id === view.sel.from) || (target.type==="unassign" && !view.sel.from)){ return; }
-    ev.stopPropagation(); ev.preventDefault();
-    var s0 = view.sel; view.sel = null; byId("selBar").hidden = true;
-    applyDrop(s0.pid, s0.iso, s0.from, target);
-  }, true);
+  bindWeekDragZone(byId("weekGrid"), "weekGrid");
+  bindWeekDragZone(byId("toFagStatusList"), "tomote");
 
   function bindDetail(root){
     root.querySelectorAll("[data-detail]").forEach(function(el){
