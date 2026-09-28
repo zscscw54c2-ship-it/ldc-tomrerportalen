@@ -2512,27 +2512,11 @@
       ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
       : "Ingen aktiv privilege-uke akkurat nå.";
     byId("pwChecklist").innerHTML = duties.length ? duties.map(function(d){
-      var st = curWeek ? pwDutyStatus(curWeek.id, d.id) : { done:false, delegatedPersonId:null };
-      var delegateSelect = curWeek ? (
-        '<select data-pwdelegate="'+d.id+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
-        '<option value="">Delegert til …</option>' +
-        state.people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===st.delegatedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-        '</select>'
-      ) : "";
-      var checkbox = curWeek ? ('<input type="checkbox" data-pwdone="'+d.id+'" '+(st.done?'checked':'')+' style="width:17px; height:17px; flex:none;" />') : '<span style="width:17px; flex:none;"></span>';
       return '<div class="taskrow" style="flex-wrap:wrap;">' +
-        '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:160px; cursor:pointer;">' + checkbox +
-        '<span'+(st.done?' style="text-decoration:line-through; color:var(--muted);"':'')+'>'+escapeHtml(d.text)+'</span></label>' +
-        delegateSelect +
+        '<span style="flex:1; min-width:160px;">'+escapeHtml(d.text)+'</span>' +
         '<button type="button" class="btn small danger" data-editonly data-delduty="'+d.id+'" title="Fjern ansvarspunkt">×</button>' +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
-    byId("pwChecklist").querySelectorAll("[data-pwdone]").forEach(function(cb){
-      cb.addEventListener("change", function(){ if(curWeek) setPwDutyStatus(curWeek.id, this.dataset.pwdone, { done: this.checked }); });
-    });
-    byId("pwChecklist").querySelectorAll("[data-pwdelegate]").forEach(function(sel){
-      sel.addEventListener("change", function(){ if(curWeek) setPwDutyStatus(curWeek.id, this.dataset.pwdelegate, { delegated_person_id: this.value || null }); });
-    });
     byId("pwChecklist").querySelectorAll("[data-delduty]").forEach(function(b){
       b.addEventListener("click", function(){ deleteDuty(this.dataset.delduty); });
     });
@@ -2880,8 +2864,7 @@
       var curWeek = currentPrivilegeWeek();
       if(!curWeek) return { badge: 0, text: "Ingen aktiv uke" };
       var duties = dutiesForCurrentProject();
-      var open2 = duties.filter(function(d){ return !pwDutyStatus(curWeek.id, d.id).done; }).length;
-      return { badge: open2, text: open2 > 0 ? open2+" ansvarspunkter igjen" : "Alt gjort denne uken" };
+      return { badge: 0, text: duties.length+" ansvarspunkter" };
     }
     if(tab === "acgo"){
       return { badge: 0, text: state.userAccounts.length+" kontoer" };
@@ -3046,9 +3029,6 @@
   }
   function rowToPwDutyStatus(row){
     return { id: row.id, privilegeWeekId: row.privilege_week_id, dutyId: row.duty_id, done: !!row.done, delegatedPersonId: row.delegated_person_id };
-  }
-  function pwDutyStatus(weekId, dutyId){
-    return state.pwDutyStatus.find(function(s){ return s.privilegeWeekId === weekId && s.dutyId === dutyId; }) || { done:false, delegatedPersonId:null };
   }
   function rowToToAgenda(row){
     return { id: row.id, project_id: row.project_id, text: row.text, createdAt: row.created_at };
@@ -3760,16 +3740,6 @@
     sb.from("morning_worship").upsert({ privilege_week_id: weekId, slot: slot, person_id: personId }, { onConflict: "privilege_week_id,slot" }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("morning_worship") !== -1 ? "Databasen mangler tabellen for morgentilbedelse. Kjør sql/08-andelig.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchMorningWorship();
-    });
-  }
-  function setPwDutyStatus(weekId, dutyId, patch){
-    if(!sb || !weekId) return;
-    var existing = pwDutyStatus(weekId, dutyId);
-    var payload = { privilege_week_id: weekId, duty_id: dutyId, done: existing.done, delegated_person_id: existing.delegatedPersonId };
-    Object.assign(payload, patch);
-    sb.from("privilege_week_duty_status").upsert(payload, { onConflict: "privilege_week_id,duty_id" }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("privilege_week_duty_status") !== -1 ? "Databasen mangler tabellen for avhuking. Kjør sql/10-utvidelser.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
-      refetchPwDutyStatus();
     });
   }
   function addToAgenda(text){
