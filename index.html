@@ -961,6 +961,7 @@
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <select id="toMeetingSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface);"></select>
           <button type="button" class="btn small primary" id="toMeetingNewBtn">+ Møte denne uken</button>
+          <button type="button" class="btn small danger" id="toMeetingDeleteBtn" title="Slett dette møtet">Slett møte</button>
         </div>
       </div>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Ukentlig møte mellom byggeleder og fag-representantene.</p>
@@ -3495,6 +3496,7 @@
 
   byId("toMeetingSelect").addEventListener("change", function(){ view.toMeetingId = this.value; renderToMoteTab(); });
   byId("toMeetingNewBtn").addEventListener("click", function(){ createToMeeting(toISODate(mondayOf(new Date()))); });
+  byId("toMeetingDeleteBtn").addEventListener("click", function(){ if(view.toMeetingId) deleteToMeeting(view.toMeetingId); });
   byId("toMeetingInfo").addEventListener("change", function(){
     var m = currentToMeeting();
     if(m) updateToMeetingInfo(m.id, this.value.trim());
@@ -3851,6 +3853,7 @@
     byId("toMeetingEmpty").hidden = !!meetings.length;
     byId("toMeetingBody").hidden = !meeting;
     byId("toMeetingSections").hidden = !meeting;
+    byId("toMeetingDeleteBtn").hidden = !meeting;
     if(!meeting) return;
 
     var infoInput = byId("toMeetingInfo");
@@ -4275,6 +4278,15 @@
     if(!sb) return;
     sb.from("to_meetings").update({ meeting_info: info || null }).eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToMeetings();
+    });
+  }
+  function deleteToMeeting(id){
+    if(!sb) return;
+    if(!confirm("Slette dette møtet? Deltakerliste, saksnotater og fag-status for denne uken forsvinner. Sikkerhetsnotater og saker å følge opp beholdes.")) return;
+    sb.from("to_meetings").delete().eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke slette møtet: "+res.error.message); return; }
+      view.toMeetingId = null;
       refetchToMeetings();
     });
   }
