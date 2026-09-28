@@ -631,6 +631,7 @@
         <span class="tag" id="brandTag"></span>
       </div>
       <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="dashbord" aria-selected="false" hidden>Dashbord</button>
         <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
         <button role="tab" data-tab="elementer" aria-selected="false">Oppgaver</button>
         <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
@@ -668,6 +669,61 @@
   <div id="mobileHome">
     <div class="mh-grid" id="mhGrid"></div>
   </div>
+
+  <section id="panel-dashbord" class="panel">
+    <div class="peoplecard">
+      <h2 style="font-size:16px; margin-bottom:8px;">Oppgaver (alle fag)</h2>
+      <div class="progress" id="dashProgress"></div>
+    </div>
+
+    <div class="cols2" style="margin-top:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">TO-møte</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Opprett eller åpne referatet for denne uken.</p>
+        <button type="button" class="btn primary" id="dashCreateMeetingBtn"></button>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Møtetider</h2>
+        <div class="field">
+          <label for="dashTeamMeetingTime">Teammøte</label>
+          <input type="text" id="dashTeamMeetingTime" placeholder="F.eks. Mandag kl 07:00" maxlength="80" />
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label for="dashToMeetingTime">TO-møte</label>
+          <input type="text" id="dashToMeetingTime" placeholder="F.eks. Tirsdag kl 13:00, brakka" maxlength="80" />
+        </div>
+      </div>
+    </div>
+
+    <div class="cols2" style="margin-top:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Handleliste – mangler å kjøpe</h2>
+        <div id="dashShopList"></div>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Dokumentasjonsbilde</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ta bilde eller last opp, velg hvilket fag det gjelder og skriv en kort beskrivelse.</p>
+        <input type="file" id="dashDokuFile" accept="image/*" capture="environment" multiple style="display:block; margin-bottom:8px;" />
+        <div id="dashDokuFormWrap" hidden>
+          <div class="field">
+            <label for="dashDokuFag">Hvilket fag gjelder det?</label>
+            <select id="dashDokuFag"></select>
+          </div>
+          <div class="field" style="margin-top:8px;">
+            <label for="dashDokuCaption">Beskrivelse</label>
+            <input type="text" id="dashDokuCaption" maxlength="160" placeholder="Hva viser bildet?" />
+          </div>
+          <button type="button" class="btn primary" id="dashDokuUploadBtn" style="margin-top:8px;">Last opp</button>
+        </div>
+        <p class="empty-note" id="dashDokuStatus" style="margin-top:6px;"></p>
+      </div>
+    </div>
+
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program denne uken</h2>
+      <div id="dashAndeligBox"></div>
+    </div>
+  </section>
 
   <section id="panel-kalender" class="panel active">
     <div class="cal-toolbar">
@@ -3239,6 +3295,7 @@
     updateAcgoTabVisibility();
     updateBehovTabVisibility();
     updateToMoteTabVisibility();
+    updateDashboardTabVisibility();
     renderProjectBar();
     renderCalView();
     renderElementsTab();
@@ -3255,6 +3312,7 @@
     renderBehovTab();
     renderToMoteTab();
     renderReferatTab();
+    renderDashboardTab();
     renderKontaktView();
     renderMobileHome();
   }
@@ -3312,7 +3370,7 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", teamMeetingTime: row.team_meeting_time || "", toMeetingTime: row.to_meeting_time || "", createdAt: row.created_at };
   }
   function rowToDuty(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -3940,6 +3998,11 @@
     if(btn) btn.hidden = !isByggeleder();
     if(!isByggeleder() && view.tab === "tomote") switchTab("kalender");
   }
+  function updateDashboardTabVisibility(){
+    var btn = document.querySelector('nav.tabs button[data-tab="dashbord"]');
+    if(btn) btn.hidden = !isByggeleder();
+    if(!isByggeleder() && view.tab === "dashbord") switchTab("kalender");
+  }
   function renderToMoteTab(){
     if(!isByggeleder()) return;
     var meetings = toMeetingsForCurrentProject();
@@ -4143,6 +4206,92 @@
   }
   byId("referatMeetingSelect").addEventListener("change", function(){ view.referatMeetingId = this.value; renderReferatTab(); });
 
+  function renderDashboardTab(){
+    if(!isByggeleder()) return;
+
+    var allEls = state.elements.filter(inCurrentProject);
+    var counts = {mangler:0,pabegynt:0,ferdig:0};
+    allEls.forEach(function(e){ counts[e.status]++; });
+    var tot = allEls.length || 1;
+    byId("dashProgress").innerHTML = allEls.length === 0 ? '<p class="empty-note">Ingen oppgaver ennå.</p>' :
+      counts.ferdig+' av '+allEls.length+' ferdig · '+counts.pabegynt+' påbegynt · '+counts.mangler+' mangler' +
+      '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>';
+
+    var meetings = toMeetingsForCurrentProject();
+    var todayMon = toISODate(mondayOf(new Date()));
+    var thisWeekMeeting = meetings.find(function(m){ return m.weekStart === todayMon; });
+    byId("dashCreateMeetingBtn").textContent = thisWeekMeeting ? "Åpne TO-møte for denne uken" : "+ Opprett TO-møte for denne uken";
+
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var teamInput = byId("dashTeamMeetingTime");
+    if(document.activeElement !== teamInput) teamInput.value = (cur && cur.teamMeetingTime) || "";
+    var toInput = byId("dashToMeetingTime");
+    if(document.activeElement !== toInput) toInput.value = (cur && cur.toMeetingTime) || "";
+
+    var missingShop = state.shopItems.filter(inCurrentProject).filter(function(s){ return !s.bought; });
+    byId("dashShopList").innerHTML = missingShop.length ? missingShop.map(function(s){
+      return '<div class="shoprow">' +
+        '<input type="checkbox" data-dashtoggleshop="'+s.id+'" />' +
+        '<span class="sname">'+escapeHtml(s.name)+'</span>' +
+        (s.quantity ? '<span class="sqty">'+escapeHtml(s.quantity)+'</span>' : '') +
+        '<span class="fag-badge" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[s.fag]||s.fag)+'</span>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Alt er kjøpt inn.</p>';
+    byId("dashShopList").querySelectorAll("[data-dashtoggleshop]").forEach(function(cb){
+      cb.addEventListener("change", function(){ toggleBought(this.dataset.dashtoggleshop, this.checked); });
+    });
+
+    var curWeek = currentPrivilegeWeek();
+    var duties = dutiesForCurrentProject();
+    var weekTxt = curWeek ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" — "+curWeek.responsible+" har Privilege Week") : "Ingen aktiv privilege-uke akkurat nå.";
+    byId("dashAndeligBox").innerHTML = '<p style="font-size:13px; margin:0 0 8px;">'+escapeHtml(weekTxt)+'</p>' +
+      (duties.length ? duties.map(function(d){
+        return '<div class="taskrow" style="flex-wrap:wrap;"><span>'+escapeHtml(d.text)+'</span></div>';
+      }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>');
+  }
+  byId("dashCreateMeetingBtn").addEventListener("click", function(){
+    var meetings = toMeetingsForCurrentProject();
+    var mon = toISODate(mondayOf(new Date()));
+    var existing = meetings.find(function(m){ return m.weekStart === mon; });
+    if(existing){ view.toMeetingId = existing.id; } else { createToMeeting(mon); }
+    switchTab("tomote");
+  });
+  byId("dashTeamMeetingTime").addEventListener("change", function(){
+    if(state.currentProjectId) updateProjectMeetingTimes(state.currentProjectId, { teamMeetingTime: this.value.trim() });
+  });
+  byId("dashToMeetingTime").addEventListener("change", function(){
+    if(state.currentProjectId) updateProjectMeetingTimes(state.currentProjectId, { toMeetingTime: this.value.trim() });
+  });
+  byId("dashDokuFile").addEventListener("change", function(){
+    var has = this.files && this.files.length > 0;
+    byId("dashDokuFormWrap").hidden = !has;
+    if(has){
+      byId("dashDokuFag").innerHTML = OVERVIEW_FAG_LIST.map(function(f){ return '<option value="'+f+'">'+escapeHtml(FAG_LABELS[f]||f)+'</option>'; }).join("");
+    }
+  });
+  byId("dashDokuUploadBtn").addEventListener("click", function(){
+    var fileInput = byId("dashDokuFile");
+    var files = fileInput.files;
+    if(!files || !files.length) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    var fag = byId("dashDokuFag").value;
+    var caption = byId("dashDokuCaption").value;
+    var total = files.length, i = 0;
+    function next(){
+      if(i >= total){
+        byId("dashDokuStatus").textContent = "";
+        fileInput.value = "";
+        byId("dashDokuCaption").value = "";
+        byId("dashDokuFormWrap").hidden = true;
+        refetchDokuPhotos();
+        return;
+      }
+      byId("dashDokuStatus").textContent = total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …";
+      uploadDokuPhoto(files[i], caption, fag).then(function(){ i++; next(); });
+    }
+    next();
+  });
+
   function renderKontaktView(){
     if(myRole() !== "kontakt") return;
     var cur = state.projects.find(function(p){ return p.id === homeProjectId(); });
@@ -4300,6 +4449,16 @@
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
         refetchProjects();
       });
+  }
+  function updateProjectMeetingTimes(id, patch){
+    if(!sb) return;
+    var payload = {};
+    if("teamMeetingTime" in patch) payload.team_meeting_time = patch.teamMeetingTime ? patch.teamMeetingTime.slice(0,80) : null;
+    if("toMeetingTime" in patch) payload.to_meeting_time = patch.toMeetingTime ? patch.toMeetingTime.slice(0,80) : null;
+    sb.from("projects").update(payload).eq("id", id).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("team_meeting_time") !== -1 || res.error.message.indexOf("to_meeting_time") !== -1 ? "Databasen mangler kolonnene for møtetider. Kjør sql/24-dashbord-motetider.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchProjects();
+    });
   }
   function deleteProject(id){
     if(!sb) return;
@@ -4632,7 +4791,7 @@
     return sb.storage.from("dokumentasjon").getPublicUrl(path).data.publicUrl;
   }
   var MAX_DOKU_BYTES = 20 * 1024 * 1024;
-  function uploadDokuPhoto(file, caption){
+  function uploadDokuPhoto(file, caption, fagOverride){
     if(file.size > MAX_DOKU_BYTES){ showError('«'+file.name+'» er for stor (maks 20 MB).'); return Promise.resolve(); }
     var safeName = file.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
     var path = currentProjectId() + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,7) + "-" + safeName;
@@ -4640,21 +4799,22 @@
       .then(function(res){
         if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
         return sb.from("documentation_photos").insert({
-          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: activeFag()
+          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: fagOverride || activeFag()
         }).then(function(res2){
           if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
         });
       });
   }
-  function uploadDokuPhotos(files, caption){
+  function uploadDokuPhotos(files, caption, fagOverride){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    if(activeFag() === "alle"){ showError("Velg et bestemt fag for å laste opp bilder."); return; }
+    var fag = fagOverride || activeFag();
+    if(fag === "alle"){ showError("Velg et bestemt fag for å laste opp bilder."); return; }
     var total = files.length, i = 0;
     function next(){
       if(i >= total){ showDokuStatus(""); refetchDokuPhotos(); return; }
       showDokuStatus(total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …");
-      uploadDokuPhoto(files[i], caption).then(function(){ i++; next(); });
+      uploadDokuPhoto(files[i], caption, fag).then(function(){ i++; next(); });
     }
     next();
   }
@@ -4846,6 +5006,7 @@
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
       });
   }
+  var didAutoOpenDashboard = false;
   function handleSession(session){
     if(!session){
       document.body.classList.remove("authed");
@@ -4861,6 +5022,10 @@
       state.me = { id: session.user.id, email: session.user.email, role: res.data.role };
       document.body.classList.add("authed");
       document.body.classList.toggle("kontakt-mode", state.me.role === "kontakt");
+      if(!didAutoOpenDashboard && isByggeleder() && !window.matchMedia("(max-width:640px)").matches){
+        didAutoOpenDashboard = true;
+        switchTab("dashbord");
+      }
       renderAll();
       startDataLayer();
     });
