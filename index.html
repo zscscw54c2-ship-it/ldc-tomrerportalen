@@ -1757,6 +1757,67 @@
     return new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate() + week*7 + dow);
   }
 
+  // Selvstendig tidslinje (samme visning som Oppgaver-fanens "Prosjekt"-visning),
+  // brukt til å bygge en tidslinje for en vilkårlig liste med oppgaver (brukes i TO-møte).
+  function buildGanttHtml(elements, opts){
+    opts = opts || {};
+    var planned = (elements || []).filter(isPlanned);
+    if(!planned.length){
+      return '<p class="empty-note">Ingen oppgaver lagt inn i planen ennå.</p>';
+    }
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var s, e;
+    planned.forEach(function(x){ if(!s || x.start < s) s = x.start; if(!e || x.end > e) e = x.end; });
+    if(cur){ if(cur.start && cur.start < s) s = cur.start; if(cur.end && cur.end > e) e = cur.end; }
+    var a = mondayOf(fromISODate(s)), b = fromISODate(e);
+    b = new Date(b.getFullYear(), b.getMonth(), b.getDate() + (7 - ((b.getDay()+6)%7) - 1));
+    var calDays = Math.round((b - a)/86400000) + 1;
+    var range = { start: a, end: b, days: calDays, workdays: Math.round(calDays/7)*5 };
+    var dw = window.matchMedia("(max-width:640px)").matches ? 22 : 32;
+
+    var bg = "";
+    for(var w=0; w<range.workdays; w+=10){
+      bg += '<div class="g-weekband" style="left:'+(w*dw)+'px; width:'+(Math.min(5,range.workdays-w)*dw)+'px"></div>';
+    }
+    var todayIso = toISODate(new Date());
+    var todayOffset = Math.round((fromISODate(todayIso) - range.start)/86400000);
+    var todayDow = ((todayOffset % 7) + 7) % 7;
+    if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
+      var ti = workdayIndex(range, todayIso);
+      bg += '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+    }
+
+    var months = "", weeks = "";
+    var m0 = 0;
+    for(var j=0;j<=range.workdays;j++){
+      var dj = workdayDate(range, Math.min(j, range.workdays-1));
+      var d0 = workdayDate(range, m0);
+      if(j === range.workdays || dj.getMonth() !== d0.getMonth()){
+        months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
+        m0 = j;
+      }
+    }
+    for(var wi=0; wi<range.workdays; wi+=5){
+      var wStart = workdayDate(range, wi);
+      weeks += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">'+(dw>=28?'Uke ':'')+isoWeekInfo(wStart).week+'</div>';
+    }
+    var rows = '<div class="g-row g-head" style="height:40px"><div class="g-name">Oppgave</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+
+    function ganttSort(x,y){
+      if(x.start !== y.start) return x.start < y.start ? -1 : 1;
+      var dx = fromISODate(x.end) - fromISODate(x.start), dy = fromISODate(y.end) - fromISODate(y.start);
+      return dx - dy;
+    }
+    planned.slice().sort(ganttSort).forEach(function(el){
+      var ai = workdayIndex(range, el.start), bi = workdayIndex(range, el.end);
+      var fagStripe = (opts.showFag && el.fag !== "tomrer") ? ' border-left:4px solid '+(FAG_COLORS[el.fag]||"var(--muted)")+';' : '';
+      var fagTitle = opts.showFag ? (FAG_LABELS[el.fag]||el.fag)+' · ' : '';
+      rows += '<div class="g-row"><div class="g-name" data-detail="'+el.id+'" title="'+escapeHtml(el.name)+'"><span>'+escapeHtml(el.name)+'</span></div>' +
+        '<div class="g-track">'+bg+'<div class="g-bar s-'+el.status+(isLate(el)?' late':'')+'" data-detail="'+el.id+'" style="left:'+(ai*dw+2)+'px; width:'+((bi-ai+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(el.name)+' · '+fmtRange(el.start,el.end)+' · '+STATUS_LABEL[el.status]+'">'+escapeHtml(el.name)+'</div></div></div>';
+    });
+    return '<div class="gantt-wrap"><div class="gantt" style="--days:'+range.workdays+'">'+rows+'</div></div>';
+  }
+
   function renderGantt(){
     var box = byId("gantt");
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
@@ -3838,23 +3899,28 @@
     var modeBtn = byId("toFagStatusModeBtn");
     var heleMode = view.toFagStatusMode === "hele";
     modeBtn.textContent = heleMode ? "Per fag" : "Hele prosjektet";
-    var weekStartDate = fromISODate(meeting.weekStart);
     var sections = toMeetingFagSections();
+    var fagStatusBox = byId("toFagStatusList");
     if(heleMode){
-      byId("toFagStatusList").innerHTML = '<div>' +
-        '<div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Viser alle fag for uken, samlet – som i Kalender.</div>' +
-        buildFagWeekCardsHtml(weekStartDate, null, null) +
+      var allPlanned = state.elements.filter(inCurrentProject).filter(isPlanned);
+      fagStatusBox.innerHTML = '<div>' +
+        '<div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Hele prosjektets tidslinje, alle fag – som i Oppgaver-fanens prosjektvisning.</div>' +
+        buildGanttHtml(allPlanned, { showFag: true }) +
         '</div>';
+      bindDetail(fagStatusBox);
     } else {
-      byId("toFagStatusList").innerHTML = sections.map(function(s){
+      fagStatusBox.innerHTML = sections.map(function(s){
         var note = toFagStatusFor(meeting.id, s.fag, s.section);
         return '<div>' +
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
           '<b style="font-size:13px; display:flex; align-items:center; gap:6px;"><i class="dot" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+escapeHtml(s.label)+'</b>' +
+          '<span style="display:flex; gap:6px;">' +
+          '<button type="button" class="btn small" data-newelfor="'+s.fag+'" data-newelsection="'+(s.section||"")+'">+ Ny oppgave</button>' +
           '<button type="button" class="btn small" data-gotoelements="'+s.fag+'">Gå til oppgaver</button>' +
+          '</span>' +
           '</div>' +
           '<textarea data-fagnote="'+s.fag+'" data-fagsection="'+(s.section||"")+'" rows="2" placeholder="Status denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
-          '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(weekStartDate, s.fag, s.section) + '</div>' +
+          '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(fromISODate(meeting.weekStart), s.fag, s.section) + '</div>' +
           '</div>';
       }).join("");
     }
@@ -3865,11 +3931,17 @@
         renderToMoteTab();
       });
     }
-    byId("toFagStatusList").querySelectorAll("[data-fagnote]").forEach(function(ta){
+    fagStatusBox.querySelectorAll("[data-fagnote]").forEach(function(ta){
       ta.addEventListener("change", function(){ setToFagStatus(meeting.id, this.dataset.fagnote, this.dataset.fagsection || null, this.value.trim()); });
     });
-    byId("toFagStatusList").querySelectorAll("[data-gotoelements]").forEach(function(b){
+    fagStatusBox.querySelectorAll("[data-gotoelements]").forEach(function(b){
       b.addEventListener("click", function(){ view.byggeleiderFag = this.dataset.gotoelements; switchTab("elementer"); });
+    });
+    fagStatusBox.querySelectorAll("[data-newelfor]").forEach(function(b){
+      b.addEventListener("click", function(){
+        view.byggeleiderFag = this.dataset.newelfor;
+        openElDialog(null, null, this.dataset.newelsection || null);
+      });
     });
 
     var followups = toFollowupsForCurrentProject();
