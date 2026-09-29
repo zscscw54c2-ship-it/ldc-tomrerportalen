@@ -572,6 +572,15 @@
   .behov-config .chip .n{ font-family:"IBM Plex Mono",monospace; font-size:12px; min-width:12px; text-align:center; }
   .behov-config .chip .rm{ border:none; background:none; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:0 2px; }
   .behov-config .chip .rm:hover{ color:var(--bad-ink); }
+  /* .frivillige-grid: samme rutenett som behov, men mer komprimert (smalere rader) og med tydeligere ukeskiller */
+  .frivillige-grid{ --nw:200px; }
+  .frivillige-grid .g-row{ height:30px; }
+  .frivillige-grid .g-group{ height:32px; }
+  .frivillige-grid .g-name{ font-size:12.5px; }
+  .frivillige-grid .behov-cell{ height:30px; padding:0; }
+  .frivillige-grid .behov-cell .who{ font-size:13px; }
+  .frivillige-grid .g-weeks div{ font-size:12px; font-weight:700; color:var(--text); border-left:2px solid var(--border-strong); }
+  .frivillige-grid .behov-track > .behov-cell:nth-child(5n){ border-right:2px solid var(--border-strong); }
 
   /* ---------- mobil hjemskjerm ---------- */
   #mobileHome{ display:none; }
@@ -908,7 +917,7 @@
           <button type="button" class="btn small" id="peopleShowAllBtn">Vis hele listen</button>
         </div>
         <div id="peopleList"></div>
-        <div id="peopleByFag" class="gantt-wrap behov-grid" hidden></div>
+        <div id="peopleByFag" class="gantt-wrap frivillige-grid" hidden></div>
         <form class="inline-add" id="addPersonForm">
           <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
           <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
@@ -2875,6 +2884,7 @@
     if(view.peopleView === "byfag"){
       byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur);
       wireFrivilligeGridEvents("peopleByFag");
+      scrollGridToCurrentWeek("peopleByFag", cur);
       return;
     }
 
@@ -4160,6 +4170,17 @@
         setPresence(parts[0], parts[1], !isPresentForFag(parts[0], parts[1], parts[2]), parts[2]);
       });
     });
+  }
+  // Ruller rutenettet slik at det åpnes på inneværende uke (man kan fortsatt scrolle tilbake for tidligere uker).
+  // Kjøres kun én gang per sidelast (dataset.scrolled), så vi ikke rykker scrollposisjonen bort fra brukeren senere.
+  function scrollGridToCurrentWeek(containerId, project){
+    var wrap = byId(containerId);
+    if(!wrap || wrap.dataset.scrolled || !project || !project.start || !project.end) return;
+    var range = behovProjectRange(project);
+    var mondayIso = toISODate(mondayOf(new Date()));
+    var ti = workdayIndex(range, mondayIso);
+    wrap.scrollLeft = Math.max(0, ti * behovDw);
+    wrap.dataset.scrolled = "1";
   }
   function updateDashboardTabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="dashbord"]');
