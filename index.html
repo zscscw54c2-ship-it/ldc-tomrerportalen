@@ -550,19 +550,28 @@
   .kontakt-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--border); background:var(--surface); }
   .kontakt-wrap{ max-width:720px; margin:0 auto; padding:20px 16px 60px; }
   /* ---------- behov-rutenett (gjenbruker .gantt/.g-row/.g-name fra Gantt-visningen) ---------- */
+  /* .behov-grid skalerer opp de delte .g-*-klassene (større, tydeligere celler) uten å påvirke Oppgaver-tidslinjen */
+  .behov-grid{ --nw:220px; }
+  .behov-grid .g-row{ height:48px; }
+  .behov-grid .g-group{ height:36px; }
+  .behov-grid .g-name{ font-size:13px; }
   .behov-track{ display:flex; flex:none; width:calc(var(--days) * var(--dw)); }
-  .behov-cell{ width:var(--dw); flex:none; height:32px; border-right:1px solid var(--border); border-bottom:1px solid transparent; cursor:default; box-sizing:border-box; display:flex; align-items:center; justify-content:center; }
+  .behov-cell{ width:var(--dw); flex:none; height:48px; border-right:1px solid var(--border); cursor:default; box-sizing:border-box; display:flex; align-items:center; justify-content:center; padding:2px; }
   .behov-cell.needed{ cursor:pointer; background:var(--warn-soft); }
   .behov-cell.filled{ cursor:pointer; background:var(--good-soft); }
   .behov-cell.clickable-empty{ cursor:pointer; }
   .behov-cell.clickable-empty:hover{ background:var(--surface-alt); }
   .behov-cell.out-of-range{ background-image:repeating-linear-gradient(45deg, var(--surface-alt) 0 5px, var(--surface) 5px 10px); }
   .behov-cell.out-of-range:not(.needed):not(.filled){ cursor:not-allowed; }
-  .behov-cell .who{ font-size:9px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; color:var(--good-ink); font-weight:700; }
+  .behov-cell .who{ font-size:11.5px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; color:var(--good-ink); font-weight:700; }
+  .behov-cell .needlabel{ font-size:11px; font-weight:700; color:var(--warn-ink); }
   .behov-fag-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 10px; }
-  .behov-fag-head .stepper{ display:flex; align-items:center; gap:6px; }
-  .behov-fag-head .stepper button{ width:22px; height:22px; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); cursor:pointer; font-size:14px; line-height:1; }
-  .behov-fag-head .stepper span{ font-family:"IBM Plex Mono",monospace; font-size:12px; min-width:14px; text-align:center; }
+  .behov-config .chip{ display:inline-flex; align-items:center; gap:7px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:5px 6px 5px 10px; font-size:12.5px; font-weight:600; }
+  .behov-config{ display:flex; flex-wrap:wrap; gap:8px; }
+  .behov-config .chip button{ width:21px; height:21px; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); cursor:pointer; font-size:13px; line-height:1; padding:0; }
+  .behov-config .chip .n{ font-family:"IBM Plex Mono",monospace; font-size:12px; min-width:12px; text-align:center; }
+  .behov-config .chip .rm{ border:none; background:none; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:0 2px; }
+  .behov-config .chip .rm:hover{ color:var(--bad-ink); }
 
   /* ---------- mobil hjemskjerm ---------- */
   #mobileHome{ display:none; }
@@ -636,8 +645,12 @@
     <div class="cal-card">
       <div class="cal-head">
         <div class="mo" id="kontaktBehovLabel"></div>
+        <div class="legend" style="margin:0">
+          <span><i class="dot warn"></i> Mangler folk</span>
+          <span><i class="dot good"></i> Dekket</span>
+        </div>
       </div>
-      <div class="gantt-wrap"><div class="gantt" id="kontaktBehovGrid"></div></div>
+      <div class="gantt-wrap behov-grid"><div class="gantt" id="kontaktBehovGrid"></div></div>
     </div>
   </div>
 </div>
@@ -875,36 +888,54 @@
   </section>
 
   <section id="panel-personer" class="panel">
-    <div class="peoplecard">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
-        <h2 style="font-size:16px; margin:0;">Frivillige</h2>
-        <div id="peopleViewToggle" hidden style="display:flex; gap:4px; background:var(--surface-2, var(--surface)); border:1px solid var(--border); border-radius:8px; padding:2px;">
-          <button type="button" class="btn small" data-peopleview="list">Liste</button>
-          <button type="button" class="btn small" data-peopleview="byfag">Etter fag</button>
-        </div>
-      </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
-      <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); width:100%; margin-bottom:10px;" />
-      <div id="peopleList"></div>
-      <div id="peopleByFag" hidden></div>
-      <form class="inline-add" id="addPersonForm">
-        <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
-        <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
-        <button class="btn primary" type="submit">Legg til</button>
-      </form>
+    <div id="personerSectionToggle" hidden style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
+      <button type="button" class="btn small" data-personersection="frivillige">Frivillige</button>
+      <button type="button" class="btn small" data-personersection="behov">Behov fra menigheten</button>
     </div>
 
-    <div id="personerBehovBox" hidden style="margin-top:16px;">
-      <div class="cal-card">
-        <div class="cal-head">
-          <div class="mo">Behov fra menigheten – <span id="behovLabel"></span></div>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Klikk på en dag for å markere at det trengs noen. Menighetskontakten fyller inn navn på de markerte dagene.</p>
+    <div id="personerFrivilligeBox">
+      <div class="peoplecard">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
+          <h2 style="font-size:16px; margin:0;">Frivillige</h2>
+          <div id="peopleViewToggle" hidden style="display:flex; gap:4px; background:var(--surface-2, var(--surface)); border:1px solid var(--border); border-radius:8px; padding:2px;">
+            <button type="button" class="btn small" data-peopleview="list">Liste</button>
+            <button type="button" class="btn small" data-peopleview="byfag">Etter fag</button>
+          </div>
         </div>
-        <div class="gantt-wrap"><div class="gantt" id="behovGrid"></div></div>
-        <form class="inline-add" id="addExtraBehovForm" style="padding:10px 14px; border-top:1px solid var(--border);">
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); flex:1; min-width:180px;" />
+          <button type="button" class="btn small" id="peopleShowAllBtn">Vis hele listen</button>
+        </div>
+        <div id="peopleList"></div>
+        <div id="peopleByFag" class="gantt-wrap behov-grid" hidden></div>
+        <form class="inline-add" id="addPersonForm">
+          <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
+          <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="personerBehovBox" hidden>
+      <div class="peoplecard" style="margin-bottom:12px;">
+        <h2 style="font-size:14px; margin-bottom:8px;">Antall plasser per fag</h2>
+        <div id="behovSlotConfig" class="behov-config"></div>
+        <form class="inline-add" id="addExtraBehovForm" style="margin-top:10px;">
           <input type="text" id="newExtraDesc" placeholder="Nytt behov utenfor fagene, f.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:220px;" />
           <button class="btn small primary" type="submit">+ Legg til rad</button>
         </form>
+      </div>
+      <div class="cal-card">
+        <div class="cal-head">
+          <div class="mo">Behov fra menigheten – <span id="behovLabel"></span></div>
+          <div class="legend" style="margin:0">
+            <span><i class="dot warn"></i> Mangler folk</span>
+            <span><i class="dot good"></i> Dekket</span>
+          </div>
+        </div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0; padding:0 14px 10px;">Klikk på en markert dag for å endre. Menighetskontakten fyller inn navn på dagene som trengs.</p>
+        <div class="gantt-wrap behov-grid"><div class="gantt" id="behovGrid"></div></div>
       </div>
     </div>
   </section>
@@ -1377,7 +1408,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video"];
@@ -2806,14 +2837,25 @@
     });
   }
   function renderPeopleTab(){
-    var behovBox = byId("personerBehovBox");
-    behovBox.hidden = !isByggeleder();
-    if(isByggeleder()){
-      var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var sectionToggle = byId("personerSectionToggle");
+    sectionToggle.hidden = !isByggeleder();
+    if(!isByggeleder()) view.personerSection = "frivillige";
+    sectionToggle.querySelectorAll("[data-personersection]").forEach(function(b){
+      b.classList.toggle("primary", b.dataset.personersection === view.personerSection);
+    });
+    var showBehov = isByggeleder() && view.personerSection === "behov";
+    byId("personerFrivilligeBox").hidden = showBehov;
+    byId("personerBehovBox").hidden = !showBehov;
+
+    if(showBehov){
       byId("behovLabel").textContent = cur ? cur.name : "";
+      renderBehovSlotConfig(cur);
       byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
       wireBehovGridEvents("behovGrid", "admin");
+      return;
     }
+
     var toggle = byId("peopleViewToggle");
     toggle.hidden = !isByggeleder();
     if(!isByggeleder()) view.peopleView = "list";
@@ -2829,39 +2871,21 @@
       byId("peopleList").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
       return;
     }
-    var q = (view.peopleSearch || "").trim().toLowerCase();
-    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
 
     if(view.peopleView === "byfag"){
-      var pid = currentProjectId();
-      var byPerson = {};
-      state.attendance.filter(function(a){ return a.project_id === pid; }).forEach(function(a){
-        if(!byPerson[a.person_id]) byPerson[a.person_id] = {};
-        byPerson[a.person_id][a.fag] = (byPerson[a.person_id][a.fag] || 0) + 1;
-      });
-      var seen = {};
-      var cards = OVERVIEW_FAG_LIST.map(function(fag){
-        var rows = list.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; });
-        if(!rows.length) return "";
-        rows.forEach(function(p){ seen[p.id] = true; });
-        return '<div class="peoplecard" style="margin-bottom:14px;"><h2 style="font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">' +
-          '<i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:9px; height:9px; border-radius:3px;"></i>'+FAG_LABELS[fag]+
-          ' <span class="badge group">'+rows.length+'</span></h2>' +
-          rows.map(function(p){
-            return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+'</span>' +
-              '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+byPerson[p.id][fag]+' dag(er)</span>' +
-              '<button type="button" class="btn small primary" data-persondates="'+p.id+'">Datoer</button></span></div>';
-          }).join("") + '</div>';
-      }).join("");
-      var rest = list.filter(function(p){ return !seen[p.id]; });
-      var restHtml = rest.length ? '<div class="peoplecard"><h2 style="font-size:15px; margin-bottom:8px;">Ikke satt opp på noe fag ennå <span class="badge group">'+rest.length+'</span></h2>' +
-        rest.map(personRowHtml).join("") + '</div>' : "";
-      byId("peopleByFag").innerHTML = (cards || restHtml) ? (cards + restHtml) : '<p class="empty-note">Ingen personer matcher søket.</p>';
-      wirePersonRowButtons(byId("peopleByFag"));
+      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur);
+      wireFrivilligeGridEvents("peopleByFag");
       return;
     }
 
     var box = byId("peopleList");
+    var q = (view.peopleSearch || "").trim().toLowerCase();
+    byId("peopleShowAllBtn").textContent = view.peopleShowAll ? "Skjul listen" : "Vis hele listen";
+    if(!q && !view.peopleShowAll){
+      box.innerHTML = '<p class="empty-note">Søk etter et navn, eller trykk «Vis hele listen».</p>';
+      return;
+    }
+    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
     if(list.length === 0){
       box.innerHTML = '<p class="empty-note">Ingen personer matcher søket.</p>';
       return;
@@ -2872,6 +2896,10 @@
   byId("peopleViewToggle").querySelectorAll("[data-peopleview]").forEach(function(b){
     b.addEventListener("click", function(){ view.peopleView = this.dataset.peopleview; renderPeopleTab(); });
   });
+  byId("personerSectionToggle").querySelectorAll("[data-personersection]").forEach(function(b){
+    b.addEventListener("click", function(){ view.personerSection = this.dataset.personersection; renderPeopleTab(); });
+  });
+  byId("peopleShowAllBtn").addEventListener("click", function(){ view.peopleShowAll = !view.peopleShowAll; renderPeopleTab(); });
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
@@ -3889,7 +3917,7 @@
     addCustomBehovSlot(desc);
     descInput.value = "";
   });
-  var behovDw = 40;
+  var behovDw = 68;
   function buildBehovGridHtml(project, mode){
     if(!project || !project.start || !project.end){
       return '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
@@ -3941,7 +3969,6 @@
       var fagSlots = slots.filter(function(s){ return s.fag === fag; }).sort(function(a,b){ return a.slotIndex - b.slotIndex; });
       var pf = projectFagRows[fag];
       html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+(pf.start && pf.end ? ' <span style="font-weight:400; color:var(--muted); font-size:11px;">('+fmtRange(pf.start,pf.end)+')</span>' : '')+'</span>' +
-        (mode === "admin" ? '<span class="stepper"><button type="button" data-behovslotminus="'+fag+'">–</button><span>'+fagSlots.length+'</span><button type="button" data-behovslotplus="'+fag+'">+</button></span>' : '') +
         '</div><div class="g-track">'+bg+todayLine+'</div></div>';
 
       fagSlots.forEach(function(slot, idx){
@@ -3961,6 +3988,7 @@
               content = '<span class="who">'+escapeHtml(personName(dayRow.personId))+'</span>';
             } else {
               cls += " needed";
+              content = '<span class="needlabel">Mangler</span>';
             }
             if(!inFagRange) cls += " out-of-range";
             attrs = mode === "admin" ? ' data-toggleneed="'+slot.id+'|'+iso+'"' : ' data-fillday="'+dayRow.id+'"';
@@ -3994,6 +4022,7 @@
               content = '<span class="who">'+escapeHtml(personName(dayRow.personId))+'</span>';
             } else {
               cls += " needed";
+              content = '<span class="needlabel">Mangler</span>';
             }
             attrs = mode === "admin" ? ' data-toggleneed="'+slot.id+'|'+iso+'"' : ' data-fillday="'+dayRow.id+'"';
           } else if(mode === "admin"){
@@ -4003,7 +4032,6 @@
           cells += '<div class="'+cls+'"'+attrs+' title="'+fmtRange(iso,iso)+'">'+content+'</div>';
         }
         html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'+escapeHtml(slot.label)+'</span>' +
-          (mode === "admin" ? '<button type="button" class="icon-btn" data-delcustomslot="'+slot.id+'" title="Slett rad" style="flex:none; padding:0 4px; font-size:14px; line-height:1; color:var(--muted); background:none; border:none; cursor:pointer;">×</button>' : '') +
           '</div><div class="g-track">'+bg+todayLine+'</div></div>';
         html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12px; color:var(--muted);">Plass 1</div><div class="behov-track">'+cells+'</div></div>';
       });
@@ -4011,6 +4039,39 @@
 
     html += '</div>';
     return html;
+  }
+  function renderBehovSlotConfig(project){
+    var box = byId("behovSlotConfig");
+    if(!box) return;
+    if(!project){ box.innerHTML = ""; return; }
+    var slots = behovSlotsForProject(project.id);
+    var projectFagRows = {};
+    state.projectFags.filter(function(pf){ return pf.project_id === project.id; }).forEach(function(pf){ projectFagRows[pf.fag] = pf; });
+    var fagsToShow = FAG_LIST.filter(function(f){ return projectFagRows[f] && projectFagRows[f].active; });
+    var customSlots = slots.filter(function(s){ return !s.fag; }).sort(function(a,b){ return (a.createdAt||"") < (b.createdAt||"") ? -1 : 1; });
+    box.innerHTML = fagsToShow.map(function(fag){
+      var n = slots.filter(function(s){ return s.fag === fag; }).length;
+      return '<span class="chip"><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+FAG_LABELS[fag]+
+        ' <button type="button" data-behovslotminus="'+fag+'">–</button><span class="n">'+n+'</span><button type="button" data-behovslotplus="'+fag+'">+</button></span>';
+    }).join("") + customSlots.map(function(s){
+      return '<span class="chip">'+escapeHtml(s.label)+' <button type="button" class="rm" data-delcustomslot="'+s.id+'" title="Slett rad">×</button></span>';
+    }).join("");
+    box.querySelectorAll("[data-behovslotplus]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var fag = btn.dataset.behovslotplus;
+        setBehovSlotCount(fag, behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length + 1);
+      });
+    });
+    box.querySelectorAll("[data-behovslotminus]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var fag = btn.dataset.behovslotminus;
+        var n = behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length;
+        if(n>0) setBehovSlotCount(fag, n-1);
+      });
+    });
+    box.querySelectorAll("[data-delcustomslot]").forEach(function(btn){
+      btn.addEventListener("click", function(){ deleteCustomBehovSlot(btn.dataset.delcustomslot); });
+    });
   }
   function wireBehovGridEvents(containerId, mode){
     var box = byId(containerId);
@@ -4021,29 +4082,84 @@
           toggleBehovDayNeeded(parts[0], parts[1]);
         });
       });
-      box.querySelectorAll("[data-behovslotplus]").forEach(function(btn){
-        btn.addEventListener("click", function(){
-          var fag = this.dataset.behovslotplus;
-          setBehovSlotCount(fag, behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length + 1);
-        });
-      });
-      box.querySelectorAll("[data-behovslotminus]").forEach(function(btn){
-        btn.addEventListener("click", function(){
-          var fag = this.dataset.behovslotminus;
-          var n = behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length;
-          if(n>0) setBehovSlotCount(fag, n-1);
-        });
-      });
-      box.querySelectorAll("[data-delcustomslot]").forEach(function(btn){
-        btn.addEventListener("click", function(){
-          deleteCustomBehovSlot(this.dataset.delcustomslot);
-        });
-      });
     } else {
       box.querySelectorAll("[data-fillday]").forEach(function(el){
         el.addEventListener("click", function(){ openBehovFillDialog(this.dataset.fillday); });
       });
     }
+  }
+  // ---------- frivillige "etter fag": samme rutenett-stil som behov, men viser hvem som er tilgjengelig hvilke dager ----------
+  function buildFrivilligeGridHtml(project){
+    if(!project || !project.start || !project.end){
+      return '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
+    }
+    var range = behovProjectRange(project);
+    var dw = behovDw;
+    var css = "--days:"+range.workdays+"; --dw:"+dw+"px;";
+    var bg = "";
+    for(var w=0; w<range.workdays; w+=10){
+      bg += '<div class="g-weekband" style="left:'+(w*dw)+'px; width:'+(Math.min(5,range.workdays-w)*dw)+'px"></div>';
+    }
+    var todayIso = toISODate(new Date());
+    var todayOffset = Math.round((fromISODate(todayIso) - range.start)/86400000);
+    var todayDow = ((todayOffset % 7) + 7) % 7;
+    var todayLine = "";
+    if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
+      var ti = workdayIndex(range, todayIso);
+      todayLine = '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+    }
+    var months = "", weeks = "";
+    var m0 = 0;
+    for(var j=0;j<=range.workdays;j++){
+      var dj = workdayDate(range, Math.min(j, range.workdays-1));
+      var d0 = workdayDate(range, m0);
+      if(j === range.workdays || dj.getMonth() !== d0.getMonth()){
+        months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
+        m0 = j;
+      }
+    }
+    for(var wi=0; wi<range.workdays; wi+=5){
+      var wStart = workdayDate(range, wi);
+      weeks += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
+    }
+    var html = '<div class="gantt" style="'+css+'">';
+    html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+
+    var byPerson = {};
+    state.attendance.filter(function(a){ return a.project_id === project.id; }).forEach(function(a){
+      if(!byPerson[a.person_id]) byPerson[a.person_id] = {};
+      byPerson[a.person_id][a.fag] = true;
+    });
+    var anyRows = false;
+    OVERVIEW_FAG_LIST.forEach(function(fag){
+      var people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      if(!people.length) return;
+      anyRows = true;
+      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      people.forEach(function(p){
+        var cells = "";
+        for(var i=0;i<range.workdays;i++){
+          var d = workdayDate(range, i);
+          var iso = toISODate(d);
+          var present = isPresentForFag(p.id, iso, fag);
+          var cls = "behov-cell clickable-empty" + (present ? " filled" : "");
+          var content = present ? '<span class="who">✓</span>' : '';
+          cells += '<div class="'+cls+'" data-toggleavail="'+p.id+'|'+iso+'|'+fag+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+'">'+content+'</div>';
+        }
+        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+escapeHtml(p.name)+'</div><div class="behov-track">'+cells+'</div></div>';
+      });
+    });
+    html += '</div>';
+    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">Ingen frivillige er satt opp på noe fag ennå.</p>';
+    return html;
+  }
+  function wireFrivilligeGridEvents(containerId){
+    byId(containerId).querySelectorAll("[data-toggleavail]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var parts = this.dataset.toggleavail.split("|");
+        setPresence(parts[0], parts[1], !isPresentForFag(parts[0], parts[1], parts[2]), parts[2]);
+      });
+    });
   }
   function updateDashboardTabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="dashbord"]');
