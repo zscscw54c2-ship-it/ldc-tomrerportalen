@@ -1088,6 +1088,7 @@
             <span id="toMeetingConcludedBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Referat klart</span>
             <button type="button" class="btn small primary" id="toMeetingNewBtn">+ Møte denne uken</button>
             <button type="button" class="btn small" id="toMeetingConcludeBtn"></button>
+            <button type="button" class="btn small" id="toMeetingPdfBtn" hidden title="Lag PDF-referat på nytt">Lag PDF på nytt</button>
             <button type="button" class="btn small danger" id="toMeetingDeleteBtn" title="Slett dette møtet">Slett møte</button>
           </div>
         </div>
@@ -3808,10 +3809,16 @@
       "Møtet merkes som avsluttet, en PDF-versjon av referatet lages og legges i arkivet på ACGO-siden, og referatet blir synlig for alle fag under TO-møte-fanen. Du kan fortsatt redigere etterpå om noe mangler.",
       function(){
         setToMeetingConcluded(m.id, true);
-        generateAndUploadReferatPdf(m);
+        generateReferatPdfSafe(m);
       },
       { title: "Avslutte møtet og lage referat?", confirmLabel: "Avslutt og lag referat" }
     );
+  });
+  byId("toMeetingPdfBtn").addEventListener("click", function(){
+    var m = state.toMeetings.find(function(x){ return x.id === view.toMeetingId; });
+    if(!m) return;
+    showInfo("Lager PDF-referat …");
+    generateReferatPdfSafe(m);
   });
   byId("toMeetingInfo").addEventListener("change", function(){
     var m = currentToMeeting();
@@ -4268,6 +4275,7 @@
       concludeBtn.textContent = meeting.concluded ? "Gjenåpne møtet" : "Avslutt møte og lag referat";
       concludeBtn.classList.toggle("primary", !meeting.concluded);
     }
+    byId("toMeetingPdfBtn").hidden = !meeting || !meeting.concluded;
     if(!meeting) return;
 
     var infoInput = byId("toMeetingInfo");
@@ -4979,9 +4987,18 @@
       if(res.error){ showError(res.error.message.indexOf("referater") !== -1 ? "Databasen mangler PDF-lagringsrommet. Kjør sql/26-to-mote-referat-pdf.sql i Supabase." : "Kunne ikke laste opp PDF-referatet: "+res.error.message); return; }
       return sb.from("to_meetings").update({ referat_pdf_path: path }).eq("id", meeting.id).then(function(res2){
         if(res2.error){ showError("PDF ble lastet opp, men kunne ikke lagres på møtet: "+res2.error.message); return; }
+        showInfo("PDF-referat opprettet ✓");
         refetchToMeetings();
       });
     });
+  }
+  function generateReferatPdfSafe(meeting){
+    try{
+      return generateAndUploadReferatPdf(meeting);
+    }catch(e){
+      showError("Kunne ikke lage PDF-referat: "+e.message);
+      return Promise.resolve();
+    }
   }
   function referatPdfUrl(path){
     return sb.storage.from("referater").getPublicUrl(path).data.publicUrl;
