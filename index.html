@@ -15,6 +15,8 @@
 <meta name="apple-mobile-web-app-title" content="LDC CG1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf-autotable.min.js"></script>
 <style>
   :root{
     --bg:#f4f7fb;
@@ -3533,7 +3535,7 @@
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
   }
   function rowToToMeeting(row){
-    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, meetingInfo: row.meeting_info || "", concluded: !!row.concluded, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, meetingInfo: row.meeting_info || "", concluded: !!row.concluded, referatPdfPath: row.referat_pdf_path || "", createdAt: row.created_at };
   }
   function rowToToAttendance(row){
     return { id: row.id, meetingId: row.meeting_id, roleKey: row.role_key, personName: row.person_name || "", present: !!row.present };
@@ -3698,6 +3700,7 @@
       return '<div class="shoprow" data-openreferat="'+m.id+'" style="cursor:pointer;">' +
         '<span class="sname">Uke '+info.week+'</span>' +
         '<span class="sqty">'+fmtRange(m.weekStart, toISODate(end))+(m.meetingInfo?' · '+escapeHtml(m.meetingInfo):'')+'</span>' +
+        (m.referatPdfPath ? '<a class="btn small" data-pdflink href="'+referatPdfUrl(m.referatPdfPath)+'" target="_blank" rel="noopener" title="Last ned PDF">PDF</a>' : '<span class="empty-note" style="font-size:11px;">Ingen PDF ennå</span>') +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen avsluttede møter ennå.</p>';
     byId("acgoReferatArchive").querySelectorAll("[data-openreferat]").forEach(function(row){
@@ -3705,6 +3708,9 @@
         view.toMeetingId = this.dataset.openreferat;
         switchTab("tomote");
       });
+    });
+    byId("acgoReferatArchive").querySelectorAll("[data-pdflink]").forEach(function(a){
+      a.addEventListener("click", function(ev){ ev.stopPropagation(); });
     });
 
     var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
@@ -3799,8 +3805,11 @@
     if(!m) return;
     if(m.concluded){ setToMeetingConcluded(m.id, false); return; }
     askConfirm(
-      "Møtet merkes som avsluttet, og referatet blir synlig for alle fag under TO-møte-fanen. Du kan fortsatt redigere etterpå om noe mangler.",
-      function(){ setToMeetingConcluded(m.id, true); },
+      "Møtet merkes som avsluttet, en PDF-versjon av referatet lages og legges i arkivet på ACGO-siden, og referatet blir synlig for alle fag under TO-møte-fanen. Du kan fortsatt redigere etterpå om noe mangler.",
+      function(){
+        setToMeetingConcluded(m.id, true);
+        generateAndUploadReferatPdf(m);
+      },
       { title: "Avslutte møtet og lage referat?", confirmLabel: "Avslutt og lag referat" }
     );
   });
@@ -4853,6 +4862,129 @@
       if(res.error){ showError(res.error.message.indexOf("concluded") !== -1 ? "Databasen mangler concluded-kolonnen. Kjør sql/25-to-mote-avslutt.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchToMeetings();
     });
+  }
+  // Bygger en pen PDF-versjon av referatet fra de samme dataene som lesevisningen viser.
+  function buildReferatPdfBlob(meeting){
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if(!jsPDFCtor) return null;
+    var doc = new jsPDFCtor({ unit: "pt", format: "a4" });
+    var margin = 40;
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var y = 54;
+
+    function ensureSpace(needed){
+      if(y + needed > pageHeight - margin){ doc.addPage(); y = 54; }
+    }
+    function sectionHeading(text){
+      ensureSpace(30);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(30,42,58);
+      doc.text(text, margin, y);
+      y += 14;
+    }
+    function afterTable(){
+      y = doc.lastAutoTable.finalY + 22;
+    }
+    var tableDefaults = { theme: "grid", headStyles: { fillColor: [47,127,217], textColor: 255, fontSize: 10 }, styles: { fontSize: 10, cellPadding: 5, textColor: [30,42,58] }, margin: { left: margin, right: margin } };
+
+    var cur = state.projects.find(function(p){ return p.id === meeting.project_id; });
+    var info = isoWeekInfo(fromISODate(meeting.weekStart));
+    var weekEnd = new Date(fromISODate(meeting.weekStart).getFullYear(), fromISODate(meeting.weekStart).getMonth(), fromISODate(meeting.weekStart).getDate()+4);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(19);
+    doc.setTextColor(20,30,45);
+    doc.text("TO-møte – referat", margin, y);
+    y += 22;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11.5);
+    doc.setTextColor(100);
+    doc.text((cur ? cur.name+" · " : "")+"Uke "+info.week+" · "+fmtRange(meeting.weekStart, toISODate(weekEnd)), margin, y);
+    y += 16;
+    if(meeting.meetingInfo){
+      doc.text(meeting.meetingInfo, margin, y);
+      y += 16;
+    }
+    y += 8;
+
+    sectionHeading("Deltakere");
+    doc.autoTable(Object.assign({}, tableDefaults, {
+      startY: y,
+      head: [["", "Rolle/fag", "Navn"]],
+      body: TO_ROLE_LIST.map(function(role){
+        var a = toAttendanceFor(meeting.id, role);
+        return [ a.present ? "Til stede" : "–", TO_ROLE_LABELS[role], a.personName || "" ];
+      }),
+      columnStyles: { 0: { cellWidth: 65 } }
+    }));
+    afterTable();
+
+    sectionHeading("Sikkerhetslogg");
+    var safety = toSafetyForCurrentProject();
+    doc.autoTable(Object.assign({}, tableDefaults, {
+      startY: y,
+      head: [["Dato", "Notat"]],
+      body: safety.length ? safety.map(function(s){ return [ fmtRange(s.day,s.day), s.text ]; }) : [["", "Ingen sikkerhetsnotater."]],
+      columnStyles: { 0: { cellWidth: 80 } }
+    }));
+    afterTable();
+
+    sectionHeading("Generelle saker");
+    var topics = toTopicsForCurrentProject();
+    doc.autoTable(Object.assign({}, tableDefaults, {
+      startY: y,
+      head: [["Sak", "Notat"]],
+      body: topics.length ? topics.map(function(t){ return [ t.text, toTopicNoteFor(meeting.id, t.id) || "–" ]; }) : [["", "Ingen saker."]],
+      columnStyles: { 0: { cellWidth: 140, fontStyle: "bold" } }
+    }));
+    afterTable();
+
+    sectionHeading("Status per fag");
+    doc.autoTable(Object.assign({}, tableDefaults, {
+      startY: y,
+      head: [["Fag", "Status"]],
+      body: toMeetingFagSections().map(function(s){ return [ s.label, toFagStatusFor(meeting.id, s.fag, s.section) || "Ingen status." ]; }),
+      columnStyles: { 0: { cellWidth: 110, fontStyle: "bold" } }
+    }));
+    afterTable();
+
+    sectionHeading("Følge opp");
+    var followups = toFollowupsForCurrentProject();
+    doc.autoTable(Object.assign({}, tableDefaults, {
+      startY: y,
+      head: [["Utført", "Sak", "Ansvarlig", "Frist"]],
+      body: followups.length ? followups.map(function(f){ return [ f.done ? "Ja" : "Nei", f.text, f.ansvarlig || "", f.frist ? fmtRange(f.frist,f.frist) : "" ]; }) : [["", "Ingen saker å følge opp.", "", ""]],
+      columnStyles: { 0: { cellWidth: 55 } }
+    }));
+
+    var pages = doc.internal.getNumberOfPages();
+    for(var i=1;i<=pages;i++){
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(150);
+      doc.text("LDC CG1 · Generert "+new Date().toLocaleDateString("nb-NO"), margin, pageHeight - 20);
+      doc.text("Side "+i+" av "+pages, pageWidth - margin, pageHeight - 20, { align: "right" });
+    }
+    return doc.output("blob");
+  }
+  function generateAndUploadReferatPdf(meeting){
+    if(!sb) return Promise.resolve();
+    var blob = buildReferatPdfBlob(meeting);
+    if(!blob){ showError("Kunne ikke lage PDF-referat (PDF-biblioteket lastet ikke inn). Referatet er likevel lagret i portalen."); return Promise.resolve(); }
+    var path = meeting.project_id + "/" + meeting.id + ".pdf";
+    return sb.storage.from("referater").upload(path, blob, { contentType: "application/pdf", upsert: true }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("referater") !== -1 ? "Databasen mangler PDF-lagringsrommet. Kjør sql/26-to-mote-referat-pdf.sql i Supabase." : "Kunne ikke laste opp PDF-referatet: "+res.error.message); return; }
+      return sb.from("to_meetings").update({ referat_pdf_path: path }).eq("id", meeting.id).then(function(res2){
+        if(res2.error){ showError("PDF ble lastet opp, men kunne ikke lagres på møtet: "+res2.error.message); return; }
+        refetchToMeetings();
+      });
+    });
+  }
+  function referatPdfUrl(path){
+    return sb.storage.from("referater").getPublicUrl(path).data.publicUrl;
   }
   function deleteToMeeting(id){
     if(!sb) return;
