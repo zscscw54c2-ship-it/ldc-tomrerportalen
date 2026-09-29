@@ -1061,6 +1061,11 @@
       </div>
     </div>
     <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Referat-arkiv</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Avsluttede TO-møter. Trykk på et for å åpne det i TO-møte-fanen.</p>
+      <div id="acgoReferatArchive" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="peoplecard" style="margin-top:16px;">
       <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
       <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -3686,6 +3691,22 @@
   var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
+    var concluded = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
+    byId("acgoReferatArchive").innerHTML = concluded.length ? concluded.map(function(m){
+      var info = isoWeekInfo(fromISODate(m.weekStart));
+      var end = new Date(fromISODate(m.weekStart).getFullYear(), fromISODate(m.weekStart).getMonth(), fromISODate(m.weekStart).getDate()+4);
+      return '<div class="shoprow" data-openreferat="'+m.id+'" style="cursor:pointer;">' +
+        '<span class="sname">Uke '+info.week+'</span>' +
+        '<span class="sqty">'+fmtRange(m.weekStart, toISODate(end))+(m.meetingInfo?' · '+escapeHtml(m.meetingInfo):'')+'</span>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen avsluttede møter ennå.</p>';
+    byId("acgoReferatArchive").querySelectorAll("[data-openreferat]").forEach(function(row){
+      row.addEventListener("click", function(){
+        view.toMeetingId = this.dataset.openreferat;
+        switchTab("tomote");
+      });
+    });
+
     var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
     byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
