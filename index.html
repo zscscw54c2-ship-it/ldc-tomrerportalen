@@ -4761,19 +4761,49 @@
     return sb.storage.from("dokumentasjon").getPublicUrl(path).data.publicUrl;
   }
   var MAX_DOKU_BYTES = 20 * 1024 * 1024;
+  // Skalerer ned og re-komprimerer bildet til JPEG før opplasting, så det går raskere på dårlig
+  // nett på byggeplassen. Faller alltid tilbake til originalfilen uendret hvis noe går galt,
+  // eller hvis komprimeringen ikke faktisk ble mindre (f.eks. en liten grafikk/skjermdump).
+  function compressImage(file, maxDim, quality){
+    return new Promise(function(resolve){
+      if(!file.type || file.type.indexOf("image/") !== 0 || file.type === "image/svg+xml"){ resolve(file); return; }
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if(!w || !h){ resolve(file); return; }
+        var scale = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement("canvas");
+        canvas.width = cw; canvas.height = ch;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, cw, ch);
+        canvas.toBlob(function(blob){
+          if(!blob || blob.size >= file.size){ resolve(file); return; }
+          var name = file.name.replace(/\.[a-zA-Z0-9]+$/, "") + ".jpg";
+          resolve(new File([blob], name, { type: "image/jpeg" }));
+        }, "image/jpeg", quality);
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
   function uploadDokuPhoto(file, caption, fagOverride){
-    if(file.size > MAX_DOKU_BYTES){ showError('«'+file.name+'» er for stor (maks 20 MB).'); return Promise.resolve(); }
-    var safeName = file.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
-    var path = currentProjectId() + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,7) + "-" + safeName;
-    return sb.storage.from("dokumentasjon").upload(path, file, { contentType: file.type || "application/octet-stream" })
-      .then(function(res){
-        if(res.error){ showError('Kunne ikke laste opp «'+file.name+'»: '+res.error.message); return; }
-        return sb.from("documentation_photos").insert({
-          project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: fagOverride || activeFag()
-        }).then(function(res2){
-          if(res2.error){ showError('«'+file.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
+    return compressImage(file, 1920, 0.82).then(function(f){
+      if(f.size > MAX_DOKU_BYTES){ showError('«'+f.name+'» er for stor (maks 20 MB).'); return; }
+      var safeName = f.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
+      var path = currentProjectId() + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,7) + "-" + safeName;
+      return sb.storage.from("dokumentasjon").upload(path, f, { contentType: f.type || "application/octet-stream" })
+        .then(function(res){
+          if(res.error){ showError('Kunne ikke laste opp «'+f.name+'»: '+res.error.message); return; }
+          return sb.from("documentation_photos").insert({
+            project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: fagOverride || activeFag()
+          }).then(function(res2){
+            if(res2.error){ showError('«'+f.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
+          });
         });
-      });
+    });
   }
   function uploadDokuPhotos(files, caption, fagOverride){
     if(!sb) return;
