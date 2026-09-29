@@ -101,26 +101,27 @@
   .project-dates{font-size:11.5px; color:var(--muted);}
 
   .fagswitch{ position:relative; display:inline-block; }
-  .fagswitch #fagSwitchBtn{ display:inline-flex; align-items:center; gap:6px; }
-  .fagswitch .chevron{ font-size:11px; color:var(--muted); transition:transform .12s; }
-  .fagswitch #fagSwitchBtn[aria-expanded="true"] .chevron{ transform:rotate(180deg); }
-  .fagswitch-menu{
-    position:absolute; top:calc(100% + 6px); left:0; z-index:30; min-width:220px; max-height:min(60vh,420px); overflow-y:auto;
+  .dropbtn{ display:inline-flex; align-items:center; gap:6px; }
+  .dropbtn .chevron{ font-size:11px; color:var(--muted); transition:transform .12s; }
+  .dropbtn[aria-expanded="true"] .chevron{ transform:rotate(180deg); }
+  /* dropmenu portal-es rett på <body> (se openDropdownMenu), derfor position:fixed og ingen egen forelder å forholde seg til */
+  .dropmenu{
+    position:fixed; z-index:200; min-width:220px; max-height:min(60vh,420px); overflow-y:auto;
     background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px;
   }
-  .fagswitch-item{
+  .dropmenu-item{
     display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:none; background:none; cursor:pointer;
     padding:8px 10px; border-radius:8px; font-size:13.5px; font-weight:600; color:var(--text);
   }
-  .fagswitch-item:hover{ background:var(--surface-alt); }
-  .fagswitch-item .dot{ width:9px; height:9px; border-radius:3px; flex:none; }
-  .fagswitch-item .name{ flex:1; }
-  .fagswitch-item .check{ color:var(--accent); font-weight:700; visibility:hidden; }
-  .fagswitch-item[aria-selected="true"] .check{ visibility:visible; }
-  .fagswitch-item[aria-selected="true"]{ background:var(--accent-soft); }
-  .fagswitch-divider{ height:1px; background:var(--border); margin:5px 2px; }
+  .dropmenu-item:hover{ background:var(--surface-alt); }
+  .dropmenu-item .dot{ width:9px; height:9px; border-radius:3px; flex:none; }
+  .dropmenu-item .name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dropmenu-item .check{ color:var(--accent); font-weight:700; visibility:hidden; flex:none; }
+  .dropmenu-item[aria-selected="true"] .check{ visibility:visible; }
+  .dropmenu-item[aria-selected="true"]{ background:var(--accent-soft); }
+  .dropmenu-divider{ height:1px; background:var(--border); margin:5px 2px; }
   @media (max-width:640px){
-    .fagswitch-menu{ min-width:0; width:max(220px, 70vw); max-width:calc(100vw - 24px); }
+    .dropmenu{ min-width:0; width:max(220px, 70vw); max-width:calc(100vw - 24px); }
   }
 
   .status-banner{
@@ -665,11 +666,10 @@
     </div>
     <div class="project-bar">
       <div class="fagswitch" id="fagSwitchWrap" hidden>
-        <button type="button" class="btn small" id="fagSwitchBtn" title="Vis byggegruppe" aria-haspopup="listbox" aria-expanded="false">
+        <button type="button" class="btn small dropbtn" id="fagSwitchBtn" title="Vis byggegruppe" aria-haspopup="listbox" aria-expanded="false">
           <span id="fagSwitchLabel"></span>
           <span class="chevron">⌄</span>
         </button>
-        <div class="fagswitch-menu" id="fagSwitchMenu" role="listbox" hidden></div>
       </div>
       <div class="project-pill" title="Bytt prosjekt under ACGO">
         <span id="projectCurrentLabel"></span>
@@ -995,7 +995,10 @@
       <h2 style="font-size:16px; margin-bottom:8px;">Prosjekt</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Velg hvilket prosjekt portalen viser. "★" markerer prosjektet som er satt som standard ved innlogging.</p>
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <select id="acgoProjectSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); min-width:200px;"></select>
+        <button type="button" class="btn dropbtn" id="acgoProjectBtn" aria-haspopup="listbox" aria-expanded="false" style="min-width:200px; justify-content:space-between;">
+          <span id="acgoProjectBtnLabel"></span>
+          <span class="chevron">⌄</span>
+        </button>
         <span id="acgoProjectDates" class="mono" style="color:var(--muted); font-size:12.5px;"></span>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -2390,21 +2393,60 @@
   }
 
   function fagSwitchItemHtml(value, label, color){
-    return '<button type="button" class="fagswitch-item" role="option" data-fag="'+value+'" aria-selected="'+(view.byggeleiderFag===value)+'">' +
+    return '<button type="button" class="dropmenu-item" role="option" data-value="'+value+'" aria-selected="'+(view.byggeleiderFag===value)+'">' +
       '<span class="dot" style="background:'+color+'"></span><span class="name">'+label+'</span><span class="check">✓</span></button>';
   }
+  // Generisk dropdown-meny som "portal"-es rett på <body>, slik at den aldri kan bli klippet
+  // eller havne bak annet innhold av en clip-path/overflow/z-index på en forelder (f.eks. header).
+  var openDropdownState = null;
+  function closeDropdownMenu(){
+    if(openDropdownState){
+      openDropdownState.menu.remove();
+      openDropdownState.btn.setAttribute("aria-expanded", "false");
+      openDropdownState = null;
+    }
+  }
+  function openDropdownMenu(btn, itemsHtml, onSelect){
+    if(openDropdownState && openDropdownState.btn === btn){ closeDropdownMenu(); return; }
+    closeDropdownMenu();
+    var menu = document.createElement("div");
+    menu.className = "dropmenu";
+    menu.setAttribute("role", "listbox");
+    menu.innerHTML = itemsHtml;
+    document.body.appendChild(menu);
+    var r = btn.getBoundingClientRect();
+    var mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var left = Math.max(10, Math.min(r.left, window.innerWidth - mw - 10));
+    var top = r.bottom + 6;
+    if(top + mh > window.innerHeight - 10) top = Math.max(10, r.top - mh - 6);
+    menu.style.top = top + "px";
+    menu.style.left = left + "px";
+    btn.setAttribute("aria-expanded", "true");
+    menu.addEventListener("click", function(ev){
+      var item = ev.target.closest("[data-value]");
+      if(!item) return;
+      onSelect(item.dataset.value);
+      closeDropdownMenu();
+    });
+    openDropdownState = { btn: btn, menu: menu };
+  }
+  document.addEventListener("click", function(ev){
+    if(!openDropdownState) return;
+    if(openDropdownState.btn.contains(ev.target) || openDropdownState.menu.contains(ev.target)) return;
+    closeDropdownMenu();
+  });
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && openDropdownState) closeDropdownMenu(); });
+  window.addEventListener("scroll", function(){ if(openDropdownState) closeDropdownMenu(); }, true);
+  window.addEventListener("resize", function(){ if(openDropdownState) closeDropdownMenu(); });
+
   function renderProjectBar(){
     var wrap = byId("fagSwitchWrap");
     if(isByggeleder()){
       wrap.hidden = false;
       byId("fagSwitchLabel").textContent = view.byggeleiderFag === "alle" ? "Alle fag (oversikt)" : (FAG_LABELS[view.byggeleiderFag] || view.byggeleiderFag);
-      byId("fagSwitchMenu").innerHTML = FAG_LIST.map(function(f){
-        return fagSwitchItemHtml(f, FAG_LABELS[f], FAG_COLORS[f] || "var(--muted)");
-      }).join("") + '<div class="fagswitch-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag (oversikt)", "var(--muted)");
     } else {
       wrap.hidden = true;
-      byId("fagSwitchMenu").hidden = true;
-      byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
+      if(openDropdownState && openDropdownState.btn === byId("fagSwitchBtn")) closeDropdownMenu();
     }
     var brandTag = byId("brandTag");
     if(state.me){
@@ -2415,45 +2457,27 @@
     byId("projectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
 
     if(!isByggeleder()) return;
-    var acgoSel = byId("acgoProjectSelect");
-    if(state.projects.length === 0){
-      acgoSel.innerHTML = '<option value="">Ingen prosjekter ennå</option>';
-      byId("acgoProjectDates").textContent = "";
-      return;
-    }
-    acgoSel.innerHTML = state.projects.map(function(p){
-      return '<option value="'+p.id+'"'+(p.id===state.currentProjectId?' selected':'')+'>'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</option>';
-    }).join("");
+    byId("acgoProjectBtnLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
     byId("acgoProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
   }
   byId("fagSwitchBtn").addEventListener("click", function(){
-    var menu = byId("fagSwitchMenu");
-    var open = menu.hidden;
-    menu.hidden = !open;
-    this.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  byId("fagSwitchMenu").addEventListener("click", function(ev){
-    var item = ev.target.closest("[data-fag]");
-    if(!item) return;
-    view.byggeleiderFag = item.dataset.fag;
-    byId("fagSwitchMenu").hidden = true;
-    byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
-    renderAll();
-  });
-  document.addEventListener("click", function(ev){
-    var wrap = byId("fagSwitchWrap");
-    if(wrap.hidden || byId("fagSwitchMenu").hidden || wrap.contains(ev.target)) return;
-    byId("fagSwitchMenu").hidden = true;
-    byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
-  });
-  document.addEventListener("keydown", function(ev){
-    if(ev.key === "Escape" && !byId("fagSwitchMenu").hidden){
-      byId("fagSwitchMenu").hidden = true;
-      byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
-    }
+    var itemsHtml = FAG_LIST.map(function(f){
+      return fagSwitchItemHtml(f, FAG_LABELS[f], FAG_COLORS[f] || "var(--muted)");
+    }).join("") + '<div class="dropmenu-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag (oversikt)", "var(--muted)");
+    openDropdownMenu(this, itemsHtml, function(value){
+      view.byggeleiderFag = value;
+      renderAll();
+    });
   });
 
-  byId("acgoProjectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
+  byId("acgoProjectBtn").addEventListener("click", function(){
+    if(!state.projects.length) return;
+    var itemsHtml = state.projects.map(function(p){
+      return '<button type="button" class="dropmenu-item" role="option" data-value="'+p.id+'" aria-selected="'+(p.id===state.currentProjectId)+'">' +
+        '<span class="name">'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</span><span class="check">✓</span></button>';
+    }).join("");
+    openDropdownMenu(this, itemsHtml, function(value){ selectProject(value); });
+  });
   byId("acgoProjectDelete").addEventListener("click", function(){
     var pid = state.currentProjectId;
     var p = state.projects.find(function(x){ return x.id === pid; });
