@@ -1078,7 +1078,9 @@
           <h2 style="font-size:16px; margin:0;">TO-møte</h2>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <select id="toMeetingSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface);"></select>
+            <span id="toMeetingConcludedBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Referat klart</span>
             <button type="button" class="btn small primary" id="toMeetingNewBtn">+ Møte denne uken</button>
+            <button type="button" class="btn small" id="toMeetingConcludeBtn"></button>
             <button type="button" class="btn small danger" id="toMeetingDeleteBtn" title="Slett dette møtet">Slett møte</button>
           </div>
         </div>
@@ -1147,7 +1149,7 @@
           <select id="referatMeetingSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface);"></select>
         </div>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Referatet fra det ukentlige møtet mellom byggeleder og fag-representantene – samme referat for alle fag.</p>
-        <div id="referatEmpty" class="empty-note" hidden>Ingen møter registrert ennå.</div>
+        <div id="referatEmpty" class="empty-note" hidden>Ingen ferdige referat ennå. Byggeleder må trykke «Avslutt møte og lag referat» først.</div>
         <div id="referatMeetingInfo" style="font-size:13px; color:var(--muted);"></div>
       </div>
 
@@ -3349,8 +3351,8 @@
         var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
         return { badge: openF, text: openF > 0 ? openF+" å følge opp" : "Ingen åpne saker" };
       }
-      var meetings2 = toMeetingsForCurrentProject();
-      if(!meetings2.length) return { badge: 0, text: "Ingen møter ennå" };
+      var meetings2 = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
+      if(!meetings2.length) return { badge: 0, text: "Ingen ferdige referat ennå" };
       var wInfo = isoWeekInfo(fromISODate(meetings2[0].weekStart));
       return { badge: 0, text: "Siste referat: uke "+wInfo.week };
     }
@@ -3526,7 +3528,7 @@
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
   }
   function rowToToMeeting(row){
-    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, meetingInfo: row.meeting_info || "", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, meetingInfo: row.meeting_info || "", concluded: !!row.concluded, createdAt: row.created_at };
   }
   function rowToToAttendance(row){
     return { id: row.id, meetingId: row.meeting_id, roleKey: row.role_key, personName: row.person_name || "", present: !!row.present };
@@ -3771,6 +3773,16 @@
   byId("toMeetingSelect").addEventListener("change", function(){ view.toMeetingId = this.value; renderToMoteTab(); });
   byId("toMeetingNewBtn").addEventListener("click", function(){ createToMeeting(toISODate(mondayOf(new Date()))); });
   byId("toMeetingDeleteBtn").addEventListener("click", function(){ if(view.toMeetingId) deleteToMeeting(view.toMeetingId); });
+  byId("toMeetingConcludeBtn").addEventListener("click", function(){
+    var m = state.toMeetings.find(function(x){ return x.id === view.toMeetingId; });
+    if(!m) return;
+    if(m.concluded){ setToMeetingConcluded(m.id, false); return; }
+    askConfirm(
+      "Møtet merkes som avsluttet, og referatet blir synlig for alle fag under TO-møte-fanen. Du kan fortsatt redigere etterpå om noe mangler.",
+      function(){ setToMeetingConcluded(m.id, true); },
+      { title: "Avslutte møtet og lage referat?", confirmLabel: "Avslutt og lag referat" }
+    );
+  });
   byId("toMeetingInfo").addEventListener("change", function(){
     var m = currentToMeeting();
     if(m) updateToMeetingInfo(m.id, this.value.trim());
@@ -4206,7 +4218,7 @@
     sel.innerHTML = meetings.map(function(m){
       var info = isoWeekInfo(fromISODate(m.weekStart));
       var end = new Date(fromISODate(m.weekStart).getFullYear(), fromISODate(m.weekStart).getMonth(), fromISODate(m.weekStart).getDate()+4);
-      return '<option value="'+m.id+'"'+(m.id===view.toMeetingId?' selected':'')+'>Uke '+info.week+' · '+fmtRange(m.weekStart, toISODate(end))+'</option>';
+      return '<option value="'+m.id+'"'+(m.id===view.toMeetingId?' selected':'')+'>'+(m.concluded?'✓ ':'')+'Uke '+info.week+' · '+fmtRange(m.weekStart, toISODate(end))+'</option>';
     }).join("");
 
     var hasThisWeek = meetings.some(function(m){ return m.weekStart === todayMon; });
@@ -4219,6 +4231,13 @@
     byId("toMeetingBody").hidden = !meeting;
     byId("toMeetingSections").hidden = !meeting;
     byId("toMeetingDeleteBtn").hidden = !meeting;
+    var concludeBtn = byId("toMeetingConcludeBtn");
+    concludeBtn.hidden = !meeting;
+    byId("toMeetingConcludedBadge").hidden = !meeting || !meeting.concluded;
+    if(meeting){
+      concludeBtn.textContent = meeting.concluded ? "Gjenåpne møtet" : "Avslutt møte og lag referat";
+      concludeBtn.classList.toggle("primary", !meeting.concluded);
+    }
     if(!meeting) return;
 
     var infoInput = byId("toMeetingInfo");
@@ -4332,7 +4351,7 @@
     });
   }
   function renderTomoteRead(){
-    var meetings = toMeetingsForCurrentProject();
+    var meetings = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
     var sel = byId("referatMeetingSelect");
 
     if(!view.referatMeetingId || !meetings.some(function(m){ return m.id === view.referatMeetingId; })){
@@ -4804,6 +4823,13 @@
     if(!sb) return;
     sb.from("to_meetings").update({ meeting_info: info || null }).eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      refetchToMeetings();
+    });
+  }
+  function setToMeetingConcluded(id, concluded){
+    if(!sb) return;
+    sb.from("to_meetings").update({ concluded: concluded }).eq("id", id).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("concluded") !== -1 ? "Databasen mangler concluded-kolonnen. Kjør sql/25-to-mote-avslutt.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchToMeetings();
     });
   }
