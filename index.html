@@ -100,6 +100,29 @@
   .project-pill span{ font-size:14px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .project-dates{font-size:11.5px; color:var(--muted);}
 
+  .fagswitch{ position:relative; display:inline-block; }
+  .fagswitch #fagSwitchBtn{ display:inline-flex; align-items:center; gap:6px; }
+  .fagswitch .chevron{ font-size:11px; color:var(--muted); transition:transform .12s; }
+  .fagswitch #fagSwitchBtn[aria-expanded="true"] .chevron{ transform:rotate(180deg); }
+  .fagswitch-menu{
+    position:absolute; top:calc(100% + 6px); left:0; z-index:30; min-width:220px; max-height:min(60vh,420px); overflow-y:auto;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px;
+  }
+  .fagswitch-item{
+    display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:none; background:none; cursor:pointer;
+    padding:8px 10px; border-radius:8px; font-size:13.5px; font-weight:600; color:var(--text);
+  }
+  .fagswitch-item:hover{ background:var(--surface-alt); }
+  .fagswitch-item .dot{ width:9px; height:9px; border-radius:3px; flex:none; }
+  .fagswitch-item .name{ flex:1; }
+  .fagswitch-item .check{ color:var(--accent); font-weight:700; visibility:hidden; }
+  .fagswitch-item[aria-selected="true"] .check{ visibility:visible; }
+  .fagswitch-item[aria-selected="true"]{ background:var(--accent-soft); }
+  .fagswitch-divider{ height:1px; background:var(--border); margin:5px 2px; }
+  @media (max-width:640px){
+    .fagswitch-menu{ min-width:0; width:max(220px, 70vw); max-width:calc(100vw - 24px); }
+  }
+
   .status-banner{
     margin-top:14px; padding:10px 14px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:8px;
     background:var(--surface-alt); border:1px solid var(--border); color:var(--muted);
@@ -641,7 +664,13 @@
       </nav>
     </div>
     <div class="project-bar">
-      <select id="fagSwitcher" title="Vis byggegruppe" hidden></select>
+      <div class="fagswitch" id="fagSwitchWrap" hidden>
+        <button type="button" class="btn small" id="fagSwitchBtn" title="Vis byggegruppe" aria-haspopup="listbox" aria-expanded="false">
+          <span id="fagSwitchLabel"></span>
+          <span class="chevron">⌄</span>
+        </button>
+        <div class="fagswitch-menu" id="fagSwitchMenu" role="listbox" hidden></div>
+      </div>
       <div class="project-pill" title="Bytt prosjekt under ACGO">
         <span id="projectCurrentLabel"></span>
       </div>
@@ -2360,15 +2389,22 @@
     box.innerHTML = '<h3>Satt opp flere steder samme dag</h3><ul>' + items.map(function(t){ return "<li>"+escapeHtml(t)+"</li>"; }).join("") + '</ul>';
   }
 
+  function fagSwitchItemHtml(value, label, color){
+    return '<button type="button" class="fagswitch-item" role="option" data-fag="'+value+'" aria-selected="'+(view.byggeleiderFag===value)+'">' +
+      '<span class="dot" style="background:'+color+'"></span><span class="name">'+label+'</span><span class="check">✓</span></button>';
+  }
   function renderProjectBar(){
-    var fagSel = byId("fagSwitcher");
+    var wrap = byId("fagSwitchWrap");
     if(isByggeleder()){
-      fagSel.hidden = false;
-      fagSel.innerHTML = FAG_LIST.map(function(f){
-        return '<option value="'+f+'"'+(view.byggeleiderFag===f?' selected':'')+'>'+FAG_LABELS[f]+'</option>';
-      }).join("") + '<option value="alle"'+(view.byggeleiderFag==="alle"?' selected':'')+'>Alle fag (oversikt)</option>';
+      wrap.hidden = false;
+      byId("fagSwitchLabel").textContent = view.byggeleiderFag === "alle" ? "Alle fag (oversikt)" : (FAG_LABELS[view.byggeleiderFag] || view.byggeleiderFag);
+      byId("fagSwitchMenu").innerHTML = FAG_LIST.map(function(f){
+        return fagSwitchItemHtml(f, FAG_LABELS[f], FAG_COLORS[f] || "var(--muted)");
+      }).join("") + '<div class="fagswitch-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag (oversikt)", "var(--muted)");
     } else {
-      fagSel.hidden = true;
+      wrap.hidden = true;
+      byId("fagSwitchMenu").hidden = true;
+      byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
     }
     var brandTag = byId("brandTag");
     if(state.me){
@@ -2390,9 +2426,31 @@
     }).join("");
     byId("acgoProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
   }
-  byId("fagSwitcher").addEventListener("change", function(){
-    view.byggeleiderFag = this.value;
+  byId("fagSwitchBtn").addEventListener("click", function(){
+    var menu = byId("fagSwitchMenu");
+    var open = menu.hidden;
+    menu.hidden = !open;
+    this.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  byId("fagSwitchMenu").addEventListener("click", function(ev){
+    var item = ev.target.closest("[data-fag]");
+    if(!item) return;
+    view.byggeleiderFag = item.dataset.fag;
+    byId("fagSwitchMenu").hidden = true;
+    byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
     renderAll();
+  });
+  document.addEventListener("click", function(ev){
+    var wrap = byId("fagSwitchWrap");
+    if(wrap.hidden || byId("fagSwitchMenu").hidden || wrap.contains(ev.target)) return;
+    byId("fagSwitchMenu").hidden = true;
+    byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
+  });
+  document.addEventListener("keydown", function(ev){
+    if(ev.key === "Escape" && !byId("fagSwitchMenu").hidden){
+      byId("fagSwitchMenu").hidden = true;
+      byId("fagSwitchBtn").setAttribute("aria-expanded", "false");
+    }
   });
 
   byId("acgoProjectSelect").addEventListener("change", function(){ if(this.value) selectProject(this.value); });
