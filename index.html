@@ -411,8 +411,9 @@
   .flex-day{ display:flex; flex-direction:column; gap:6px; }
   .flex-daylabel{ font-size:11px; font-weight:700; color:var(--muted); text-align:center; text-transform:uppercase; }
   .flex-cell{
-    border:1px solid var(--border); border-radius:9px; padding:8px 4px; text-align:center; cursor:pointer;
-    font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text);
+    border:1px solid var(--border); border-radius:9px; padding:8px 2px; text-align:center; cursor:pointer;
+    font-size:10px; font-weight:600; background:var(--surface); color:var(--text); line-height:1.25;
+    word-break:break-word; hyphens:auto; display:flex; align-items:center; justify-content:center; min-height:38px;
   }
   .flex-cell:hover{ background:var(--surface-alt); }
   .flex-cell.pending{ background:var(--warn-soft); color:var(--warn-ink); border-color:transparent; }
@@ -1023,7 +1024,10 @@
 
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <div id="pwBanner" class="status-banner" style="margin:0; flex:1; min-width:220px;"></div>
+        <div style="flex:1; min-width:220px;">
+          <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25;"></div>
+          <div id="pwBannerSub" class="mono" style="font-size:12px; color:var(--muted); margin-top:2px;"></div>
+        </div>
         <button class="btn small" id="andeligEditBtn">Rediger</button>
       </div>
       <h2 style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
@@ -1038,25 +1042,25 @@
     <button type="button" class="subhome-back" id="teamHomeBack">← Tilbake</button>
 
     <div class="subhome-section" data-tiled data-sec="ukasmaal">
-      <div class="peoplecard" style="margin-bottom:16px;">
+      <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
         <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
         <div id="weeklyGoalsList"></div>
-      </div>
-      <div class="peoplecard" style="margin-bottom:16px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
-          <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
-        </div>
-        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
-        <div id="teamMeetingView"></div>
       </div>
     </div>
 
     <div class="subhome-section" data-tiled data-sec="flex">
       <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
-        <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
-        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken. Er du med i teamet kan du også sende egen forespørsel – du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
+          <h2 style="font-size:16px; margin:0;">FLEX</h2>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="btn small ghost" id="flexWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
+            <span id="flexWeekLabel" class="mono" style="font-weight:700; font-size:13px; min-width:56px; text-align:center;"></span>
+            <button type="button" class="btn small ghost" id="flexWeekNext" title="Neste uke" aria-label="Neste uke">›</button>
+            <button type="button" class="btn small" id="flexWeekToday" hidden>Denne uken</button>
+          </div>
+        </div>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
         <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
       </div>
     </div>
@@ -1111,7 +1115,7 @@
         </div>
       </div>
 
-      <div class="cols2">
+      <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
           <div id="toAgendaList"></div>
@@ -1130,6 +1134,35 @@
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
+      </div>
+
+      <div class="cols2" style="margin-bottom:16px;">
+        <div class="peoplecard">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
+            <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
+          </div>
+          <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
+          <div id="teamMeetingView"></div>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
+          <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
+          <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
+        <div id="overviewProgramList"></div>
+        <form class="inline-add" id="addOverviewProgramForm" data-editonly>
+          <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
+          <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
       </div>
     </div>
 
@@ -1161,28 +1194,6 @@
           <button class="btn small primary" id="pwNewBtn">+ Ny uke</button>
         </div>
         <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
-      </div>
-    </div>
-
-    <div class="subhome-section" data-tiled data-sec="mer">
-      <div class="cols2">
-        <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
-          <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
-          <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
-          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
-            <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
-          </div>
-        </div>
-        <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
-          <div id="overviewProgramList"></div>
-          <form class="inline-add" id="addOverviewProgramForm" data-editonly>
-            <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
-            <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
-            <button class="btn primary" type="submit">Legg til</button>
-          </form>
-        </div>
       </div>
     </div>
   </section>
@@ -1669,7 +1680,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, flexWeekMonday: mondayOf(new Date()) };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -1777,10 +1788,18 @@
   document.querySelectorAll("nav.tabs button").forEach(function(btn){
     btn.addEventListener("click", function(){ switchTab(btn.dataset.tab); });
   });
-  byId("mobileBackHome").addEventListener("click", function(ev){
-    ev.preventDefault();
+  function goBackOneLevel(){
+    var activePanel = document.querySelector("section.panel.active");
+    if(activePanel && activePanel.classList.contains("subhome-open")){
+      closeSubHome(activePanel);
+      return;
+    }
     document.body.classList.remove("section-active");
     window.scrollTo(0,0);
+  }
+  byId("mobileBackHome").addEventListener("click", function(ev){
+    ev.preventDefault();
+    goBackOneLevel();
   });
   // edge-swipe (fra venstre kant) tilbake til hjemskjermen på mobil
   (function(){
@@ -1794,7 +1813,7 @@
       if(startX === null || !fromEdge) { startX = null; return; }
       var t = ev.changedTouches[0];
       var dx = t.clientX - startX, dy = Math.abs(t.clientY - startY);
-      if(dx > 70 && dy < 60){ document.body.classList.remove("section-active"); window.scrollTo(0,0); }
+      if(dx > 70 && dy < 60){ goBackOneLevel(); }
       startX = null;
     }, { passive:true });
   })();
@@ -3329,10 +3348,10 @@
     if(document.activeElement !== byId("meetingAddressInput")) byId("meetingAddressInput").value = (cur && cur.meetingAddress) || "";
 
     var curWeek = currentPrivilegeWeek();
-    var banner = byId("pwBanner");
-    banner.textContent = curWeek
-      ? ("Denne uken (uke "+isoWeekInfo(fromISODate(curWeek.start)).week+") har "+curWeek.responsible+" Privilege Week.")
-      : "Ingen privilege-uke er registrert for denne uken.";
+    byId("pwBanner").innerHTML = curWeek
+      ? ('Privilege Week: <span style="color:var(--accent);">'+escapeHtml(curWeek.responsible)+'</span>')
+      : "Ingen privilege-uke registrert for denne uken.";
+    byId("pwBannerSub").textContent = "Uke "+isoWeekInfo(curWeek ? fromISODate(curWeek.start) : new Date()).week;
 
     var duties = dutiesForCurrentProject();
     byId("pwWeekLabel").textContent = curWeek
@@ -3855,17 +3874,14 @@
       icon:'<svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg>',
       status:function(){
         var n = toAgendaForCurrentProject().length;
-        return { badge:n, text: "Koder, kontoer, saker og møter" };
+        return { badge:n, text: "Koder, kontoer, saker, møter og mer" };
       } },
     { key:"pw", name:"Privilege Week", color:"var(--good)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
       status:function(){
         var curWeek = currentPrivilegeWeek();
         return { badge:0, text: curWeek ? curWeek.responsible+" denne uken" : "Ingen aktiv uke" };
-      } },
-    { key:"mer", name:"Mer", color:"var(--muted)",
-      icon:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
-      status:function(){ return { badge:0, text:"Info og åndelig program" }; } }
+      } }
   ];
   function renderTeamHomeGrid(){
     renderSubHomeGrid(byId("panel-andelig"), "teamHomeGrid", "teamHomeBack", TEAM_HOME_TILES);
@@ -4079,8 +4095,11 @@
   }
   function renderTeamFlexBox(){
     var flexPair = myTeamPair();
-    var flexMonday = mondayOf(new Date());
+    var flexMonday = view.flexWeekMonday;
     var flexWk = toISODate(flexMonday);
+    var isLiveWeek = flexWk === toISODate(mondayOf(new Date()));
+    byId("flexWeekLabel").textContent = "Uke "+isoWeekInfo(flexMonday).week;
+    byId("flexWeekToday").hidden = isLiveWeek;
     var pid = currentProjectId();
     var weekReqs = state.flexRequests.filter(function(r){ return r.project_id === pid && r.weekStart === flexWk; });
     byId("flexGrid").innerHTML = weekDays(flexMonday).map(function(d, i){
@@ -4129,6 +4148,18 @@
       });
     });
   }
+  byId("flexWeekPrev").addEventListener("click", function(){
+    view.flexWeekMonday = new Date(view.flexWeekMonday.getFullYear(), view.flexWeekMonday.getMonth(), view.flexWeekMonday.getDate()-7);
+    renderTeamFlexBox();
+  });
+  byId("flexWeekNext").addEventListener("click", function(){
+    view.flexWeekMonday = new Date(view.flexWeekMonday.getFullYear(), view.flexWeekMonday.getMonth(), view.flexWeekMonday.getDate()+7);
+    renderTeamFlexBox();
+  });
+  byId("flexWeekToday").addEventListener("click", function(){
+    view.flexWeekMonday = mondayOf(new Date());
+    renderTeamFlexBox();
+  });
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
     return state.openAccounts.filter(function(a){ return a.project_id === pid; }).sort(function(a,b){ return a.leverandor.localeCompare(b.leverandor,"no"); });
