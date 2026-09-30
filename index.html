@@ -408,6 +408,15 @@
   .goalchip.s-pabegynt{ background:var(--warn-soft); color:var(--warn-ink); }
   .goalchip.s-ferdig{ background:var(--good-soft); color:var(--good-ink); }
   .goalchip.late{ background:var(--bad); color:#fff; }
+  .flex-day{ display:flex; flex-direction:column; gap:6px; }
+  .flex-daylabel{ font-size:11px; font-weight:700; color:var(--muted); text-align:center; text-transform:uppercase; }
+  .flex-cell{
+    border:1px solid var(--border); border-radius:9px; padding:8px 4px; text-align:center; cursor:pointer;
+    font-size:11.5px; font-weight:600; background:var(--surface); color:var(--text);
+  }
+  .flex-cell:hover{ background:var(--surface-alt); }
+  .flex-cell.pending{ background:var(--warn-soft); color:var(--warn-ink); border-color:transparent; }
+  .flex-cell.approved{ background:var(--good-soft); color:var(--good-ink); border-color:transparent; font-weight:700; }
   .ppl{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
   .ppl span{font-size:11px; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:1px 7px; white-space:nowrap;}
   .ppl span.conf{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink); font-weight:700;}
@@ -1012,6 +1021,12 @@
       </div>
     </div>
 
+    <div class="peoplecard" id="flexBox" hidden style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
+      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send forespørsel om å ta flex en halv dag denne uken. Du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
+      <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
+    </div>
+
     <div class="cols2" style="margin-bottom:16px;">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
@@ -1133,6 +1148,7 @@
   </section>
 
   <section id="panel-acgo" class="panel">
+    <p id="acgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div>
         <h2 style="font-size:16px; margin-bottom:2px;">TO-møte</h2>
@@ -1191,6 +1207,12 @@
   </section>
 
   <section id="panel-cgo" class="panel">
+    <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Flex-forespørsler</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ventende forespørsler om flex fra teamet. Kun én kan godkjennes per person per uke.</p>
+      <div id="flexRequestList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
         <h2 style="font-size:16px; margin:0;">Teammøte-agenda</h2>
@@ -1577,7 +1599,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2662,7 +2684,7 @@
     }
     var brandTag = byId("brandTag");
     if(state.me){
-      brandTag.textContent = FAG_LABELS[myRole()] || "";
+      brandTag.textContent = isByggeleder() ? byggeleiderIdentityLabel() : (FAG_LABELS[myRole()] || "");
     }
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     byId("projectCurrentLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
@@ -3165,6 +3187,40 @@
     byId("teamMeetingView").innerHTML = sentMeeting ?
       '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(sentMeeting.agenda)+'</div>' :
       '<p class="empty-note">Ingen teammøte-agenda sendt for denne uken ennå.</p>';
+
+    var flexPair = myTeamPair();
+    byId("flexBox").hidden = !flexPair;
+    if(flexPair){
+      var flexMonday = mondayOf(new Date());
+      var flexWk = toISODate(flexMonday);
+      var myFlex = flexRequestsForPersonWeek(flexPair.personId, flexWk);
+      byId("flexGrid").innerHTML = weekDays(flexMonday).map(function(d, i){
+        var iso = toISODate(d);
+        var cellHtml = ["formiddag","ettermiddag"].map(function(period){
+          var reqs = myFlex.filter(function(r){ return r.day === iso && r.period === period; });
+          var approved = reqs.find(function(r){ return r.status === "approved"; });
+          var pending = reqs.find(function(r){ return r.status === "pending"; });
+          var req = approved || pending;
+          var cls = "flex-cell" + (approved ? " approved" : pending ? " pending" : "");
+          var label = period === "formiddag" ? "Formiddag" : "Ettermiddag";
+          var content = approved ? "✓ "+label : (pending ? label+" …" : label);
+          return '<div class="'+cls+'" data-flexcell="'+iso+'|'+period+'|'+(req?req.id:"")+'">'+content+'</div>';
+        }).join("");
+        return '<div class="flex-day"><div class="flex-daylabel">'+DAY_ABBR[i]+'</div>'+cellHtml+'</div>';
+      }).join("");
+      byId("flexGrid").querySelectorAll("[data-flexcell]").forEach(function(el){
+        el.addEventListener("click", function(){
+          var parts = this.dataset.flexcell.split("|");
+          var iso = parts[0], period = parts[1], reqId = parts[2];
+          if(reqId){
+            askConfirm("Trekke tilbake denne flex-forespørselen?", function(){ withdrawFlexRequest(reqId); }, { title: "Trekk tilbake?", confirmLabel: "Trekk tilbake" });
+          } else {
+            var label = period === "formiddag" ? "formiddag" : "ettermiddag";
+            askConfirm("Send forespørsel om å ta flex "+DAY_ABBR[weekDays(flexMonday).findIndex(function(d){ return toISODate(d)===iso; })]+" "+label+"?", function(){ requestFlex(flexPair.personId, iso, period); }, { title: "Send flex-forespørsel?", confirmLabel: "Send forespørsel" });
+          }
+        });
+      });
+    }
 
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
@@ -3825,6 +3881,31 @@
     var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
     return state.teamMeetings.find(function(m){ return m.project_id === pid && m.weekStart === wk; }) || null;
   }
+  function rowToFlexRequest(row){
+    return { id: row.id, project_id: row.project_id, personId: row.person_id, weekStart: row.week_start, day: row.day, period: row.period, status: row.status, requestedBy: row.requested_by || "", createdAt: row.created_at, resolvedAt: row.resolved_at };
+  }
+  function myLinkedPerson(){
+    if(!state.me || !state.me.personId) return null;
+    return state.people.find(function(p){ return p.id === state.me.personId; }) || null;
+  }
+  function myTeamPair(){
+    if(!state.me || !state.me.personId) return null;
+    return teamPairsForCurrentProject().find(function(t){ return t.personId === state.me.personId; }) || null;
+  }
+  function byggeleiderIdentityLabel(){
+    var p = myLinkedPerson();
+    if(p && p.name === "Sakkestad") return "CGO";
+    if(p && p.name === "Ridderberg") return "ACGO";
+    return FAG_LABELS.byggeleder;
+  }
+  function flexRequestsForPersonWeek(personId, weekStart){
+    var pid = currentProjectId();
+    return state.flexRequests.filter(function(r){ return r.project_id === pid && r.personId === personId && r.weekStart === weekStart; });
+  }
+  function pendingFlexRequestsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.flexRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+  }
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
     return state.openAccounts.filter(function(a){ return a.project_id === pid; }).sort(function(a,b){ return a.leverandor.localeCompare(b.leverandor,"no"); });
@@ -4046,6 +4127,8 @@
   var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
+    var acgoPerson = myLinkedPerson();
+    byId("acgoIdentityLine").textContent = acgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+acgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
     var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
     byId("acgoTomoteStatus").textContent = openF > 0 ? openF+" sak(er) å følge opp" : "Ingen åpne saker";
     var concluded = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
@@ -4173,6 +4256,27 @@
 
   function renderCgoTab(){
     if(!isByggeleder()) return;
+    var cgoPerson = myLinkedPerson();
+    byId("cgoIdentityLine").textContent = cgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+cgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
+
+    var pending = pendingFlexRequestsForCurrentProject();
+    byId("flexRequestList").innerHTML = pending.length ? pending.map(function(r){
+      var p = state.people.find(function(x){ return x.id === r.personId; });
+      var periodLabel = r.period === "formiddag" ? "Formiddag" : "Ettermiddag";
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(p ? p.name : "?")+'</span>' +
+        '<span class="sqty">'+fmtRange(r.day, r.day)+' · '+periodLabel+'</span>' +
+        '<span style="display:flex; gap:6px;">' +
+        '<button class="btn small primary" data-approveflexrequest="'+r.id+'">Godkjenn</button>' +
+        '<button class="btn small ghost" data-rejectflexrequest="'+r.id+'">Avslå</button>' +
+        '</span></div>';
+    }).join("") : '<p class="empty-note">Ingen ventende flex-forespørsler.</p>';
+    byId("flexRequestList").querySelectorAll("[data-approveflexrequest]").forEach(function(b){
+      b.addEventListener("click", function(){ approveFlexRequest(this.dataset.approveflexrequest); });
+    });
+    byId("flexRequestList").querySelectorAll("[data-rejectflexrequest]").forEach(function(b){
+      b.addEventListener("click", function(){ rejectFlexRequest(this.dataset.rejectflexrequest); });
+    });
+
     var m = currentWeekTeamMeeting();
     var textarea = byId("cgoTeamMeetingAgenda");
     if(document.activeElement !== textarea) textarea.value = (m && m.agenda) || "";
@@ -5132,6 +5236,13 @@
       renderAll();
     });
   }
+  function refetchFlexRequests(){
+    sb.from("flex_requests").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.flexRequests = res.data.map(rowToFlexRequest);
+      renderAll();
+    });
+  }
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -5348,6 +5459,40 @@
       if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
       showInfo(sent ? "Sendt til Team-siden ✓" : "Trukket tilbake");
       refetchTeamMeetings();
+    });
+  }
+  function requestFlex(personId, day, period){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var wk = toISODate(mondayOf(fromISODate(day)));
+    sb.from("flex_requests").insert({ project_id: pid, person_id: personId, week_start: wk, day: day, period: period, requested_by: (state.me && state.me.email) || "" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("flex_requests") !== -1 ? "Databasen mangler tabellen for flex. Kjør sql/33-flex-og-cgo-identitet.sql i Supabase." : "Kunne ikke sende forespørsel: "+res.error.message); return; }
+      showInfo("Flex-forespørsel sendt ✓");
+      refetchFlexRequests();
+    });
+  }
+  function withdrawFlexRequest(id){
+    if(!sb) return;
+    sb.from("flex_requests").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke trekke tilbake: "+res.error.message); return; } refetchFlexRequests(); });
+  }
+  function approveFlexRequest(id){
+    if(!sb) return;
+    var r = state.flexRequests.find(function(x){ return x.id === id; });
+    if(!r) return;
+    var siblings = flexRequestsForPersonWeek(r.personId, r.weekStart).filter(function(x){ return x.id !== id && x.status === "pending"; });
+    sb.from("flex_requests").update({ status: "approved", resolved_at: new Date().toISOString() }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke godkjenne: "+res.error.message); return; }
+      Promise.all(siblings.map(function(s){
+        return sb.from("flex_requests").update({ status: "rejected", resolved_at: new Date().toISOString() }).eq("id", s.id);
+      })).then(function(){ refetchFlexRequests(); });
+    });
+  }
+  function rejectFlexRequest(id){
+    if(!sb) return;
+    sb.from("flex_requests").update({ status: "rejected", resolved_at: new Date().toISOString() }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke avslå: "+res.error.message); return; }
+      refetchFlexRequests();
     });
   }
   function addOpenAccount(leverandor, kundenr, merking){
@@ -6039,6 +6184,7 @@
     refetchSiteCodes();
     refetchWeeklyScriptures();
     refetchTeamMeetings();
+    refetchFlexRequests();
 
     realtimeChannel = sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -6073,6 +6219,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
       .on("postgres_changes", { event: "*", schema: "public", table: "weekly_scriptures" }, refetchWeeklyScriptures)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
+      .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
       .subscribe(handleRealtimeStatus);
   }
   // Nettverket kan hikke uten at det er et reelt problem - prøv noen ganger stille
@@ -6100,13 +6247,13 @@
       state.me = null;
       return;
     }
-    sb.from("profiles").select("role").eq("id", session.user.id).single().then(function(res){
+    sb.from("profiles").select("role, person_id").eq("id", session.user.id).single().then(function(res){
       if(res.error || !res.data){
         byId("loginError").textContent = "Denne kontoen mangler en rolle. Kontakt byggeleder.";
         sb.auth.signOut();
         return;
       }
-      state.me = { id: session.user.id, email: session.user.email, role: res.data.role };
+      state.me = { id: session.user.id, email: session.user.email, role: res.data.role, personId: res.data.person_id || null };
       document.body.classList.add("authed");
       document.body.classList.toggle("kontakt-mode", state.me.role === "kontakt");
       if(!didAutoOpenDashboard && isByggeleder() && !window.matchMedia("(max-width:640px)").matches){
