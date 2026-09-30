@@ -76,14 +76,14 @@
   img{max-width:100%;}
   [hidden]{display:none!important;}
 
-  .wrap{max-width:1080px; margin:0 auto; padding-block:0 60px;}
+  .wrap{max-width:1600px; margin:0 auto; padding-block:0 60px;}
 
   header.top{
     position:sticky; top:0; z-index:20;
     background:rgba(255,255,255,0.94); backdrop-filter:blur(8px); padding-block:14px 10px; margin-inline:-16px; padding-inline:16px;
     box-shadow:0 0 0 100vmax rgba(255,255,255,0.94), 0 1px 0 100vmax var(--border); clip-path:inset(0 -100vmax -1px);
   }
-  .top-inner{max-width:1080px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 16px;}
+  .top-inner{max-width:1600px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 16px;}
   .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   .brand h1{font-size:22px; letter-spacing:-0.01em;}
   .brand h1 .ldc{color:var(--accent);}
@@ -97,7 +97,7 @@
   nav.tabs button:hover{color:var(--text);}
 
   .project-bar{
-    max-width:1080px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
   .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:6px 10px; }
   .project-pill span{ font-size:14px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -688,6 +688,7 @@
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
+        <button role="tab" data-tab="cgo" aria-selected="false" hidden>CGO</button>
         <button role="tab" data-tab="tomote" aria-selected="false">TO-møte</button>
       </nav>
     </div>
@@ -1125,6 +1126,13 @@
         <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
         <button class="btn primary" type="submit">Legg til</button>
       </form>
+    </div>
+  </section>
+
+  <section id="panel-cgo" class="panel">
+    <div class="peoplecard">
+      <h2 style="font-size:16px; margin-bottom:8px;">CGO</h2>
+      <p class="sub" style="font-size:13px; color:var(--muted); line-height:1.5;">Denne siden er under oppbygging. Her skal koordinering av mat, losji og renhold legges til - detaljene kommer.</p>
     </div>
   </section>
 
@@ -3421,6 +3429,8 @@
       icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' },
     { tab:"acgo", name:"ACGO", color:"var(--bad)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' },
+    { tab:"cgo", name:"CGO", color:"var(--good)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>' },
     { tab:"tomote", name:"TO-møte", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' }
   ];
@@ -3497,6 +3507,7 @@
     grid.innerHTML = HOME_TILES.filter(function(t){
       if(t.tab === "andelig") return andeligVisibleForMe();
       if(t.tab === "acgo") return isByggeleder();
+      if(t.tab === "cgo") return isByggeleder();
       return true;
     }).map(function(t){
       var body;
@@ -3523,6 +3534,7 @@
     if(view.dragging){ view.pendingRender = true; return; }
     updateAndeligTabVisibility();
     updateAcgoTabVisibility();
+    updateCgoTabVisibility();
     updateDashboardTabVisibility();
     renderProjectBar();
     renderCalView();
@@ -3552,6 +3564,11 @@
     var btn = document.querySelector('nav.tabs button[data-tab="acgo"]');
     if(btn) btn.hidden = !isByggeleder();
     if(!isByggeleder() && view.tab === "acgo") switchTab("kalender");
+  }
+  function updateCgoTabVisibility(){
+    var btn = document.querySelector('nav.tabs button[data-tab="cgo"]');
+    if(btn) btn.hidden = !isByggeleder();
+    if(!isByggeleder() && view.tab === "cgo") switchTab("kalender");
   }
 
   function goToWeek(newStart){
