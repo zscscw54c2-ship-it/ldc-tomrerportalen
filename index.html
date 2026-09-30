@@ -54,6 +54,7 @@
     --fag-ventilasjon:#6f8fd1;
     --fag-stillas:#9b6bd6;
     --fag-audio-video:#d6568f;
+    --fag-behov-menighet:#8a8f98;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -901,6 +902,22 @@
   </section>
 
   <section id="panel-personer" class="panel">
+    <div class="peoplecard" style="margin-bottom:14px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Team-parene og hvilken uke de evt. har privilege week.</p>
+      <div id="frivilligeTeamList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="peoplecard" data-acgoonly style="margin-bottom:14px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
+      <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <form class="inline-add" id="addOpenAccountForm" style="margin-top:10px; flex-wrap:wrap;">
+        <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
+        <input type="text" id="newOpenAccountKundenr" placeholder="Kundenr" maxlength="80" style="max-width:140px;" />
+        <input type="text" id="newOpenAccountMerking" placeholder="Merking" maxlength="120" style="max-width:160px;" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
     <div id="personerSectionToggle" hidden style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
       <button type="button" class="btn small" data-personersection="frivillige">Frivillige</button>
       <button type="button" class="btn small" data-personersection="behov">Behov fra menigheten</button>
@@ -1460,14 +1477,14 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [] };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "byfag", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
-  var OVERVIEW_ONLY_FAGS = ["stillas","audio_video"];
+  var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet"];
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
-  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", byggeleder:"ACGO" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)" };
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", byggeleder:"ACGO" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)" };
   var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
   var TO_ROLE_LABELS = Object.assign({ prosjektleder:"Prosjektleder", arbeidsleder:"Arbeidsleder" }, FAG_LABELS);
   function toMeetingFagSections(){
@@ -2891,6 +2908,24 @@
   }
   function renderPeopleTab(){
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+
+    document.querySelectorAll("#panel-personer [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
+    var pairs = teamPairsForCurrentProject();
+    var todayIso = toISODate(new Date());
+    byId("frivilligeTeamList").innerHTML = pairs.length ? pairs.map(function(t){
+      var week = privilegeWeeksForCurrentProject().find(function(w){ return w.responsible === t.name && w.end >= todayIso; });
+      var weekText = week ? "Uke "+isoWeekInfo(fromISODate(week.start)).week+" · "+fmtRange(week.start,week.end) : "Ingen kommende uke satt";
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span><span class="sqty" style="font-size:12px;">'+escapeHtml(weekText)+'</span></div>';
+    }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå. Legg til under Team-fanen.</p>';
+
+    var accounts = openAccountsForCurrentProject();
+    byId("openAccountsList").innerHTML = accounts.length ? accounts.map(function(a){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(a.leverandor)+'</span><span class="sqty" style="font-size:12px;">'+[a.kundenr?("Kundenr: "+a.kundenr):"", a.merking].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-delopenaccount="'+a.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen kontoer lagt til ennå.</p>';
+    byId("openAccountsList").querySelectorAll("[data-delopenaccount]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne kontoen?")) deleteOpenAccount(this.dataset.delopenaccount); });
+    });
+
     var sectionToggle = byId("personerSectionToggle");
     sectionToggle.hidden = !isByggeleder();
     if(!isByggeleder()) view.personerSection = "frivillige";
@@ -2911,7 +2946,6 @@
 
     var toggle = byId("peopleViewToggle");
     toggle.hidden = false;
-    if(!isByggeleder() && !view.peopleViewInited){ view.peopleView = "byfag"; view.peopleViewInited = true; }
     toggle.querySelectorAll("[data-peopleview]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.peopleview === view.peopleView);
     });
@@ -2957,6 +2991,14 @@
     b.addEventListener("click", function(){ view.personerSection = this.dataset.personersection; renderPeopleTab(); });
   });
   byId("peopleShowAllBtn").addEventListener("click", function(){ view.peopleShowAll = !view.peopleShowAll; renderPeopleTab(); });
+  byId("addOpenAccountForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var levInput = byId("newOpenAccountLeverandor"), kundeInput = byId("newOpenAccountKundenr"), merkInput = byId("newOpenAccountMerking");
+    var leverandor = levInput.value.trim();
+    if(!leverandor) return;
+    addOpenAccount(leverandor, kundeInput.value.trim(), merkInput.value.trim());
+    levInput.value = ""; kundeInput.value = ""; merkInput.value = "";
+  });
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
@@ -3563,6 +3605,13 @@
     var pid = currentProjectId();
     return state.teamPairs.filter(function(t){ return t.project_id === pid; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
   }
+  function rowToOpenAccount(row){
+    return { id: row.id, project_id: row.project_id, leverandor: row.leverandor, kundenr: row.kundenr || "", merking: row.merking || "", createdAt: row.created_at };
+  }
+  function openAccountsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.openAccounts.filter(function(a){ return a.project_id === pid; }).sort(function(a,b){ return a.leverandor.localeCompare(b.leverandor,"no"); });
+  }
   function rowToDuty(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
   }
@@ -4055,7 +4104,34 @@
         sb.from("attendance").upsert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: slot.fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
           if(res.error) showError("Kunne ikke registrere oppmøte: "+res.error.message);
         });
+      } else if(personId && slot && !slot.fag){
+        sb.from("attendance").upsert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: "behov_menighet" }, { onConflict: "project_id,person_id,day" }).then(function(res){
+          if(res.error) showError("Kunne ikke registrere oppmøte: "+res.error.message);
+        });
+        ensureBehovMenighetTask(slot.project_id, slot.label, d.day, personId);
       }
+    });
+  }
+  // Lager (eller gjenbruker) en oppgave i kalenderen for et behov utenfor de faste fagene,
+  // så det som fylles inn under "Behov fra menigheten" også dukker opp som en oppgave på riktig dato.
+  function ensureBehovMenighetTask(projectId, label, day, personId){
+    if(!sb) return;
+    var existing = state.elements.find(function(e){ return e.project_id === projectId && e.fag === "behov_menighet" && e.start === day && e.end === day && e.name === label; });
+    if(existing){
+      var next = Object.assign({}, existing.assignments);
+      var ids = (next[day] || []).slice();
+      if(ids.indexOf(personId) === -1) ids.push(personId);
+      next[day] = ids;
+      sb.from("elements").update({ assignments: next }).eq("id", existing.id).then(function(res){
+        if(res.error){ showError("Kunne ikke oppdatere oppgaven i kalenderen: "+res.error.message); return; }
+        refetchElements();
+      });
+      return;
+    }
+    var assignments = {}; assignments[day] = [personId];
+    sb.from("elements").insert({ project_id: projectId, section: "utvendig", name: label.slice(0,120), start: day, end: day, status: "mangler", fag: "behov_menighet", assignments: assignments, done: false }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("elements") !== -1 ? "Databasen mangler støtte for behov-fra-menigheten-faget. Kjør sql/29-behov-menighet-virtuelt-fag.sql i Supabase." : "Kunne ikke opprette oppgave i kalenderen: "+res.error.message); return; }
+      refetchElements();
     });
   }
   function addPersonAndFillBehovDay(dayRowId, name){
@@ -4782,6 +4858,13 @@
       renderAll();
     });
   }
+  function refetchOpenAccounts(){
+    sb.from("open_accounts").select("*").order("leverandor").then(function(res){
+      if(res.error){ return; }
+      state.openAccounts = res.data.map(rowToOpenAccount);
+      renderAll();
+    });
+  }
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -4929,6 +5012,19 @@
   function deleteTeamPair(id){
     if(!sb) return;
     sb.from("team_pairs").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchTeamPairs(); });
+  }
+  function addOpenAccount(leverandor, kundenr, merking){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("open_accounts").insert({ project_id: pid, leverandor: leverandor.slice(0,120), kundenr: kundenr.slice(0,80) || null, merking: merking.slice(0,120) || null }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("open_accounts") !== -1 ? "Databasen mangler tabellen for OPEN ACCOUNTS. Kjør sql/30-open-accounts.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      refetchOpenAccounts();
+    });
+  }
+  function deleteOpenAccount(id){
+    if(!sb) return;
+    sb.from("open_accounts").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOpenAccounts(); });
   }
   function saveSpiritualInfo(text){
     if(!sb) return;
@@ -5602,6 +5698,7 @@
     refetchToFollowups();
     refetchFagRequests();
     refetchTeamPairs();
+    refetchOpenAccounts();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -5632,6 +5729,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "to_followups" }, refetchToFollowups)
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_requests" }, refetchFagRequests)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_pairs" }, refetchTeamPairs)
+      .on("postgres_changes", { event: "*", schema: "public", table: "open_accounts" }, refetchOpenAccounts)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
