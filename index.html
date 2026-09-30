@@ -100,7 +100,16 @@
   .project-bar{
     max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
-  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:6px 10px; }
+  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:6px 10px; font:inherit; color:inherit; cursor:pointer; }
+  .project-pill:hover{ background:var(--surface); }
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--border-strong);
+    background:var(--surface); font-size:18px; line-height:1; cursor:pointer; color:var(--text);
+    transition:transform .15s ease, background .15s ease;
+  }
+  .icon-btn:hover{ background:var(--surface-alt); }
+  .icon-btn:active{ transform:rotate(-25deg); }
   .project-pill span{ font-size:14px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .project-dates{font-size:11.5px; color:var(--muted);}
 
@@ -712,11 +721,11 @@
           <span class="chevron">⌄</span>
         </button>
       </div>
-      <div class="project-pill" title="Bytt prosjekt under ACGO">
+      <button type="button" class="dropbtn project-pill" id="projectSwitchBtn" title="Bytt prosjekt" aria-haspopup="listbox" aria-expanded="false">
         <span id="projectCurrentLabel"></span>
-      </div>
+      </button>
       <span id="projectDates" class="mono project-dates"></span>
-      <button class="btn small ghost" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
+      <button class="icon-btn" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
       <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
     </div>
     <div id="statusBanner" class="status-banner ok"></div>
@@ -985,6 +994,25 @@
 
     <div class="cols2" style="margin-bottom:16px;">
       <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Ukens skriftsted</h2>
+        <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:13.5px; color:var(--text); font-style:normal;"></div>
+        <div data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+          <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
+          <button class="btn primary small" id="weeklyScriptureSave">Lagre</button>
+        </div>
+      </div>
+      <div class="peoplecard">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
+          <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
+        </div>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
+        <div id="teamMeetingView"></div>
+      </div>
+    </div>
+
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
         <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
@@ -1162,9 +1190,21 @@
   </section>
 
   <section id="panel-cgo" class="panel">
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
+        <h2 style="font-size:16px; margin:0;">Teammøte-agenda</h2>
+        <span id="cgoTeamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt til Team-siden</span>
+      </div>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ukentlig agenda for teammøtet. Fyll ut og send når den er klar, så vises den på Team-siden.</p>
+      <textarea id="cgoTeamMeetingAgenda" rows="6" placeholder="F.eks. 1. Sikkerhet på plassen&#10;2. Status denne uken&#10;3. Fokus neste uke" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button type="button" class="btn small" id="cgoTeamMeetingSave">Lagre utkast</button>
+        <button type="button" class="btn small primary" id="cgoTeamMeetingSend"></button>
+      </div>
+    </div>
     <div class="peoplecard">
       <h2 style="font-size:16px; margin-bottom:8px;">CGO</h2>
-      <p class="sub" style="font-size:13px; color:var(--muted); line-height:1.5;">Denne siden er under oppbygging. Her skal koordinering av mat, losji og renhold legges til - detaljene kommer.</p>
+      <p class="sub" style="font-size:13px; color:var(--muted); line-height:1.5;">Resten av denne siden er under oppbygging. Her skal koordinering av mat, losji og renhold legges til - detaljene kommer.</p>
     </div>
   </section>
 
@@ -1536,7 +1576,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -1707,6 +1747,10 @@
   function isPresentForFag(personId, iso, fag){
     var pid = currentProjectId();
     return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso && a.fag === fag; });
+  }
+  function isPresentAnyFag(personId, iso){
+    var pid = currentProjectId();
+    return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso; });
   }
   function assignedAnywhereOn(iso){
     var set = new Set();
@@ -2416,6 +2460,7 @@
     return weeks;
   }
   function personDatesFag(){
+    if(personDatesDialog.dataset.forceFag) return personDatesDialog.dataset.forceFag;
     if(activeFag() !== "alle") return activeFag();
     return personDatesDialog.dataset.fag || "";
   }
@@ -2429,7 +2474,7 @@
     byId("pdMeta").innerHTML = '<span>'+escapeHtml(cur ? cur.name : "")+'</span><span><b>'+total+'</b> dag(er) valgt</span>';
 
     var pickWrap = byId("pdFagPickWrap");
-    var overview = activeFag() === "alle";
+    var overview = activeFag() === "alle" && !personDatesDialog.dataset.forceFag;
     pickWrap.hidden = !overview;
     if(overview){
       var pick = byId("pdFagPick");
@@ -2469,10 +2514,11 @@
       });
     });
   }
-  function openPersonDates(pid, fag){
+  function openPersonDates(pid, forceFag){
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     personDatesDialog.dataset.person = pid;
-    personDatesDialog.dataset.fag = fag || "";
+    personDatesDialog.dataset.fag = "";
+    personDatesDialog.dataset.forceFag = forceFag || "";
     renderPersonDates();
     personDatesDialog.showModal();
     var curWk = byId("pdWeeks").querySelector('.att-week[style]');
@@ -2637,6 +2683,14 @@
 
   byId("acgoProjectBtn").addEventListener("click", function(){
     if(!state.projects.length) return;
+    var itemsHtml = state.projects.map(function(p){
+      return '<button type="button" class="dropmenu-item" role="option" data-value="'+p.id+'" aria-selected="'+(p.id===state.currentProjectId)+'">' +
+        '<span class="name">'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</span><span class="check">✓</span></button>';
+    }).join("");
+    openDropdownMenu(this, itemsHtml, function(value){ selectProject(value); });
+  });
+  byId("projectSwitchBtn").addEventListener("click", function(){
+    if(state.projects.length < 2) return;
     var itemsHtml = state.projects.map(function(p){
       return '<button type="button" class="dropmenu-item" role="option" data-value="'+p.id+'" aria-selected="'+(p.id===state.currentProjectId)+'">' +
         '<span class="name">'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</span><span class="check">✓</span></button>';
@@ -3098,6 +3152,19 @@
         '</div>';
     }).join("") : '<p class="empty-note">Ingen oppgaver skal avsluttes denne uken.</p>';
 
+    var scripture = currentWeekScripture();
+    byId("weeklyScriptureView").textContent = scripture ? scripture.text : "Ingen skriftsted lagt inn ennå.";
+    byId("weeklyScriptureView").classList.toggle("empty-note", !scripture);
+    var scriptureInput = byId("weeklyScriptureInput");
+    if(document.activeElement !== scriptureInput) scriptureInput.value = (scripture && scripture.text) || "";
+
+    var teamMeeting = currentWeekTeamMeeting();
+    var sentMeeting = teamMeeting && teamMeeting.sent ? teamMeeting : null;
+    byId("teamMeetingBadge").hidden = !sentMeeting;
+    byId("teamMeetingView").innerHTML = sentMeeting ?
+      '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(sentMeeting.agenda)+'</div>' :
+      '<p class="empty-note">Ingen teammøte-agenda sendt for denne uken ennå.</p>';
+
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
@@ -3219,13 +3286,25 @@
       return '<option value="'+w.id+'"'+(w.id===view.mwWeekId?' selected':'')+'>Uke '+info.week+' · '+escapeHtml(w.responsible)+' ('+fmtRange(w.start,w.end)+')</option>';
     }).join("");
 
+    var curWeekObj = weeks.find(function(w){ return w.id === view.mwWeekId; });
+    var mwWeekDays = [];
+    if(curWeekObj){
+      var d = fromISODate(curWeekObj.start), endD = fromISODate(curWeekObj.end);
+      while(d <= endD){ mwWeekDays.push(toISODate(d)); d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1); }
+    }
+    var availableThisWeek = state.people.filter(function(p){ return mwWeekDays.some(function(iso){ return isPresentAnyFag(p.id, iso); }); });
     var bySlot = mwForWeek(view.mwWeekId);
     byId("mwSlots").innerHTML = MW_SLOTS.map(function(label, i){
       var slot = i+1, pid = bySlot[slot] || "";
+      var options = availableThisWeek.slice();
+      if(pid && !options.some(function(p){ return p.id === pid; })){
+        var picked = state.people.find(function(p){ return p.id === pid; });
+        if(picked) options.push(picked);
+      }
       return '<div class="field"><label>'+slot+'. '+escapeHtml(label)+'</label>'+
         '<select data-mwslot="'+slot+'"><option value="">— Ikke satt —</option>' +
-        state.people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-        '</select></div>';
+        options.map(function(p){ return '<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+        '</select>'+(!availableThisWeek.length ? '<p class="empty-note" style="margin-top:4px;">Ingen er satt tilgjengelig denne uken ennå.</p>' : '')+'</div>';
     }).join("");
     byId("mwSlots").querySelectorAll("[data-mwslot]").forEach(function(s){
       s.addEventListener("change", function(){ setMorningWorship(view.mwWeekId, Number(this.dataset.mwslot), this.value || null); });
@@ -3249,6 +3328,11 @@
   byId("spiritualInfoSave").addEventListener("click", function(){ saveSpiritualInfo(byId("spiritualInfoInput").value); });
   byId("siteInfoSave").addEventListener("click", function(){
     saveSiteInfo(byId("siteAddressInput").value.trim(), byId("eatingAddressInput").value.trim(), byId("meetingAddressInput").value.trim());
+  });
+  byId("weeklyScriptureSave").addEventListener("click", function(){
+    var text = byId("weeklyScriptureInput").value.trim();
+    if(!text) return;
+    saveWeeklyScripture(text);
   });
   byId("addTeamPairForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -3635,6 +3719,7 @@
     renderRoomTab();
     renderSpiritualTab();
     renderAcgoTab();
+    renderCgoTab();
     renderToMoteTab();
     renderDashboardTab();
     renderKontaktView();
@@ -3724,6 +3809,20 @@
   }
   function rowToOpenAccount(row){
     return { id: row.id, project_id: row.project_id, leverandor: row.leverandor, kundenr: row.kundenr || "", merking: row.merking || "", createdAt: row.created_at };
+  }
+  function rowToWeeklyScripture(row){
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, text: row.text };
+  }
+  function currentWeekScripture(){
+    var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
+    return state.weeklyScriptures.find(function(s){ return s.project_id === pid && s.weekStart === wk; }) || null;
+  }
+  function rowToTeamMeeting(row){
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, agenda: row.agenda || "", sent: !!row.sent, sentAt: row.sent_at, createdAt: row.created_at };
+  }
+  function currentWeekTeamMeeting(){
+    var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
+    return state.teamMeetings.find(function(m){ return m.project_id === pid && m.weekStart === wk; }) || null;
   }
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
@@ -4069,6 +4168,25 @@
     if(!text) return;
     addPortalSuggestion(text);
     input.value = "";
+  });
+
+  function renderCgoTab(){
+    if(!isByggeleder()) return;
+    var m = currentWeekTeamMeeting();
+    var textarea = byId("cgoTeamMeetingAgenda");
+    if(document.activeElement !== textarea) textarea.value = (m && m.agenda) || "";
+    byId("cgoTeamMeetingBadge").hidden = !(m && m.sent);
+    byId("cgoTeamMeetingSend").textContent = (m && m.sent) ? "Trekk tilbake" : "Send til Team-siden";
+  }
+  byId("cgoTeamMeetingSave").addEventListener("click", function(){ saveTeamMeetingAgenda(byId("cgoTeamMeetingAgenda").value); });
+  byId("cgoTeamMeetingSend").addEventListener("click", function(){
+    var m = currentWeekTeamMeeting();
+    if(!m || !m.sent){
+      saveTeamMeetingAgenda(byId("cgoTeamMeetingAgenda").value);
+      setTeamMeetingSent(true);
+    } else {
+      setTeamMeetingSent(false);
+    }
   });
 
   byId("toMeetingSelect").addEventListener("change", function(){ view.toMeetingId = this.value; renderToMoteTab(); });
@@ -4999,6 +5117,20 @@
       renderAll();
     });
   }
+  function refetchWeeklyScriptures(){
+    sb.from("weekly_scriptures").select("*").order("week_start").then(function(res){
+      if(res.error){ return; }
+      state.weeklyScriptures = res.data.map(rowToWeeklyScripture);
+      renderAll();
+    });
+  }
+  function refetchTeamMeetings(){
+    sb.from("team_meetings").select("*").order("week_start").then(function(res){
+      if(res.error){ return; }
+      state.teamMeetings = res.data.map(rowToTeamMeeting);
+      renderAll();
+    });
+  }
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -5182,6 +5314,40 @@
   function deleteSiteCode(id){
     if(!sb) return;
     sb.from("site_codes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchSiteCodes(); });
+  }
+  function saveWeeklyScripture(text){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var wk = toISODate(mondayOf(new Date()));
+    sb.from("weekly_scriptures").upsert({ project_id: pid, week_start: wk, text: text.slice(0,300) }, { onConflict: "project_id,week_start" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("weekly_scriptures") !== -1 ? "Databasen mangler tabellen for ukens skriftsted. Kjør sql/32-ukens-skriftsted-og-teammote.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      showInfo("Lagret ✓");
+      refetchWeeklyScriptures();
+    });
+  }
+  function saveTeamMeetingAgenda(text){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var wk = toISODate(mondayOf(new Date()));
+    var existing = currentWeekTeamMeeting();
+    sb.from("team_meetings").upsert({ project_id: pid, week_start: wk, agenda: text.slice(0,4000), sent: existing ? existing.sent : false }, { onConflict: "project_id,week_start" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("team_meetings") !== -1 ? "Databasen mangler tabellen for teammøte. Kjør sql/32-ukens-skriftsted-og-teammote.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchTeamMeetings();
+    });
+  }
+  function setTeamMeetingSent(sent){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var wk = toISODate(mondayOf(new Date()));
+    var existing = currentWeekTeamMeeting();
+    sb.from("team_meetings").upsert({ project_id: pid, week_start: wk, agenda: existing ? existing.agenda : "", sent: sent, sent_at: sent ? new Date().toISOString() : null }, { onConflict: "project_id,week_start" }).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
+      showInfo(sent ? "Sendt til Team-siden ✓" : "Trukket tilbake");
+      refetchTeamMeetings();
+    });
   }
   function addOpenAccount(leverandor, kundenr, merking){
     if(!sb) return;
@@ -5870,8 +6036,10 @@
     refetchTeamPairs();
     refetchOpenAccounts();
     refetchSiteCodes();
+    refetchWeeklyScriptures();
+    refetchTeamMeetings();
 
-    sb.channel("public-changes")
+    realtimeChannel = sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
       .on("postgres_changes", { event: "*", schema: "public", table: "elements" }, refetchElements)
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, refetchProjects)
@@ -5902,10 +6070,27 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "team_pairs" }, refetchTeamPairs)
       .on("postgres_changes", { event: "*", schema: "public", table: "open_accounts" }, refetchOpenAccounts)
       .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
-      .subscribe(function(status){
-        if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
-        if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
-      });
+      .on("postgres_changes", { event: "*", schema: "public", table: "weekly_scriptures" }, refetchWeeklyScriptures)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
+      .subscribe(handleRealtimeStatus);
+  }
+  // Nettverket kan hikke uten at det er et reelt problem - prøv noen ganger stille
+  // i bakgrunnen før vi faktisk forstyrrer brukeren med et varsel.
+  var realtimeChannel, realtimeRetries = 0, REALTIME_MAX_RETRIES = 4;
+  function handleRealtimeStatus(status){
+    if(status === "SUBSCRIBED"){
+      realtimeRetries = 0;
+      byId("statusBanner").className = "status-banner ok";
+      return;
+    }
+    if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){
+      if(realtimeRetries < REALTIME_MAX_RETRIES){
+        realtimeRetries++;
+        setTimeout(function(){ if(realtimeChannel) realtimeChannel.subscribe(handleRealtimeStatus); }, 1500 * realtimeRetries);
+      } else {
+        showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer.");
+      }
+    }
   }
   var didAutoOpenDashboard = false;
   function handleSession(session){
