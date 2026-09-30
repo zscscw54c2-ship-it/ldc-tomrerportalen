@@ -638,6 +638,7 @@
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="E-post" required autocomplete="username" />
       <input type="password" id="loginPassword" placeholder="Passord" required autocomplete="current-password" />
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); margin:6px 0 2px;"><input type="checkbox" id="loginRemember" checked /> Husk meg på denne enheten</label>
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
     <p class="err" id="loginError"></p>
@@ -770,6 +771,7 @@
         <button type="button" data-calsec="utvendig" aria-pressed="false"><i class="dot" style="background:var(--utvendig)"></i>Utvendig</button>
       </div>
     </div>
+    <p class="sub" id="fagPeriodBanner" hidden style="font-size:12.5px; color:var(--muted); margin:-6px 0 10px;"></p>
 
     <div class="cal-card" id="weekView">
       <div class="cal-head">
@@ -957,12 +959,18 @@
 
   <section id="panel-andelig" class="panel">
     <div class="peoplecard" id="andeligVisibilityBox" hidden style="margin-bottom:14px;">
-      <h2 style="font-size:14px; margin-bottom:8px;">Vis Åndelig-siden for</h2>
+      <h2 style="font-size:14px; margin-bottom:8px;">Vis Team-siden for</h2>
       <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
     </div>
     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
       <div id="pwBanner" class="status-banner" style="margin-top:0; flex:1; min-width:220px;"></div>
       <button class="btn small" id="andeligEditBtn">Rediger</button>
+    </div>
+
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Oppgaver fra kalenderen som skal være ferdige denne uken, gruppert etter fag.</p>
+      <div id="weeklyGoalsList"></div>
     </div>
 
     <div class="cols2" style="margin-bottom:16px;">
@@ -1495,9 +1503,27 @@
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12anhudHNtcnpjdGtzbmVxZWF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5ODUyNzQsImV4cCI6MjEwNTU2MTI3NH0.M_1-uErd_wIQPZskQK87kRGJlC3SPD5mCN0ofn3702c";
   // ---------------------------------------------------------------------
 
+  // "Husk meg"-preferansen (1/0) ligger alltid i localStorage (bare et flagg, ikke selve
+  // innloggingen), og styrer om selve økten lagres i localStorage (overlever restart av
+  // nettleseren) eller sessionStorage (forsvinner når fanen/nettleseren lukkes).
+  var REMEMBER_ME_KEY = "ldc_remember_me";
+  function rememberMePreferred(){
+    try{ return localStorage.getItem(REMEMBER_ME_KEY) !== "0"; }catch(e){ return true; }
+  }
+  var authStorage = {
+    getItem: function(key){
+      try{ return (rememberMePreferred() ? window.localStorage : window.sessionStorage).getItem(key); }catch(e){ return null; }
+    },
+    setItem: function(key, value){
+      try{ (rememberMePreferred() ? window.localStorage : window.sessionStorage).setItem(key, value); }catch(e){}
+    },
+    removeItem: function(key){
+      try{ window.localStorage.removeItem(key); window.sessionStorage.removeItem(key); }catch(e){}
+    }
+  };
   var sb = null;
   if(window.supabase && SUPABASE_URL.indexOf("REPLACE_WITH") !== 0){
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [] };
@@ -2221,6 +2247,10 @@
   }
 
   function renderCalView(){
+    var periodBanner = byId("fagPeriodBanner");
+    var period = activeFag() !== "alle" ? fagIsLocked(activeFag()) : null;
+    periodBanner.hidden = !period;
+    if(period) periodBanner.textContent = FAG_LABELS[activeFag()]+" er aktivt i dette prosjektet "+fmtRange(period.start, period.end)+".";
     byId("weekView").hidden = view.calView !== "uke";
     byId("ganttView").hidden = view.calView !== "prosjekt";
     document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
@@ -2429,10 +2459,10 @@
       });
     });
   }
-  function openPersonDates(pid){
+  function openPersonDates(pid, fag){
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     personDatesDialog.dataset.person = pid;
-    personDatesDialog.dataset.fag = "";
+    personDatesDialog.dataset.fag = fag || "";
     renderPersonDates();
     personDatesDialog.showModal();
     var curWk = byId("pdWeeks").querySelector('.att-week[style]');
@@ -3039,6 +3069,20 @@
         cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
       });
     }
+    var goalWeekDays = weekDays(mondayOf(new Date())).map(toISODate);
+    var goalWeekStart = goalWeekDays[0], goalWeekEnd = goalWeekDays[goalWeekDays.length-1];
+    var goalTasks = state.elements.filter(inCurrentProject).filter(function(e){ return e.end && e.end >= goalWeekStart && e.end <= goalWeekEnd; });
+    var goalsByFag = {};
+    goalTasks.forEach(function(e){ (goalsByFag[e.fag] = goalsByFag[e.fag] || []).push(e); });
+    var goalFags = Object.keys(goalsByFag).sort(function(a,b){ return (FAG_LABELS[a]||a).localeCompare(FAG_LABELS[b]||b,"no"); });
+    byId("weeklyGoalsList").innerHTML = goalFags.length ? goalFags.map(function(fag){
+      var tasks = goalsByFag[fag].slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      return '<div style="margin-bottom:10px;"><div style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; margin-bottom:4px;">' +
+        '<i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block;"></i>'+(FAG_LABELS[fag]||fag)+'</div>' +
+        tasks.map(function(e){ return '<div class="shoprow"><span class="sname">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>'; }).join("") +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen oppgaver skal avsluttes denne uken.</p>';
+
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
@@ -3049,13 +3093,19 @@
 
     byId("newTeamPairFag").innerHTML = '<option value="">Fag (valgfritt)</option>' + FAG_LIST.map(function(f){ return '<option value="'+f+'">'+FAG_LABELS[f]+'</option>'; }).join("");
     var pairs = teamPairsForCurrentProject();
+    var pid = currentProjectId();
     byId("teamPairList").innerHTML = pairs.length ? pairs.map(function(t){
+      var nDays = t.personId ? state.attendance.filter(function(a){ return a.project_id === pid && a.person_id === t.personId && a.fag === "team"; }).length : 0;
       return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span>' +
-        '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+'</span>' +
+        '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+(t.personId?' · '+nDays+' dag(er) tilgjengelig':'')+'</span>' +
+        (t.personId ? '<button type="button" class="btn small" data-setavail="'+t.personId+'">Sett tilgjengelighet</button>' : '') +
         '<button class="del" data-editonly data-delteampair="'+t.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå.</p>';
     byId("teamPairList").querySelectorAll("[data-delteampair]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Fjerne dette team-paret?")) deleteTeamPair(this.dataset.delteampair); });
+    });
+    byId("teamPairList").querySelectorAll("[data-setavail]").forEach(function(b){
+      b.addEventListener("click", function(){ openPersonDates(this.dataset.setavail, "team"); });
     });
 
     document.querySelectorAll("#panel-andelig [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
@@ -5846,6 +5896,7 @@
     var email = byId("loginEmail").value.trim();
     var password = byId("loginPassword").value;
     byId("loginError").textContent = "";
+    try{ localStorage.setItem(REMEMBER_ME_KEY, byId("loginRemember").checked ? "1" : "0"); }catch(e){}
     sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
       if(res.error){ byId("loginError").textContent = "Feil e-post eller passord."; return; }
       byId("loginPassword").value = "";
