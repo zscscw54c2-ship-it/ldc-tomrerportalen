@@ -690,7 +690,8 @@
         <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
         <button role="tab" data-tab="cgo" aria-selected="false" hidden>CGO</button>
-        <button role="tab" data-tab="tomote" aria-selected="false">TO-møte</button>
+        <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
+        <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
       </nav>
     </div>
     <div class="project-bar">
@@ -910,21 +911,19 @@
     </div>
 
     <div id="personerFrivilligeBox">
+      <div class="peoplecard" style="margin-bottom:14px;">
+        <h2 style="font-size:16px; margin-bottom:2px;">Frivillige etter fag</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Tilgjengelighet per dag, gruppert etter fag.</p>
+        <div id="peopleByFag" class="gantt-wrap frivillige-grid"></div>
+      </div>
       <div class="peoplecard">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
-          <h2 style="font-size:16px; margin:0;">Frivillige</h2>
-          <div id="peopleViewToggle" hidden style="display:flex; gap:4px; background:var(--surface-2, var(--surface)); border:1px solid var(--border); border-radius:8px; padding:2px;">
-            <button type="button" class="btn small" data-peopleview="list">Liste</button>
-            <button type="button" class="btn small" data-peopleview="byfag">Etter fag</button>
-          </div>
-        </div>
+        <h2 style="font-size:16px; margin-bottom:4px;">Søk i listen</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); flex:1; min-width:180px;" />
           <button type="button" class="btn small" id="peopleShowAllBtn">Vis hele listen</button>
         </div>
         <div id="peopleList"></div>
-        <div id="peopleByFag" class="gantt-wrap frivillige-grid" hidden></div>
         <form class="inline-add" id="addPersonForm">
           <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
           <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
@@ -1087,6 +1086,13 @@
   </section>
 
   <section id="panel-acgo" class="panel">
+    <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h2 style="font-size:16px; margin-bottom:2px;">TO-møte</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;" id="acgoTomoteStatus"></p>
+      </div>
+      <button type="button" class="btn primary" id="acgoOpenTomoteBtn">Åpne TO-møte</button>
+    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:8px;">Prosjekt</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Velg hvilket prosjekt portalen viser. "★" markerer prosjektet som er satt som standard ved innlogging.</p>
@@ -1372,7 +1378,8 @@
     </div>
     <div class="field">
       <label for="elName">Navn på oppgave</label>
-      <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" />
+      <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" list="elNameSuggestions" />
+      <datalist id="elNameSuggestions"></datalist>
     </div>
     <div class="field" id="elSectionField">
       <label for="elSection">Seksjon</label>
@@ -1494,7 +1501,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "byfag", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -1594,7 +1601,8 @@
     view.tab = tab;
     document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.tab===tab ? "true":"false"); });
     document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
-    byId("panel-"+tab).classList.add("active");
+    var panelId = (tab === "referat") ? "tomote" : tab;
+    byId("panel-"+panelId).classList.add("active");
     document.body.classList.add("section-active");
     window.scrollTo(0,0);
   }
@@ -2610,6 +2618,7 @@
   byId("acgoProjectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
   });
+  byId("acgoOpenTomoteBtn").addEventListener("click", function(){ switchTab("tomote"); });
   var projectDialog = byId("projectDialog");
   byId("acgoProjectNewBtn").addEventListener("click", function(){
     byId("projDlgTitle").textContent = "Nytt prosjekt";
@@ -2943,34 +2952,24 @@
       return;
     }
 
-    var toggle = byId("peopleViewToggle");
-    toggle.hidden = false;
-    toggle.querySelectorAll("[data-peopleview]").forEach(function(b){
-      b.classList.toggle("primary", b.dataset.peopleview === view.peopleView);
-    });
-    toggle.querySelector('[data-peopleview="byfag"]').textContent = isByggeleder() ? "Etter fag" : "Mitt fag";
-    byId("peopleList").hidden = view.peopleView !== "list";
-    byId("peopleByFag").hidden = view.peopleView !== "byfag";
     byId("addPersonForm").hidden = !isByggeleder();
 
     if(state.people.length === 0){
-      byId("peopleList").hidden = false;
-      byId("peopleByFag").hidden = true;
-      byId("peopleList").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
-      return;
-    }
-
-    if(view.peopleView === "byfag"){
+      byId("peopleByFag").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
+    } else {
       var fagFilter = isByggeleder() ? null : activeFag();
       byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder() });
       wireFrivilligeGridEvents("peopleByFag", { readOnly: !isByggeleder() });
       scrollGridToCurrentWeek("peopleByFag", cur);
-      return;
     }
 
     var box = byId("peopleList");
-    var q = (view.peopleSearch || "").trim().toLowerCase();
     byId("peopleShowAllBtn").textContent = view.peopleShowAll ? "Skjul listen" : "Vis hele listen";
+    if(state.people.length === 0){
+      box.innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
+      return;
+    }
+    var q = (view.peopleSearch || "").trim().toLowerCase();
     if(!q && !view.peopleShowAll){
       box.innerHTML = '<p class="empty-note">Søk etter et navn, eller trykk «Vis hele listen».</p>';
       return;
@@ -2983,9 +2982,6 @@
     box.innerHTML = list.map(personRowHtml).join("");
     wirePersonRowButtons(box);
   }
-  byId("peopleViewToggle").querySelectorAll("[data-peopleview]").forEach(function(b){
-    b.addEventListener("click", function(){ view.peopleView = this.dataset.peopleview; renderPeopleTab(); });
-  });
   byId("personerSectionToggle").querySelectorAll("[data-personersection]").forEach(function(b){
     b.addEventListener("click", function(){ view.personerSection = this.dataset.personersection; renderPeopleTab(); });
   });
@@ -3388,6 +3384,10 @@
       }
     }
     syncPlanned();
+    var pastNames = [];
+    state.elements.forEach(function(e){ if(e.name && pastNames.indexOf(e.name) === -1) pastNames.push(e.name); });
+    pastNames.sort(function(a,b){ return a.localeCompare(b,"no"); });
+    byId("elNameSuggestions").innerHTML = pastNames.map(function(n){ return '<option value="'+escapeHtml(n)+'"></option>'; }).join("");
     elDialog.showModal();
   }
   byId("elCancel").addEventListener("click", function(){ elDialog.close(); });
@@ -3448,6 +3448,8 @@
     { tab:"cgo", name:"CGO", color:"var(--good)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>' },
     { tab:"tomote", name:"TO-møte", color:"var(--cyan)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' },
+    { tab:"referat", name:"Referat", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' }
   ];
   function homeTileStatus(tab){
@@ -3495,10 +3497,10 @@
       return { badge: 0, text: state.userAccounts.length+" kontoer" };
     }
     if(tab === "tomote"){
-      if(isByggeleder()){
-        var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
-        return { badge: openF, text: openF > 0 ? openF+" å følge opp" : "Ingen åpne saker" };
-      }
+      var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
+      return { badge: openF, text: openF > 0 ? openF+" å følge opp" : "Ingen åpne saker" };
+    }
+    if(tab === "referat"){
       var meetings2 = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
       if(!meetings2.length) return { badge: 0, text: "Ingen ferdige referat ennå" };
       var wInfo = isoWeekInfo(fromISODate(meetings2[0].weekStart));
@@ -3524,6 +3526,8 @@
       if(t.tab === "andelig") return andeligVisibleForMe();
       if(t.tab === "acgo") return isByggeleder();
       if(t.tab === "cgo") return isByggeleder();
+      if(t.tab === "tomote") return false;
+      if(t.tab === "referat") return !isByggeleder();
       return true;
     }).map(function(t){
       var body;
@@ -3551,6 +3555,7 @@
     updateAndeligTabVisibility();
     updateAcgoTabVisibility();
     updateCgoTabVisibility();
+    updateTomoteTabVisibility();
     updateDashboardTabVisibility();
     renderProjectBar();
     renderCalView();
@@ -3585,6 +3590,13 @@
     var btn = document.querySelector('nav.tabs button[data-tab="cgo"]');
     if(btn) btn.hidden = !isByggeleder();
     if(!isByggeleder() && view.tab === "cgo") switchTab("kalender");
+  }
+  function updateTomoteTabVisibility(){
+    var tomoteBtn = document.querySelector('nav.tabs button[data-tab="tomote"]');
+    if(tomoteBtn) tomoteBtn.hidden = true;
+    var referatBtn = document.querySelector('nav.tabs button[data-tab="referat"]');
+    if(referatBtn) referatBtn.hidden = isByggeleder();
+    if(isByggeleder() && view.tab === "referat") switchTab("kalender");
   }
 
   function goToWeek(newStart){
@@ -3869,6 +3881,8 @@
   var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
+    var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
+    byId("acgoTomoteStatus").textContent = openF > 0 ? openF+" sak(er) å følge opp" : "Ingen åpne saker";
     var concluded = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
     byId("acgoReferatArchive").innerHTML = concluded.length ? concluded.map(function(m){
       var info = isoWeekInfo(fromISODate(m.weekStart));
@@ -4431,7 +4445,7 @@
     if(opts.readOnly){
       pendingFagRequestsForCurrentProject().forEach(function(r){ pendingSet[r.personId+"|"+r.day+"|"+r.fag] = true; });
     }
-    var fagsToList = opts.fagFilter ? [opts.fagFilter] : OVERVIEW_FAG_LIST;
+    var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(OVERVIEW_FAG_LIST.filter(function(f){ return f !== "team"; }));
     var anyRows = false;
     fagsToList.forEach(function(fag){
       var people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
