@@ -1024,18 +1024,22 @@
 
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <div style="flex:1; min-width:220px;">
-          <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25;"></div>
-          <div id="pwBannerSub" class="mono" style="font-size:12px; color:var(--muted); margin-top:2px;"></div>
+        <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25; flex:1; min-width:180px;"></div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button type="button" class="btn small ghost" id="teamWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
+          <span id="teamWeekLabel" class="mono" style="font-weight:700; font-size:13.5px; min-width:60px; text-align:center;"></span>
+          <button type="button" class="btn small ghost" id="teamWeekNext" title="Neste uke" aria-label="Neste uke">›</button>
+          <button type="button" class="btn small" id="teamWeekToday" hidden>Denne uken</button>
         </div>
         <button class="btn small" id="andeligEditBtn">Rediger</button>
       </div>
       <h2 style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
       <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:14px; color:var(--text); font-style:normal;"></div>
-      <div data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+      <div id="weeklyScriptureEditWrap" data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
         <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
         <button class="btn primary small" id="weeklyScriptureSave">Lagre</button>
       </div>
+      <p id="scriptureEditNote" class="empty-note" style="margin-top:6px;" hidden>Bytt til denne uken for å redigere skriftstedet.</p>
     </div>
 
     <div class="mh-grid subhome-grid" id="teamHomeGrid"></div>
@@ -1051,15 +1055,7 @@
 
     <div class="subhome-section" data-tiled data-sec="flex">
       <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-          <h2 style="font-size:16px; margin:0;">FLEX</h2>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" class="btn small ghost" id="flexWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
-            <span id="flexWeekLabel" class="mono" style="font-weight:700; font-size:13px; min-width:56px; text-align:center;"></span>
-            <button type="button" class="btn small ghost" id="flexWeekNext" title="Neste uke" aria-label="Neste uke">›</button>
-            <button type="button" class="btn small" id="flexWeekToday" hidden>Denne uken</button>
-          </div>
-        </div>
+        <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
         <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
         <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
       </div>
@@ -1680,7 +1676,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, flexWeekMonday: mondayOf(new Date()) };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()) };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -3282,15 +3278,22 @@
         cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
       });
     }
-    byId("weeklyGoalsList").innerHTML = goalsChipsHtml(mondayOf(new Date()));
+    var teamWeekMonday = view.teamWeekMonday;
+    var isLiveTeamWeek = toISODate(teamWeekMonday) === toISODate(mondayOf(new Date()));
+    byId("teamWeekLabel").textContent = "Uke "+isoWeekInfo(teamWeekMonday).week;
+    byId("teamWeekToday").hidden = isLiveTeamWeek;
 
-    var scripture = currentWeekScripture();
+    byId("weeklyGoalsList").innerHTML = goalsChipsHtml(teamWeekMonday);
+
+    var scripture = currentWeekScripture(teamWeekMonday);
     byId("weeklyScriptureView").textContent = scripture ? scripture.text : "Ingen skriftsted lagt inn ennå.";
     byId("weeklyScriptureView").classList.toggle("empty-note", !scripture);
     var scriptureInput = byId("weeklyScriptureInput");
     if(document.activeElement !== scriptureInput) scriptureInput.value = (scripture && scripture.text) || "";
+    byId("weeklyScriptureEditWrap").style.display = (view.andeligEdit && isLiveTeamWeek) ? "flex" : "none";
+    byId("scriptureEditNote").hidden = !(view.andeligEdit && !isLiveTeamWeek);
 
-    var teamMeeting = currentWeekTeamMeeting();
+    var teamMeeting = currentWeekTeamMeeting(teamWeekMonday);
     var sentMeeting = teamMeeting && teamMeeting.sent ? teamMeeting : null;
     byId("teamMeetingBadge").hidden = !sentMeeting;
     byId("teamMeetingView").innerHTML = sentMeeting ?
@@ -3347,16 +3350,15 @@
     if(document.activeElement !== byId("eatingAddressInput")) byId("eatingAddressInput").value = (cur && cur.eatingAddress) || "";
     if(document.activeElement !== byId("meetingAddressInput")) byId("meetingAddressInput").value = (cur && cur.meetingAddress) || "";
 
-    var curWeek = currentPrivilegeWeek();
+    var curWeek = currentPrivilegeWeek(view.teamWeekMonday);
     byId("pwBanner").innerHTML = curWeek
       ? ('Privilege Week: <span style="color:var(--accent);">'+escapeHtml(curWeek.responsible)+'</span>')
       : "Ingen privilege-uke registrert for denne uken.";
-    byId("pwBannerSub").textContent = "Uke "+isoWeekInfo(curWeek ? fromISODate(curWeek.start) : new Date()).week;
 
     var duties = dutiesForCurrentProject();
     byId("pwWeekLabel").textContent = curWeek
       ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
-      : "Ingen aktiv privilege-uke akkurat nå.";
+      : "Ingen aktiv privilege-uke denne uken.";
     byId("pwChecklist").innerHTML = duties.length ? duties.map(function(d){
       return '<div class="taskrow" style="flex-wrap:wrap;">' +
         '<span style="flex:1; min-width:160px;">'+escapeHtml(d.text)+'</span>' +
@@ -4029,15 +4031,15 @@
   function rowToWeeklyScripture(row){
     return { id: row.id, project_id: row.project_id, weekStart: row.week_start, text: row.text };
   }
-  function currentWeekScripture(){
-    var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
+  function currentWeekScripture(weekMonday){
+    var pid = currentProjectId(), wk = toISODate(weekMonday || mondayOf(new Date()));
     return state.weeklyScriptures.find(function(s){ return s.project_id === pid && s.weekStart === wk; }) || null;
   }
   function rowToTeamMeeting(row){
     return { id: row.id, project_id: row.project_id, weekStart: row.week_start, agenda: row.agenda || "", sent: !!row.sent, sentAt: row.sent_at, createdAt: row.created_at };
   }
-  function currentWeekTeamMeeting(){
-    var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
+  function currentWeekTeamMeeting(weekMonday){
+    var pid = currentProjectId(), wk = toISODate(weekMonday || mondayOf(new Date()));
     return state.teamMeetings.find(function(m){ return m.project_id === pid && m.weekStart === wk; }) || null;
   }
   function rowToFlexRequest(row){
@@ -4101,11 +4103,8 @@
   }
   function renderTeamFlexBox(){
     var flexPair = myTeamPair();
-    var flexMonday = view.flexWeekMonday;
+    var flexMonday = view.teamWeekMonday;
     var flexWk = toISODate(flexMonday);
-    var isLiveWeek = flexWk === toISODate(mondayOf(new Date()));
-    byId("flexWeekLabel").textContent = "Uke "+isoWeekInfo(flexMonday).week;
-    byId("flexWeekToday").hidden = isLiveWeek;
     var pid = currentProjectId();
     var weekReqs = state.flexRequests.filter(function(r){ return r.project_id === pid && r.weekStart === flexWk; });
     byId("flexGrid").innerHTML = weekDays(flexMonday).map(function(d, i){
@@ -4154,17 +4153,17 @@
       });
     });
   }
-  byId("flexWeekPrev").addEventListener("click", function(){
-    view.flexWeekMonday = new Date(view.flexWeekMonday.getFullYear(), view.flexWeekMonday.getMonth(), view.flexWeekMonday.getDate()-7);
-    renderTeamFlexBox();
+  byId("teamWeekPrev").addEventListener("click", function(){
+    view.teamWeekMonday = new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()-7);
+    renderSpiritualTab();
   });
-  byId("flexWeekNext").addEventListener("click", function(){
-    view.flexWeekMonday = new Date(view.flexWeekMonday.getFullYear(), view.flexWeekMonday.getMonth(), view.flexWeekMonday.getDate()+7);
-    renderTeamFlexBox();
+  byId("teamWeekNext").addEventListener("click", function(){
+    view.teamWeekMonday = new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()+7);
+    renderSpiritualTab();
   });
-  byId("flexWeekToday").addEventListener("click", function(){
-    view.flexWeekMonday = mondayOf(new Date());
-    renderTeamFlexBox();
+  byId("teamWeekToday").addEventListener("click", function(){
+    view.teamWeekMonday = mondayOf(new Date());
+    renderSpiritualTab();
   });
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
@@ -4200,9 +4199,9 @@
     state.morningWorship.filter(function(m){ return m.privilegeWeekId === weekId; }).forEach(function(m){ bySlot[m.slot] = m.personId; });
     return bySlot;
   }
-  function currentPrivilegeWeek(){
-    var todayIso = toISODate(new Date());
-    return privilegeWeeksForCurrentProject().find(function(w){ return w.start <= todayIso && todayIso <= w.end; }) || null;
+  function currentPrivilegeWeek(refDate){
+    var refIso = toISODate(refDate || new Date());
+    return privilegeWeeksForCurrentProject().find(function(w){ return w.start <= refIso && refIso <= w.end; }) || null;
   }
   function rowToPwDutyStatus(row){
     return { id: row.id, privilegeWeekId: row.privilege_week_id, dutyId: row.duty_id, done: !!row.done, delegatedPersonId: row.delegated_person_id };
