@@ -655,6 +655,21 @@
   .mh-mdow{ font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; }
   .mh-mnum{ font-size:13px; font-weight:700; font-family:"IBM Plex Mono",monospace; }
 
+  /* ---------- mobil "hjemskjerm" inni Team- og ACGO-siden ---------- */
+  .subhome-grid{ display:none; }
+  .subhome-back{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:9px 2px; margin-bottom:6px; font-size:14.5px; font-weight:700; color:var(--accent); border:none; background:none; font-family:inherit; cursor:pointer; }
+  .subhome-back .arrow{ font-size:17px; line-height:1; }
+  @media (min-width:641px){
+    .subhome-grid, .subhome-back{ display:none !important; }
+  }
+  @media (max-width:640px){
+    .subhome-grid{ display:grid; margin-bottom:16px; }
+    .subhome-section[data-tiled]{ display:none; }
+    .subhome-section[data-tiled].active{ display:block; }
+    .subhome-open .subhome-grid{ display:none; }
+    .subhome-open .subhome-back{ display:flex; }
+  }
+
   @media (max-width:640px){
     #mobileHome{ display:block; }
     header.top nav.tabs{ display:none; }
@@ -1005,27 +1020,30 @@
       <h2 style="font-size:14px; margin-bottom:8px;">Vis Team-siden for</h2>
       <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
     </div>
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <div id="pwBanner" class="status-banner" style="margin-top:0; flex:1; min-width:220px;"></div>
-      <button class="btn small" id="andeligEditBtn">Rediger</button>
-    </div>
 
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
-      <div id="weeklyGoalsList"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+        <div id="pwBanner" class="status-banner" style="margin:0; flex:1; min-width:220px;"></div>
+        <button class="btn small" id="andeligEditBtn">Rediger</button>
+      </div>
+      <h2 style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
+      <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:14px; color:var(--text); font-style:normal;"></div>
+      <div data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+        <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
+        <button class="btn primary small" id="weeklyScriptureSave">Lagre</button>
+      </div>
     </div>
 
-    <div class="cols2" style="margin-bottom:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Ukens skriftsted</h2>
-        <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:13.5px; color:var(--text); font-style:normal;"></div>
-        <div data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
-          <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
-          <button class="btn primary small" id="weeklyScriptureSave">Lagre</button>
-        </div>
+    <div class="mh-grid subhome-grid" id="teamHomeGrid"></div>
+    <button type="button" class="subhome-back" id="teamHomeBack">← Tilbake</button>
+
+    <div class="subhome-section" data-tiled data-sec="ukasmaal">
+      <div class="peoplecard" style="margin-bottom:16px;">
+        <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
+        <div id="weeklyGoalsList"></div>
       </div>
-      <div class="peoplecard">
+      <div class="peoplecard" style="margin-bottom:16px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
           <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
@@ -1035,129 +1053,137 @@
       </div>
     </div>
 
-    <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken. Er du med i teamet kan du også sende egen forespørsel – du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
-      <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
+    <div class="subhome-section" data-tiled data-sec="flex">
+      <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
+        <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken. Er du med i teamet kan du også sende egen forespørsel – du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
+        <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
+      </div>
     </div>
 
-    <div class="cols2" style="margin-bottom:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
-        <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
-        <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
-          <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
-          <select id="newTeamPairFag" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"><option value="">Fag (valgfritt)</option></select>
-          <input type="text" id="newTeamPairAddress" placeholder="Adresse" maxlength="160" style="flex:1; min-width:160px;" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
+    <div class="subhome-section" data-tiled data-sec="byggeplass">
+      <div class="cols2" style="margin-bottom:16px;">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
+          <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+            <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
+            <select id="newTeamPairFag" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"><option value="">Fag (valgfritt)</option></select>
+            <input type="text" id="newTeamPairAddress" placeholder="Adresse" maxlength="160" style="flex:1; min-width:160px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
+          <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
+          <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
+            <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
+            <div class="field"><label>Spisested</label><input type="text" id="eatingAddressInput" maxlength="160" /></div>
+            <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
+            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
+          </div>
+        </div>
       </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
-        <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
-        <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
-          <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
-          <div class="field"><label>Spisested</label><input type="text" id="eatingAddressInput" maxlength="160" /></div>
-          <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
-          <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
+
+      <div class="cols2" style="margin-bottom:16px;">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:2px;">Koder</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
+          <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+            <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
+            <input type="text" id="newSiteCodeValue" placeholder="Kode/passord" required maxlength="120" style="flex:1; min-width:120px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+        <div class="peoplecard" data-acgoonly>
+          <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
+          <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <form class="inline-add" id="addOpenAccountForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+            <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
+            <input type="text" id="newOpenAccountKundenr" placeholder="Kundenr" maxlength="80" style="max-width:140px;" />
+            <input type="text" id="newOpenAccountMerking" placeholder="Merking" maxlength="120" style="max-width:160px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="cols2">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
+          <div id="toAgendaList"></div>
+          <form class="inline-add" id="addToAgendaForm">
+            <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
+          <div id="overviewMoteList"></div>
+          <form class="inline-add" id="addOverviewMoteForm" data-editonly>
+            <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
+            <input type="text" id="newOvMoteTime" placeholder="Tid" maxlength="60" style="max-width:130px;" />
+            <input type="text" id="newOvMoteAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:170px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
         </div>
       </div>
     </div>
 
-    <div class="cols2" style="margin-bottom:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Koder</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
-        <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
-        <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
-          <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
-          <input type="text" id="newSiteCodeValue" placeholder="Kode/passord" required maxlength="120" style="flex:1; min-width:120px;" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-      <div class="peoplecard" data-acgoonly>
-        <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
-        <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
-        <form class="inline-add" id="addOpenAccountForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
-          <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
-          <input type="text" id="newOpenAccountKundenr" placeholder="Kundenr" maxlength="80" style="max-width:140px;" />
-          <input type="text" id="newOpenAccountMerking" placeholder="Merking" maxlength="120" style="max-width:160px;" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="cols2">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
-        <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
-        <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
-        <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
-          <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
+    <div class="subhome-section" data-tiled data-sec="pw">
+      <div class="cols2" style="margin-bottom:16px;">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
+          <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
+          <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
+          <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
+            <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+            <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
+            <button type="button" class="btn small" id="mwWeekEditBtn">Rediger uke</button>
+          </div>
+          <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
         </div>
       </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
-        <div id="toAgendaList"></div>
-        <form class="inline-add" id="addToAgendaForm">
-          <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-    </div>
 
-    <div class="cols2" style="margin-top:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
-        <div id="overviewProgramList"></div>
-        <form class="inline-add" id="addOverviewProgramForm" data-editonly>
-          <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
-          <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
-        <div id="overviewMoteList"></div>
-        <form class="inline-add" id="addOverviewMoteForm" data-editonly>
-          <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
-          <input type="text" id="newOvMoteTime" placeholder="Tid" maxlength="60" style="max-width:130px;" />
-          <input type="text" id="newOvMoteAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:170px;" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="cols2" style="margin-top:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
-        <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
-        <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
-        <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
-          <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-          <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
-          <button type="button" class="btn small" id="mwWeekEditBtn">Rediger uke</button>
+      <div class="peoplecard" data-editonly>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <h2 style="font-size:16px;">Privilege Week – alle uker</h2>
+          <button class="btn small primary" id="pwNewBtn">+ Ny uke</button>
         </div>
-        <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     </div>
 
-    <div class="peoplecard" data-editonly style="margin-top:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <h2 style="font-size:16px;">Privilege Week – alle uker</h2>
-        <button class="btn small primary" id="pwNewBtn">+ Ny uke</button>
+    <div class="subhome-section" data-tiled data-sec="mer">
+      <div class="cols2">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
+          <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
+          <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
+          </div>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
+          <div id="overviewProgramList"></div>
+          <form class="inline-add" id="addOverviewProgramForm" data-editonly>
+            <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
+            <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
       </div>
-      <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
   </section>
 
@@ -1187,36 +1213,47 @@
         <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
     </div>
-    <div class="cols2">
+    <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
+    <button type="button" class="subhome-back" id="acgoHomeBack">← Tilbake</button>
+
+    <div class="subhome-section" data-tiled data-sec="brukere">
+      <div class="cols2">
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer og hvilket fag de tilhører.</p>
+          <div id="userAccountsList"></div>
+        </div>
+        <div class="peoplecard">
+          <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
+          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
+          <div id="projectFagList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subhome-section" data-tiled data-sec="referat">
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer og hvilket fag de tilhører.</p>
-        <div id="userAccountsList"></div>
+        <h2 style="font-size:16px; margin-bottom:4px;">Referat-arkiv</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Avsluttede TO-møter. Trykk på et for å åpne det i TO-møte-fanen.</p>
+        <div id="acgoReferatArchive" style="display:flex; flex-direction:column; gap:6px;"></div>
+      </div>
+    </div>
+
+    <div class="subhome-section" data-tiled data-sec="forespors">
+      <div class="peoplecard" style="margin-bottom:16px;">
+        <h2 style="font-size:16px; margin-bottom:4px;">Forespørsler fra fag</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ønsker om å legge til eller fjerne tilgjengelighet i "Frivillige"-fanen, sendt inn av fag for godkjenning.</p>
+        <div id="fagRequestList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
-        <div id="projectFagList"></div>
+        <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+        <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <form class="inline-add" id="addPortalSuggestionForm" style="margin-top:10px;">
+          <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
       </div>
-    </div>
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Referat-arkiv</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Avsluttede TO-møter. Trykk på et for å åpne det i TO-møte-fanen.</p>
-      <div id="acgoReferatArchive" style="display:flex; flex-direction:column; gap:6px;"></div>
-    </div>
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Forespørsler fra fag</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ønsker om å legge til eller fjerne tilgjengelighet i "Frivillige"-fanen, sendt inn av fag for godkjenning.</p>
-      <div id="fagRequestList" style="display:flex; flex-direction:column; gap:6px;"></div>
-    </div>
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
-      <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
-      <form class="inline-add" id="addPortalSuggestionForm" style="margin-top:10px;">
-        <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
-        <button class="btn primary" type="submit">Legg til</button>
-      </form>
     </div>
   </section>
 
@@ -1267,6 +1304,12 @@
             <input type="text" id="toMeetingInfo" placeholder="F.eks. Tirsdag 13:00, Gvarv" maxlength="120" />
           </div>
         </div>
+      </div>
+
+      <div class="peoplecard" style="margin-top:16px;">
+        <h2 style="font-size:16px; margin-bottom:2px;">Forrige ukes mål</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Hvordan gikk forrige uke? Bra å sjekke før møtet.</p>
+        <div id="tomotePrevGoals"></div>
       </div>
 
       <div id="toMeetingSections" hidden>
@@ -1796,10 +1839,6 @@
   function isPresentForFag(personId, iso, fag){
     var pid = currentProjectId();
     return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso && a.fag === fag; });
-  }
-  function isPresentAnyFag(personId, iso){
-    var pid = currentProjectId();
-    return state.attendance.some(function(a){ return a.project_id === pid && a.person_id === personId && a.day === iso; });
   }
   function assignedAnywhereOn(iso){
     var set = new Set();
@@ -3190,7 +3229,28 @@
     textInput.value = "";
   });
 
+  function goalsChipsHtml(weekMonday){
+    var goalWeekDays = weekDays(weekMonday).map(toISODate);
+    var goalWeekStart = goalWeekDays[0], goalWeekEnd = goalWeekDays[goalWeekDays.length-1];
+    var goalTasks = state.elements.filter(inCurrentProject).filter(function(e){ return e.end && e.end >= goalWeekStart && e.end <= goalWeekEnd; });
+    var goalsByFag = {};
+    goalTasks.forEach(function(e){ (goalsByFag[e.fag] = goalsByFag[e.fag] || []).push(e); });
+    var goalFags = Object.keys(goalsByFag).sort(function(a,b){ return (FAG_LABELS[a]||a).localeCompare(FAG_LABELS[b]||b,"no"); });
+    return goalFags.length ? goalFags.map(function(fag){
+      var tasks = goalsByFag[fag].slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      return '<div class="goalgroup">' +
+        '<span class="gg-label"><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:7px; height:7px; border-radius:2px; display:inline-block;"></i>'+(FAG_LABELS[fag]||fag)+'</span>' +
+        '<span class="gg-chips">' + tasks.map(function(e){
+          var late = isLate(e);
+          var cls = late ? "late" : "s-"+e.status;
+          var label = late ? "Forsinket" : STATUS_LABEL[e.status];
+          return '<span class="goalchip '+cls+'">'+escapeHtml(e.name)+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
+        }).join("") + '</span>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen oppgaver skulle avsluttes denne uken.</p>';
+  }
   function renderSpiritualTab(){
+    renderTeamHomeGrid();
     var visBox = byId("andeligVisibilityBox");
     visBox.hidden = !isByggeleder();
     if(isByggeleder()){
@@ -3203,24 +3263,7 @@
         cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
       });
     }
-    var goalWeekDays = weekDays(mondayOf(new Date())).map(toISODate);
-    var goalWeekStart = goalWeekDays[0], goalWeekEnd = goalWeekDays[goalWeekDays.length-1];
-    var goalTasks = state.elements.filter(inCurrentProject).filter(function(e){ return e.end && e.end >= goalWeekStart && e.end <= goalWeekEnd; });
-    var goalsByFag = {};
-    goalTasks.forEach(function(e){ (goalsByFag[e.fag] = goalsByFag[e.fag] || []).push(e); });
-    var goalFags = Object.keys(goalsByFag).sort(function(a,b){ return (FAG_LABELS[a]||a).localeCompare(FAG_LABELS[b]||b,"no"); });
-    byId("weeklyGoalsList").innerHTML = goalFags.length ? goalFags.map(function(fag){
-      var tasks = goalsByFag[fag].slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-      return '<div class="goalgroup">' +
-        '<span class="gg-label"><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:7px; height:7px; border-radius:2px; display:inline-block;"></i>'+(FAG_LABELS[fag]||fag)+'</span>' +
-        '<span class="gg-chips">' + tasks.map(function(e){
-          var late = isLate(e);
-          var cls = late ? "late" : "s-"+e.status;
-          var label = late ? "Forsinket" : STATUS_LABEL[e.status];
-          return '<span class="goalchip '+cls+'">'+escapeHtml(e.name)+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
-        }).join("") + '</span>' +
-        '</div>';
-    }).join("") : '<p class="empty-note">Ingen oppgaver skal avsluttes denne uken.</p>';
+    byId("weeklyGoalsList").innerHTML = goalsChipsHtml(mondayOf(new Date()));
 
     var scripture = currentWeekScripture();
     byId("weeklyScriptureView").textContent = scripture ? scripture.text : "Ingen skriftsted lagt inn ennå.";
@@ -3358,13 +3401,10 @@
       return '<option value="'+w.id+'"'+(w.id===view.mwWeekId?' selected':'')+'>Uke '+info.week+' · '+escapeHtml(w.responsible)+' ('+fmtRange(w.start,w.end)+')</option>';
     }).join("");
 
-    var curWeekObj = weeks.find(function(w){ return w.id === view.mwWeekId; });
-    var mwWeekDays = [];
-    if(curWeekObj){
-      var d = fromISODate(curWeekObj.start), endD = fromISODate(curWeekObj.end);
-      while(d <= endD){ mwWeekDays.push(toISODate(d)); d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1); }
-    }
-    var availableThisWeek = state.people.filter(function(p){ return mwWeekDays.some(function(iso){ return isPresentAnyFag(p.id, iso); }); });
+    var pidProject = currentProjectId();
+    var projectPersonIds = {};
+    state.attendance.forEach(function(a){ if(a.project_id === pidProject) projectPersonIds[a.person_id] = true; });
+    var availableThisWeek = state.people.filter(function(p){ return projectPersonIds[p.id]; });
     var bySlot = mwForWeek(view.mwWeekId);
     byId("mwSlots").innerHTML = MW_SLOTS.map(function(label, i){
       var slot = i+1, pid = bySlot[slot] || "";
@@ -3769,6 +3809,88 @@
     grid.querySelectorAll("[data-hometile]").forEach(function(b){
       b.addEventListener("click", function(){ switchTab(this.dataset.hometile); });
     });
+  }
+
+  /* ---------- mobil "hjemskjerm" inni en enkelt fane (Team / ACGO) ---------- */
+  function renderSubHomeGrid(panelEl, gridId, backId, tiles){
+    var grid = byId(gridId);
+    grid.innerHTML = tiles.map(function(t){
+      var st = t.status();
+      var badge = st.badge > 0 ? '<span class="mh-badge">'+st.badge+'</span>' : "";
+      return '<button type="button" class="mh-tile" data-subtile="'+t.key+'">' + badge +
+        '<span class="mh-icon" style="background:'+t.color+'">'+t.icon+'</span>' +
+        '<div class="mh-name">'+escapeHtml(t.name)+'</div><div class="mh-status">'+escapeHtml(st.text)+'</div>' +
+        '</button>';
+    }).join("");
+    grid.querySelectorAll("[data-subtile]").forEach(function(b){
+      b.addEventListener("click", function(){ openSubHomeSection(panelEl, this.dataset.subtile); });
+    });
+    byId(backId).onclick = function(){ closeSubHome(panelEl); };
+  }
+  function openSubHomeSection(panelEl, key){
+    panelEl.classList.add("subhome-open");
+    panelEl.querySelectorAll(".subhome-section[data-tiled]").forEach(function(s){ s.classList.toggle("active", s.dataset.sec === key); });
+    window.scrollTo(0,0);
+  }
+  function closeSubHome(panelEl){
+    panelEl.classList.remove("subhome-open");
+    panelEl.querySelectorAll(".subhome-section[data-tiled]").forEach(function(s){ s.classList.remove("active"); });
+  }
+  var TEAM_HOME_TILES = [
+    { key:"ukasmaal", name:"Ukas mål", color:"var(--accent)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M5 21V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>',
+      status:function(){
+        var days = weekDays(mondayOf(new Date())).map(toISODate);
+        var n = state.elements.filter(inCurrentProject).filter(function(e){ return e.end && e.end >= days[0] && e.end <= days[4]; }).length;
+        return { badge:0, text: n ? n+" mål denne uken" : "Ingen mål denne uken" };
+      } },
+    { key:"flex", name:"FLEX", color:"var(--warn)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg>',
+      status:function(){
+        var pid = currentProjectId(), wk = toISODate(mondayOf(new Date()));
+        var n = state.flexRequests.filter(function(r){ return r.project_id === pid && r.weekStart === wk && r.status === "pending"; }).length;
+        return { badge:n, text: n ? n+" venter på svar" : "Ingen ventende" };
+      } },
+    { key:"byggeplass", name:"Byggeplass", color:"var(--utvendig)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg>',
+      status:function(){
+        var n = toAgendaForCurrentProject().length;
+        return { badge:n, text: "Koder, kontoer, saker og møter" };
+      } },
+    { key:"pw", name:"Privilege Week", color:"var(--good)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+      status:function(){
+        var curWeek = currentPrivilegeWeek();
+        return { badge:0, text: curWeek ? curWeek.responsible+" denne uken" : "Ingen aktiv uke" };
+      } },
+    { key:"mer", name:"Mer", color:"var(--muted)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+      status:function(){ return { badge:0, text:"Info og åndelig program" }; } }
+  ];
+  function renderTeamHomeGrid(){
+    renderSubHomeGrid(byId("panel-andelig"), "teamHomeGrid", "teamHomeBack", TEAM_HOME_TILES);
+  }
+  var ACGO_HOME_TILES = [
+    { key:"brukere", name:"Brukere & fag", color:"var(--accent)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>',
+      status:function(){ return { badge:0, text: state.userAccounts.length+" kontoer" }; } },
+    { key:"referat", name:"Referat-arkiv", color:"var(--cyan)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M3 7l2-3h14l2 3"/><rect x="3" y="7" width="18" height="13" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
+      status:function(){
+        var meetings2 = toMeetingsForCurrentProject().filter(function(m){ return m.concluded; });
+        if(!meetings2.length) return { badge:0, text:"Ingen ferdige referat ennå" };
+        var wInfo = isoWeekInfo(fromISODate(meetings2[0].weekStart));
+        return { badge:0, text:"Siste referat: uke "+wInfo.week };
+      } },
+    { key:"forespors", name:"Forespørsler", color:"var(--bad)",
+      icon:'<svg viewBox="0 0 24 24"><path d="M4 4h16v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 13h5l1.5 2h3L15 13h5"/></svg>',
+      status:function(){
+        var n = pendingFagRequestsForCurrentProject().length + state.portalSuggestions.length;
+        return { badge:n, text: n ? n+" å se på" : "Ingen nye" };
+      } }
+  ];
+  function renderAcgoHomeGrid(){
+    renderSubHomeGrid(byId("panel-acgo"), "acgoHomeGrid", "acgoHomeBack", ACGO_HOME_TILES);
   }
 
   function renderAll(){
@@ -4228,6 +4350,7 @@
   var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
+    renderAcgoHomeGrid();
     var acgoPerson = myLinkedPerson();
     byId("acgoIdentityLine").textContent = acgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+acgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
     var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
@@ -4925,6 +5048,9 @@
     newBtn.disabled = hasThisWeek;
 
     var meeting = currentToMeeting();
+    var refMonday = meeting ? fromISODate(meeting.weekStart) : mondayOf(new Date());
+    var prevMonday = new Date(refMonday.getFullYear(), refMonday.getMonth(), refMonday.getDate()-7);
+    byId("tomotePrevGoals").innerHTML = goalsChipsHtml(prevMonday);
     byId("toMeetingEmpty").hidden = !!meetings.length;
     byId("toMeetingBody").hidden = !meeting;
     byId("toMeetingSections").hidden = !meeting;
@@ -6234,10 +6360,7 @@
 
   // ---------- innlogging ----------
   var dataLayerStarted = false;
-  function startDataLayer(){
-    if(dataLayerStarted) return;
-    dataLayerStarted = true;
-    showInfo("Kobler til database …");
+  function refetchAllData(){
     refetchPeople();
     refetchElements();
     refetchProjects();
@@ -6272,6 +6395,12 @@
     refetchWeeklyScriptures();
     refetchTeamMeetings();
     refetchFlexRequests();
+  }
+  function startDataLayer(){
+    if(dataLayerStarted) return;
+    dataLayerStarted = true;
+    showInfo("Kobler til database …");
+    refetchAllData();
 
     realtimeChannel = sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -6308,6 +6437,9 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
       .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
       .subscribe(handleRealtimeStatus);
+
+    setInterval(function(){ if(document.visibilityState !== "hidden") refetchAllData(); }, 120000);
+    document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") refetchAllData(); });
   }
   // Nettverket kan hikke uten at det er et reelt problem - prøv noen ganger stille
   // i bakgrunnen før vi faktisk forstyrrer brukeren med et varsel.
