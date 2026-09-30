@@ -9,7 +9,7 @@
 <link rel="icon" sizes="192x192" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="icons/manifest.json">
-<meta name="theme-color" content="#2f7fd9">
+<meta name="theme-color" content="#2f6fa8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="LDC CG1">
@@ -19,35 +19,35 @@
 <script src="vendor/jspdf-autotable.min.js"></script>
 <style>
   :root{
-    --bg:#f4f7fb;
+    --bg:#f3f5f8;
     --surface:#ffffff;
-    --surface-alt:#eef3f9;
-    --border:#e0e7f0;
-    --border-strong:#c9d4e2;
-    --text:#1e2a3a;
-    --muted:#687588;
-    --accent:#2f7fd9;
+    --surface-alt:#edf1f5;
+    --border:#dde3ea;
+    --border-strong:#c7d1dc;
+    --text:#1b2430;
+    --muted:#64748b;
+    --accent:#2f6fa8;
     --accent-ink:#ffffff;
-    --accent-soft:#e5f0fc;
+    --accent-soft:#e4edf6;
     --innvendig:#e08a3c;
     --innvendig-soft:#fdf0e3;
     --utvendig:#1fa38e;
     --utvendig-soft:#e0f5f1;
-    --good:#34b074;
+    --good:#1f9d6f;
     --good-soft:#e3f6ec;
-    --good-ink:#1c7a4c;
-    --warn:#e6a623;
+    --good-ink:#1b6b47;
+    --warn:#d69a1f;
     --warn-soft:#fdf3da;
-    --warn-ink:#94650a;
-    --bad:#e5634f;
+    --warn-ink:#7a5510;
+    --bad:#d2503d;
     --bad-soft:#fde8e4;
-    --bad-ink:#b63c2a;
+    --bad-ink:#8a2e1f;
     --violet:#8b6fd1;
     --rose:#d1667f;
     --cyan:#2696a6;
-    --fag-tomrer:#2f7fd9;
-    --fag-maler:#e6a623;
-    --fag-elektriker:#e5634f;
+    --fag-tomrer:#2f6fa8;
+    --fag-maler:#d69a1f;
+    --fag-elektriker:#d2503d;
     --fag-vvs:#1fa38e;
     --fag-landscape:#5fa84a;
     --fag-murer:#8a6d4f;
@@ -56,7 +56,7 @@
     --fag-audio-video:#d6568f;
     --fag-behov-menighet:#8a8f98;
     --fag-team:#2f9e6f;
-    --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
+    --shadow: 0 1px 2px rgba(27,36,48,0.05), 0 8px 20px -12px rgba(27,36,48,0.18);
     color-scheme: light;
   }
 
@@ -613,12 +613,13 @@
   #mobileBackHome .arrow{ font-size:18px; line-height:1; }
   .mh-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px; }
   .mh-tile{
-    position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow);
+    position:relative; background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
     padding:14px; text-align:left; cursor:pointer; display:flex; flex-direction:column; gap:8px; min-height:104px;
-    font-family:inherit; color:inherit;
+    font-family:inherit; color:inherit; transition:transform .12s ease, box-shadow .12s ease;
   }
+  .mh-tile:active{ transform:scale(.97); }
   .mh-tile.wide{ grid-column:span 2; }
-  .mh-icon{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .mh-icon{ width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; }
   .mh-icon svg{ width:20px; height:20px; fill:none; stroke:#fff; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .mh-name{ font-weight:700; font-size:14.5px; }
   .mh-status{ font-size:12px; color:var(--muted); }
