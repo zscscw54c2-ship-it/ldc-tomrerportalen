@@ -55,6 +55,7 @@
     --fag-stillas:#9b6bd6;
     --fag-audio-video:#d6568f;
     --fag-behov-menighet:#8a8f98;
+    --fag-team:#2f9e6f;
     --shadow: 0 1px 2px rgba(30,42,58,0.05), 0 8px 20px -12px rgba(30,42,58,0.18);
     color-scheme: light;
   }
@@ -903,22 +904,6 @@
   </section>
 
   <section id="panel-personer" class="panel">
-    <div class="peoplecard" style="margin-bottom:14px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Team-parene og hvilken uke de evt. har privilege week.</p>
-      <div id="frivilligeTeamList" style="display:flex; flex-direction:column; gap:6px;"></div>
-    </div>
-    <div class="peoplecard" data-acgoonly style="margin-bottom:14px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
-      <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
-      <form class="inline-add" id="addOpenAccountForm" style="margin-top:10px; flex-wrap:wrap;">
-        <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
-        <input type="text" id="newOpenAccountKundenr" placeholder="Kundenr" maxlength="80" style="max-width:140px;" />
-        <input type="text" id="newOpenAccountMerking" placeholder="Merking" maxlength="120" style="max-width:160px;" />
-        <button class="btn primary" type="submit">Legg til</button>
-      </form>
-    </div>
     <div id="personerSectionToggle" hidden style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
       <button type="button" class="btn small" data-personersection="frivillige">Frivillige</button>
       <button type="button" class="btn small" data-personersection="behov">Behov fra menigheten</button>
@@ -984,13 +969,12 @@
     <div class="cols2" style="margin-bottom:16px;">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse og evt. koder. Fag er valgfritt.</p>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
         <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
         <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
           <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
           <select id="newTeamPairFag" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"><option value="">Fag (valgfritt)</option></select>
           <input type="text" id="newTeamPairAddress" placeholder="Adresse" maxlength="160" style="flex:1; min-width:160px;" />
-          <input type="text" id="newTeamPairCodes" placeholder="Koder (valgfritt)" maxlength="120" style="max-width:160px;" />
           <button class="btn primary" type="submit">Legg til</button>
         </form>
       </div>
@@ -1004,6 +988,30 @@
           <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
           <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
         </div>
+      </div>
+    </div>
+
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Koder</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
+        <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+          <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
+          <input type="text" id="newSiteCodeValue" placeholder="Kode/passord" required maxlength="120" style="flex:1; min-width:120px;" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+      <div class="peoplecard" data-acgoonly>
+        <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
+        <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <form class="inline-add" id="addOpenAccountForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+          <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
+          <input type="text" id="newOpenAccountKundenr" placeholder="Kundenr" maxlength="80" style="max-width:140px;" />
+          <input type="text" id="newOpenAccountMerking" placeholder="Merking" maxlength="120" style="max-width:160px;" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
       </div>
     </div>
 
@@ -1485,14 +1493,14 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "byfag", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
-  var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet"];
+  var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
-  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", byggeleder:"ACGO" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)" };
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)" };
   var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
   var TO_ROLE_LABELS = Object.assign({ prosjektleder:"Prosjektleder", arbeidsleder:"Arbeidsleder" }, FAG_LABELS);
   function toMeetingFagSections(){
@@ -2917,23 +2925,6 @@
   function renderPeopleTab(){
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
 
-    document.querySelectorAll("#panel-personer [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
-    var pairs = teamPairsForCurrentProject();
-    var todayIso = toISODate(new Date());
-    byId("frivilligeTeamList").innerHTML = pairs.length ? pairs.map(function(t){
-      var week = privilegeWeeksForCurrentProject().find(function(w){ return w.responsible === t.name && w.end >= todayIso; });
-      var weekText = week ? "Uke "+isoWeekInfo(fromISODate(week.start)).week+" · "+fmtRange(week.start,week.end) : "Ingen kommende uke satt";
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span><span class="sqty" style="font-size:12px;">'+escapeHtml(weekText)+'</span></div>';
-    }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå. Legg til under Team-fanen.</p>';
-
-    var accounts = openAccountsForCurrentProject();
-    byId("openAccountsList").innerHTML = accounts.length ? accounts.map(function(a){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(a.leverandor)+'</span><span class="sqty" style="font-size:12px;">'+[a.kundenr?("Kundenr: "+a.kundenr):"", a.merking].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-delopenaccount="'+a.id+'" title="Fjern">×</button></div>';
-    }).join("") : '<p class="empty-note">Ingen kontoer lagt til ennå.</p>';
-    byId("openAccountsList").querySelectorAll("[data-delopenaccount]").forEach(function(b){
-      b.addEventListener("click", function(){ if(confirm("Fjerne denne kontoen?")) deleteOpenAccount(this.dataset.delopenaccount); });
-    });
-
     var sectionToggle = byId("personerSectionToggle");
     sectionToggle.hidden = !isByggeleder();
     if(!isByggeleder()) view.personerSection = "frivillige";
@@ -2999,14 +2990,6 @@
     b.addEventListener("click", function(){ view.personerSection = this.dataset.personersection; renderPeopleTab(); });
   });
   byId("peopleShowAllBtn").addEventListener("click", function(){ view.peopleShowAll = !view.peopleShowAll; renderPeopleTab(); });
-  byId("addOpenAccountForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var levInput = byId("newOpenAccountLeverandor"), kundeInput = byId("newOpenAccountKundenr"), merkInput = byId("newOpenAccountMerking");
-    var leverandor = levInput.value.trim();
-    if(!leverandor) return;
-    addOpenAccount(leverandor, kundeInput.value.trim(), merkInput.value.trim());
-    levInput.value = ""; kundeInput.value = ""; merkInput.value = "";
-  });
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
@@ -3072,11 +3055,28 @@
     var pairs = teamPairsForCurrentProject();
     byId("teamPairList").innerHTML = pairs.length ? pairs.map(function(t){
       return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span>' +
-        '<span class="sqty" style="font-size:12px;">'+[t.address, t.codes ? "Koder: "+t.codes : ""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' +
+        '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+'</span>' +
         '<button class="del" data-editonly data-delteampair="'+t.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå.</p>';
     byId("teamPairList").querySelectorAll("[data-delteampair]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Fjerne dette team-paret?")) deleteTeamPair(this.dataset.delteampair); });
+    });
+
+    document.querySelectorAll("#panel-andelig [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
+    var codes = siteCodesForCurrentProject();
+    byId("siteCodesList").innerHTML = codes.length ? codes.map(function(c){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(c.label)+'</span><span class="sqty mono">'+escapeHtml(c.value)+'</span><button class="del" data-editonly data-delsitecode="'+c.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen koder lagt til ennå.</p>';
+    byId("siteCodesList").querySelectorAll("[data-delsitecode]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne koden?")) deleteSiteCode(this.dataset.delsitecode); });
+    });
+
+    var accounts = openAccountsForCurrentProject();
+    byId("openAccountsList").innerHTML = accounts.length ? accounts.map(function(a){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(a.leverandor)+'</span><span class="sqty" style="font-size:12px;">'+[a.kundenr?("Kundenr: "+a.kundenr):"", a.merking].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-delopenaccount="'+a.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen kontoer lagt til ennå.</p>';
+    byId("openAccountsList").querySelectorAll("[data-delopenaccount]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne kontoen?")) deleteOpenAccount(this.dataset.delopenaccount); });
     });
 
     var siteFields = [["Byggeplass", cur && cur.siteAddress], ["Spisested", cur && cur.eatingAddress], ["Møter", cur && cur.meetingAddress]].filter(function(f){ return f[1]; });
@@ -3191,11 +3191,27 @@
   });
   byId("addTeamPairForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var nameInput = byId("newTeamPairName"), addrInput = byId("newTeamPairAddress"), codesInput = byId("newTeamPairCodes"), fagInput = byId("newTeamPairFag");
+    var nameInput = byId("newTeamPairName"), addrInput = byId("newTeamPairAddress"), fagInput = byId("newTeamPairFag");
     var name = nameInput.value.trim();
     if(!name) return;
-    addTeamPair(name, fagInput.value, addrInput.value.trim(), codesInput.value.trim());
-    nameInput.value = ""; addrInput.value = ""; codesInput.value = ""; fagInput.value = "";
+    addTeamPair(name, fagInput.value, addrInput.value.trim());
+    nameInput.value = ""; addrInput.value = ""; fagInput.value = "";
+  });
+  byId("addSiteCodeForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var labelInput = byId("newSiteCodeLabel"), valueInput = byId("newSiteCodeValue");
+    var label = labelInput.value.trim(), value = valueInput.value.trim();
+    if(!label || !value) return;
+    addSiteCode(label, value);
+    labelInput.value = ""; valueInput.value = "";
+  });
+  byId("addOpenAccountForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var levInput = byId("newOpenAccountLeverandor"), kundeInput = byId("newOpenAccountKundenr"), merkInput = byId("newOpenAccountMerking");
+    var leverandor = levInput.value.trim();
+    if(!leverandor) return;
+    addOpenAccount(leverandor, kundeInput.value.trim(), merkInput.value.trim());
+    levInput.value = ""; kundeInput.value = ""; merkInput.value = "";
   });
   byId("addDutyForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -3616,11 +3632,18 @@
     return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", createdAt: row.created_at };
   }
   function rowToTeamPair(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, fag: row.fag || "", address: row.address || "", codes: row.codes || "", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, fag: row.fag || "", address: row.address || "", personId: row.person_id || "", createdAt: row.created_at };
   }
   function teamPairsForCurrentProject(){
     var pid = currentProjectId();
     return state.teamPairs.filter(function(t){ return t.project_id === pid; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+  }
+  function rowToSiteCode(row){
+    return { id: row.id, project_id: row.project_id, label: row.label, value: row.value, createdAt: row.created_at };
+  }
+  function siteCodesForCurrentProject(){
+    var pid = currentProjectId();
+    return state.siteCodes.filter(function(c){ return c.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? -1 : 1; });
   }
   function rowToOpenAccount(row){
     return { id: row.id, project_id: row.project_id, leverandor: row.leverandor, kundenr: row.kundenr || "", merking: row.merking || "", createdAt: row.created_at };
@@ -4882,6 +4905,13 @@
       renderAll();
     });
   }
+  function refetchSiteCodes(){
+    sb.from("site_codes").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.siteCodes = res.data.map(rowToSiteCode);
+      renderAll();
+    });
+  }
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -5017,18 +5047,36 @@
       refetchProjects();
     });
   }
-  function addTeamPair(name, fag, address, codes){
+  function addTeamPair(name, fag, address){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("team_pairs").insert({ project_id: pid, name: name.slice(0,80), fag: fag || null, address: address.slice(0,160) || null, codes: codes.slice(0,120) || null }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("team_pairs") !== -1 ? "Databasen mangler tabellen for teamet. Kjør sql/28-team.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
-      refetchTeamPairs();
+    sb.from("people").insert({ name: name.slice(0,80) }).select().single().then(function(res){
+      if(res.error){ showError("Kunne ikke opprette personen: "+res.error.message); return; }
+      var personId = res.data.id;
+      refetchPeople();
+      sb.from("team_pairs").insert({ project_id: pid, name: name.slice(0,80), fag: fag || null, address: address.slice(0,160) || null, person_id: personId }).then(function(res2){
+        if(res2.error){ showError(res2.error.message.indexOf("team_pairs") !== -1 ? "Databasen mangler kolonnen person_id for teamet. Kjør sql/31-team-koder-open-accounts.sql i Supabase." : "Kunne ikke legge til: "+res2.error.message); return; }
+        refetchTeamPairs();
+      });
     });
   }
   function deleteTeamPair(id){
     if(!sb) return;
     sb.from("team_pairs").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchTeamPairs(); });
+  }
+  function addSiteCode(label, value){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("site_codes").insert({ project_id: pid, label: label.slice(0,80), value: value.slice(0,120) }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("site_codes") !== -1 ? "Databasen mangler tabellen for koder. Kjør sql/31-team-koder-open-accounts.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      refetchSiteCodes();
+    });
+  }
+  function deleteSiteCode(id){
+    if(!sb) return;
+    sb.from("site_codes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchSiteCodes(); });
   }
   function addOpenAccount(leverandor, kundenr, merking){
     if(!sb) return;
@@ -5716,6 +5764,7 @@
     refetchFagRequests();
     refetchTeamPairs();
     refetchOpenAccounts();
+    refetchSiteCodes();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -5747,6 +5796,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_requests" }, refetchFagRequests)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_pairs" }, refetchTeamPairs)
       .on("postgres_changes", { event: "*", schema: "public", table: "open_accounts" }, refetchOpenAccounts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
