@@ -3999,19 +3999,32 @@
     if(count > existing.length){
       var nextIndex = existing.reduce(function(max,s){ return Math.max(max, s.slotIndex); }, 0) + 1;
       sb.from("behov_slot").insert({ project_id: pid, fag: fag, slot_index: nextIndex }).then(function(res){
-        if(res.error){ showError(res.error.message.indexOf("behov_slot") !== -1 ? "Databasen mangler tabellen for behov. Kjør sql/19-behov-v2-dag-rutenett.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+        if(res.error){
+          showError(res.error.message.indexOf("behov_slot") !== -1 ? "Databasen mangler tabellen for behov. Kjør sql/19-behov-v2-dag-rutenett.sql i Supabase." : "Kunne ikke legge til: "+res.error.message);
+          renderBehovSlotConfig(state.projects.find(function(p){ return p.id === pid; }));
+          return;
+        }
         refetchBehovSlots();
       });
     } else if(count < existing.length){
       var toRemove = existing.slice().sort(function(a,b){ return b.slotIndex - a.slotIndex; })[0];
-      if(!toRemove) return;
+      if(!toRemove){ renderBehovSlotConfig(state.projects.find(function(p){ return p.id === pid; })); return; }
       var hasFilled = behovDaysForSlot(toRemove.id).some(function(d){ return d.personId; });
-      if(hasFilled && !confirm("Denne plassen har allerede fylt inn navn på noen dager. Fjerne den likevel?")) return;
+      if(hasFilled && !confirm("Denne plassen har allerede fylt inn navn på noen dager. Fjerne den likevel?")){
+        renderBehovSlotConfig(state.projects.find(function(p){ return p.id === pid; }));
+        return;
+      }
       sb.from("behov_slot").delete().eq("id", toRemove.id).then(function(res){
-        if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; }
+        if(res.error){
+          showError("Kunne ikke fjerne: "+res.error.message);
+          renderBehovSlotConfig(state.projects.find(function(p){ return p.id === pid; }));
+          return;
+        }
         refetchBehovSlots();
         refetchBehovDays();
       });
+    } else {
+      renderBehovSlotConfig(state.projects.find(function(p){ return p.id === pid; }));
     }
   }
   function toggleBehovDayNeeded(slotId, day){
@@ -4222,15 +4235,18 @@
     }).join("");
     box.querySelectorAll("[data-behovslotplus]").forEach(function(btn){
       btn.addEventListener("click", function(){
+        if(btn.disabled) return;
+        btn.disabled = true;
         var fag = btn.dataset.behovslotplus;
         setBehovSlotCount(fag, behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length + 1);
       });
     });
     box.querySelectorAll("[data-behovslotminus]").forEach(function(btn){
       btn.addEventListener("click", function(){
+        if(btn.disabled) return;
         var fag = btn.dataset.behovslotminus;
         var n = behovSlotsForCurrentProject().filter(function(s){ return s.fag===fag; }).length;
-        if(n>0) setBehovSlotCount(fag, n-1);
+        if(n>0){ btn.disabled = true; setBehovSlotCount(fag, n-1); }
       });
     });
     box.querySelectorAll("[data-delcustomslot]").forEach(function(btn){
