@@ -3113,14 +3113,14 @@
       var nDays = t.personId ? state.attendance.filter(function(a){ return a.project_id === pid && a.person_id === t.personId && a.fag === "team"; }).length : 0;
       return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span>' +
         '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+(t.personId?' · '+nDays+' dag(er) tilgjengelig':'')+'</span>' +
-        (t.personId ? '<button type="button" class="btn small" data-setavail="'+t.personId+'">Sett tilgjengelighet</button>' : '') +
+        '<button type="button" class="btn small" data-setavail="'+t.id+'">Sett tilgjengelighet</button>' +
         '<button class="del" data-editonly data-delteampair="'+t.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå.</p>';
     byId("teamPairList").querySelectorAll("[data-delteampair]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Fjerne dette team-paret?")) deleteTeamPair(this.dataset.delteampair); });
     });
     byId("teamPairList").querySelectorAll("[data-setavail]").forEach(function(b){
-      b.addEventListener("click", function(){ openPersonDates(this.dataset.setavail, "team"); });
+      b.addEventListener("click", function(){ openTeamPairAvailability(this.dataset.setavail); });
     });
 
     document.querySelectorAll("#panel-andelig [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
@@ -5151,6 +5151,24 @@
   function deleteTeamPair(id){
     if(!sb) return;
     sb.from("team_pairs").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchTeamPairs(); });
+  }
+  // Eldre team-par kan mangle en tilknyttet person (opprettet før den koblingen fantes).
+  // Oppretter personen først i så fall, så "Sett tilgjengelighet" alltid fungerer.
+  function openTeamPairAvailability(teamPairId){
+    if(!sb) return;
+    var t = state.teamPairs.find(function(x){ return x.id === teamPairId; });
+    if(!t) return;
+    if(t.personId){ openPersonDates(t.personId, "team"); return; }
+    sb.from("people").insert({ name: t.name.slice(0,80) }).select().single().then(function(res){
+      if(res.error){ showError("Kunne ikke opprette personen: "+res.error.message); return; }
+      var personId = res.data.id;
+      refetchPeople();
+      sb.from("team_pairs").update({ person_id: personId }).eq("id", teamPairId).then(function(res2){
+        if(res2.error){ showError("Kunne ikke koble personen til team-paret: "+res2.error.message); return; }
+        refetchTeamPairs();
+        openPersonDates(personId, "team");
+      });
+    });
   }
   function addSiteCode(label, value){
     if(!sb) return;
