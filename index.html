@@ -389,6 +389,16 @@
   .stpill.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink);}
   .stpill.s-ferdig{background:var(--good-soft); color:var(--good-ink);}
   .stpill.late{background:var(--bad); color:#fff;}
+  .goalgroup{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid var(--border); }
+  .goalgroup:last-child{ border-bottom:none; }
+  .goalgroup .gg-label{ font-weight:600; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; flex:none; min-width:90px; }
+  .goalgroup .gg-chips{ display:flex; flex-wrap:wrap; gap:5px; flex:1; }
+  .goalchip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:99px; background:var(--surface-alt); border:1px solid var(--border); }
+  .goalchip .dot{ width:6px; height:6px; border-radius:50%; flex:none; background:var(--bad); }
+  .goalchip.s-pabegynt .dot{ background:var(--warn); }
+  .goalchip.s-ferdig .dot{ background:var(--good); }
+  .goalchip.s-ferdig{ color:var(--muted); text-decoration:line-through; }
+  .goalchip.late .dot{ background:var(--bad); }
   .ppl{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
   .ppl span{font-size:11px; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:1px 7px; white-space:nowrap;}
   .ppl span.conf{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink); font-weight:700;}
@@ -969,7 +979,7 @@
 
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Oppgaver fra kalenderen som skal være ferdige denne uken, gruppert etter fag.</p>
+      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
       <div id="weeklyGoalsList"></div>
     </div>
 
@@ -3077,9 +3087,12 @@
     var goalFags = Object.keys(goalsByFag).sort(function(a,b){ return (FAG_LABELS[a]||a).localeCompare(FAG_LABELS[b]||b,"no"); });
     byId("weeklyGoalsList").innerHTML = goalFags.length ? goalFags.map(function(fag){
       var tasks = goalsByFag[fag].slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-      return '<div style="margin-bottom:10px;"><div style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; margin-bottom:4px;">' +
-        '<i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block;"></i>'+(FAG_LABELS[fag]||fag)+'</div>' +
-        tasks.map(function(e){ return '<div class="shoprow"><span class="sname">'+escapeHtml(e.name)+'</span>'+statusPill(e)+'</div>'; }).join("") +
+      return '<div class="goalgroup">' +
+        '<span class="gg-label"><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:7px; height:7px; border-radius:2px; display:inline-block;"></i>'+(FAG_LABELS[fag]||fag)+'</span>' +
+        '<span class="gg-chips">' + tasks.map(function(e){
+          var cls = isLate(e) ? "late" : "s-"+e.status;
+          return '<span class="goalchip '+cls+'" title="'+escapeHtml(STATUS_LABEL[e.status]||"")+'"><i class="dot"></i>'+escapeHtml(e.name)+'</span>';
+        }).join("") + '</span>' +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen oppgaver skal avsluttes denne uken.</p>';
 
