@@ -563,6 +563,8 @@
   .behov-cell.filled{ cursor:pointer; background:var(--good-soft); }
   .behov-cell.clickable-empty{ cursor:pointer; }
   .behov-cell.clickable-empty:hover{ background:var(--surface-alt); }
+  .behov-cell.pending{ background:var(--warn-soft); }
+  .behov-cell.pending .who{ color:var(--warn-ink, #8a5a00); }
   .behov-cell.out-of-range{ background-image:repeating-linear-gradient(45deg, var(--surface-alt) 0 5px, var(--surface) 5px 10px); }
   .behov-cell.out-of-range:not(.needed):not(.filled){ cursor:not-allowed; }
   .behov-cell .who{ font-size:11.5px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; color:var(--good-ink); font-weight:700; }
@@ -1068,6 +1070,11 @@
       <div id="acgoReferatArchive" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>
     <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forespørsler fra fag</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ønsker om å legge til eller fjerne tilgjengelighet i "Frivillige"-fanen, sendt inn av fag for godkjenning.</p>
+      <div id="fagRequestList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="peoplecard" style="margin-top:16px;">
       <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
       <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -1423,10 +1430,10 @@
 
   var sb = null;
   if(window.supabase && SUPABASE_URL.indexOf("REPLACE_WITH") !== 0){
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2840,8 +2847,8 @@
     var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
     return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+'</span>' +
       '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
-      '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
-      '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button></span></div>';
+      (isByggeleder() ? '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
+      '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button>' : '') + '</span></div>';
   }
   function wirePersonRowButtons(root){
     root.querySelectorAll("[data-persondates]").forEach(function(b){
@@ -2876,13 +2883,15 @@
     }
 
     var toggle = byId("peopleViewToggle");
-    toggle.hidden = !isByggeleder();
-    if(!isByggeleder()) view.peopleView = "list";
+    toggle.hidden = false;
+    if(!isByggeleder() && !view.peopleViewInited){ view.peopleView = "byfag"; view.peopleViewInited = true; }
     toggle.querySelectorAll("[data-peopleview]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.peopleview === view.peopleView);
     });
+    toggle.querySelector('[data-peopleview="byfag"]').textContent = isByggeleder() ? "Etter fag" : "Mitt fag";
     byId("peopleList").hidden = view.peopleView !== "list";
     byId("peopleByFag").hidden = view.peopleView !== "byfag";
+    byId("addPersonForm").hidden = !isByggeleder();
 
     if(state.people.length === 0){
       byId("peopleList").hidden = false;
@@ -2892,8 +2901,9 @@
     }
 
     if(view.peopleView === "byfag"){
-      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur);
-      wireFrivilligeGridEvents("peopleByFag");
+      var fagFilter = isByggeleder() ? null : activeFag();
+      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder() });
+      wireFrivilligeGridEvents("peopleByFag", { readOnly: !isByggeleder() });
       scrollGridToCurrentWeek("peopleByFag", cur);
       return;
     }
@@ -3531,6 +3541,13 @@
   function rowToPortalSuggestion(row){
     return { id: row.id, text: row.text, createdAt: row.created_at };
   }
+  function rowToFagRequest(row){
+    return { id: row.id, project_id: row.project_id, fag: row.fag, personId: row.person_id, day: row.day, desiredPresent: !!row.desired_present, status: row.status, requestedBy: row.requested_by || "", createdAt: row.created_at, resolvedAt: row.resolved_at };
+  }
+  function pendingFagRequestsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.fagRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+  }
   // ---------- TO-møte ----------
   function rowToToTopic(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -3777,6 +3794,25 @@
         if(locked && (locked.start !== cur.start || locked.end !== cur.end) && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Vil du sette den til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") i stedet?")) return;
         upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
       });
+    });
+
+    var pendingReq = pendingFagRequestsForCurrentProject();
+    byId("fagRequestList").innerHTML = pendingReq.length ? pendingReq.map(function(r){
+      return '<div class="shoprow"><span class="sname">'+
+        '<i class="dot" style="background:'+(FAG_COLORS[r.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block; margin-right:6px;"></i>' +
+        escapeHtml(FAG_LABELS[r.fag]||r.fag)+' · '+escapeHtml(personName(r.personId))+' · '+fmtRange(r.day,r.day)+
+        ' — '+(r.desiredPresent ? "sett tilgjengelig" : "fjern tilgjengelighet")+
+        (r.requestedBy ? ' <span style="color:var(--muted); font-size:11px;">('+escapeHtml(r.requestedBy)+')</span>' : '') +
+        '</span><span style="display:flex; gap:6px;">' +
+        '<button class="btn small primary" data-approvereq="'+r.id+'">Godkjenn</button>' +
+        '<button class="btn small ghost" data-rejectreq="'+r.id+'">Avslå</button>' +
+        '</span></div>';
+    }).join("") : '<p class="empty-note">Ingen ventende forespørsler.</p>';
+    byId("fagRequestList").querySelectorAll("[data-approvereq]").forEach(function(b){
+      b.addEventListener("click", function(){ approveFagRequest(this.dataset.approvereq); });
+    });
+    byId("fagRequestList").querySelectorAll("[data-rejectreq]").forEach(function(b){
+      b.addEventListener("click", function(){ rejectFagRequest(this.dataset.rejectreq); });
     });
 
     var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
@@ -4148,7 +4184,8 @@
     }
   }
   // ---------- frivillige "etter fag": samme rutenett-stil som behov, men viser hvem som er tilgjengelig hvilke dager ----------
-  function buildFrivilligeGridHtml(project){
+  function buildFrivilligeGridHtml(project, opts){
+    opts = opts || {};
     if(!project || !project.start || !project.end){
       return '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
     }
@@ -4189,8 +4226,13 @@
       if(!byPerson[a.person_id]) byPerson[a.person_id] = {};
       byPerson[a.person_id][a.fag] = true;
     });
+    var pendingSet = {};
+    if(opts.readOnly){
+      pendingFagRequestsForCurrentProject().forEach(function(r){ pendingSet[r.personId+"|"+r.day+"|"+r.fag] = true; });
+    }
+    var fagsToList = opts.fagFilter ? [opts.fagFilter] : OVERVIEW_FAG_LIST;
     var anyRows = false;
-    OVERVIEW_FAG_LIST.forEach(function(fag){
+    fagsToList.forEach(function(fag){
       var people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
       if(!people.length) return;
       anyRows = true;
@@ -4201,9 +4243,13 @@
           var d = workdayDate(range, i);
           var iso = toISODate(d);
           var present = isPresentForFag(p.id, iso, fag);
-          var cls = "behov-cell clickable-empty" + (present ? " filled" : "");
-          var content = present ? '<span class="who">✓</span>' : '';
-          cells += '<div class="'+cls+'" data-toggleavail="'+p.id+'|'+iso+'|'+fag+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+'">'+content+'</div>';
+          var pending = opts.readOnly && pendingSet[p.id+"|"+iso+"|"+fag];
+          var cls = "behov-cell clickable-empty" + (present ? " filled" : "") + (pending ? " pending" : "");
+          var content = present ? '<span class="who">✓</span>' : "";
+          if(pending) content = '<span class="who" title="Venter på godkjenning fra ACGO">…</span>';
+          var attr = opts.readOnly ? "data-requestavail" : "data-toggleavail";
+          var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
+          cells += '<div class="'+cls+'" '+attr+'="'+p.id+'|'+iso+'|'+fag+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
         html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+escapeHtml(p.name)+'</div><div class="behov-track">'+cells+'</div></div>';
       });
@@ -4212,7 +4258,24 @@
     if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">Ingen frivillige er satt opp på noe fag ennå.</p>';
     return html;
   }
-  function wireFrivilligeGridEvents(containerId){
+  function wireFrivilligeGridEvents(containerId, opts){
+    opts = opts || {};
+    if(opts.readOnly){
+      byId(containerId).querySelectorAll("[data-requestavail]").forEach(function(el){
+        el.addEventListener("click", function(){
+          var parts = this.dataset.requestavail.split("|");
+          var personId = parts[0], iso = parts[1], fag = parts[2];
+          var present = isPresentForFag(personId, iso, fag);
+          var name = personName(personId);
+          askConfirm(
+            present ? 'Send forespørsel om å fjerne '+name+' fra '+fmtRange(iso,iso)+' til ACGO?' : 'Send forespørsel om å sette '+name+' tilgjengelig '+fmtRange(iso,iso)+' til ACGO?',
+            function(){ requestFagAvailability(personId, iso, fag, !present); },
+            { title: "Send forespørsel?", confirmLabel: "Send forespørsel" }
+          );
+        });
+      });
+      return;
+    }
     byId(containerId).querySelectorAll("[data-toggleavail]").forEach(function(el){
       el.addEventListener("click", function(){
         var parts = this.dataset.toggleavail.split("|");
@@ -4627,6 +4690,13 @@
       renderAll();
     });
   }
+  function refetchFagRequests(){
+    sb.from("fag_requests").select("*").order("created_at").then(function(res){
+      if(res.error){ return; }
+      state.fagRequests = res.data.map(rowToFagRequest);
+      renderAll();
+    });
+  }
   function refetchToTopics(){
     sb.from("to_topics").select("*").order("sort_order").then(function(res){
       if(res.error){ return; }
@@ -4831,6 +4901,34 @@
   function deletePortalSuggestion(id){
     if(!sb) return;
     sb.from("portal_suggestions").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchPortalSuggestions(); });
+  }
+  function requestFagAvailability(personId, iso, fag, desiredPresent){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("fag_requests").insert({ project_id: pid, fag: fag, person_id: personId, day: iso, desired_present: desiredPresent, requested_by: (state.me && state.me.email) || "" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("fag_requests") !== -1 ? "Databasen mangler tabellen for forespørsler. Kjør sql/27-fag-forespoersler.sql i Supabase." : "Kunne ikke sende forespørsel: "+res.error.message); return; }
+      showInfo("Forespørsel sendt til ACGO ✓");
+      refetchFagRequests();
+    });
+  }
+  function approveFagRequest(id){
+    if(!sb) return;
+    var r = state.fagRequests.find(function(x){ return x.id === id; });
+    if(!r) return;
+    setPresence(r.personId, r.day, r.desiredPresent, r.fag).then(function(){
+      sb.from("fag_requests").update({ status: "approved", resolved_at: new Date().toISOString() }).eq("id", id).then(function(res){
+        if(res.error){ showError("Kunne ikke oppdatere forespørselen: "+res.error.message); return; }
+        refetchFagRequests();
+      });
+    });
+  }
+  function rejectFagRequest(id){
+    if(!sb) return;
+    sb.from("fag_requests").update({ status: "rejected", resolved_at: new Date().toISOString() }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke oppdatere forespørselen: "+res.error.message); return; }
+      refetchFagRequests();
+    });
   }
   function addToTopic(text){
     if(!sb) return;
@@ -5388,6 +5486,7 @@
     refetchToFagStatus();
     refetchToSafetyLog();
     refetchToFollowups();
+    refetchFagRequests();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -5416,6 +5515,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "to_meeting_fag_status" }, refetchToFagStatus)
       .on("postgres_changes", { event: "*", schema: "public", table: "to_safety_log" }, refetchToSafetyLog)
       .on("postgres_changes", { event: "*", schema: "public", table: "to_followups" }, refetchToFollowups)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fag_requests" }, refetchFagRequests)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
