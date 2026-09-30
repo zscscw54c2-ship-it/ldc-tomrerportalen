@@ -421,13 +421,13 @@
   .flex-cell.rejected{ background:var(--bad-soft); color:var(--bad-ink); border-color:transparent; }
   .flex-cell.static{ cursor:default; }
   .flex-cell-static{
-    border:1px solid var(--border); border-radius:9px; padding:7px 4px; min-height:48px;
+    border:1px solid var(--border); border-radius:9px; padding:6px 2px; min-height:48px;
     display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px;
     background:var(--surface);
   }
-  .flex-cell-period{ font-size:9.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; }
-  .flex-cell-names{ display:flex; flex-direction:column; align-items:center; gap:3px; }
-  .flex-name{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--surface-alt); color:var(--text); }
+  .flex-cell-period{ font-size:8.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0; line-height:1.15; text-align:center; word-break:break-word; }
+  .flex-cell-names{ display:flex; flex-direction:column; align-items:center; gap:3px; max-width:100%; }
+  .flex-name{ font-size:10px; font-weight:700; padding:2px 5px; border-radius:99px; background:var(--surface-alt); color:var(--text); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .flex-name.approved{ background:var(--good-soft); color:var(--good-ink); }
   .flex-name.pending{ background:var(--warn-soft); color:var(--warn-ink); border:1px dashed var(--warn-ink); }
   .flex-name.pending[data-flexaction]{ cursor:pointer; }
@@ -3420,10 +3420,16 @@
       return '<option value="'+w.id+'"'+(w.id===view.mwWeekId?' selected':'')+'>Uke '+info.week+' · '+escapeHtml(w.responsible)+' ('+fmtRange(w.start,w.end)+')</option>';
     }).join("");
 
+    var curWeekObj = weeks.find(function(w){ return w.id === view.mwWeekId; });
+    var mwWeekDays = [];
+    if(curWeekObj){
+      var d = fromISODate(curWeekObj.start), endD = fromISODate(curWeekObj.end);
+      while(d <= endD){ mwWeekDays.push(toISODate(d)); d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1); }
+    }
     var pidProject = currentProjectId();
-    var projectPersonIds = {};
-    state.attendance.forEach(function(a){ if(a.project_id === pidProject) projectPersonIds[a.person_id] = true; });
-    var availableThisWeek = state.people.filter(function(p){ return projectPersonIds[p.id]; });
+    var presentPersonIds = {};
+    state.attendance.forEach(function(a){ if(a.project_id === pidProject && mwWeekDays.indexOf(a.day) !== -1) presentPersonIds[a.person_id] = true; });
+    var availableThisWeek = state.people.filter(function(p){ return presentPersonIds[p.id]; });
     var bySlot = mwForWeek(view.mwWeekId);
     byId("mwSlots").innerHTML = MW_SLOTS.map(function(label, i){
       var slot = i+1, pid = bySlot[slot] || "";
