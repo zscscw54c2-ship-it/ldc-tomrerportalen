@@ -685,7 +685,7 @@
         <button role="tab" data-tab="dokumentasjon" aria-selected="false">Dokumentasjon</button>
         <button role="tab" data-tab="personer" aria-selected="false">Frivillige</button>
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
-        <button role="tab" data-tab="andelig" aria-selected="false">Åndelig</button>
+        <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
         <button role="tab" data-tab="tomote" aria-selected="false">TO-møte</button>
       </nav>
@@ -961,6 +961,32 @@
     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
       <div id="pwBanner" class="status-banner" style="margin-top:0; flex:1; min-width:220px;"></div>
       <button class="btn small" id="andeligEditBtn">Rediger</button>
+    </div>
+
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse og evt. koder. Fag er valgfritt.</p>
+        <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+          <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
+          <select id="newTeamPairFag" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"><option value="">Fag (valgfritt)</option></select>
+          <input type="text" id="newTeamPairAddress" placeholder="Adresse" maxlength="160" style="flex:1; min-width:160px;" />
+          <input type="text" id="newTeamPairCodes" placeholder="Koder (valgfritt)" maxlength="120" style="max-width:160px;" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
+        <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
+        <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
+          <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
+          <div class="field"><label>Spisested</label><input type="text" id="eatingAddressInput" maxlength="160" /></div>
+          <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
+          <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
+        </div>
+      </div>
     </div>
 
     <div class="cols2">
@@ -1369,6 +1395,7 @@
     </div>
     <div class="field">
       <label for="pwResponsible">Ansvarlig (familie/team)</label>
+      <select id="pwResponsiblePick" style="margin-bottom:6px;"><option value="">— Velg fra teamet, eller skriv inn under —</option></select>
       <input type="text" id="pwResponsible" required maxlength="60" placeholder="F.eks. Bakken" />
     </div>
     <div class="field">
@@ -1433,7 +1460,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", peopleView: "list", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -2991,6 +3018,23 @@
     infoView.textContent = infoText || "Ingen info lagt til ennå.";
     infoView.classList.toggle("empty-note", !infoText);
 
+    byId("newTeamPairFag").innerHTML = '<option value="">Fag (valgfritt)</option>' + FAG_LIST.map(function(f){ return '<option value="'+f+'">'+FAG_LABELS[f]+'</option>'; }).join("");
+    var pairs = teamPairsForCurrentProject();
+    byId("teamPairList").innerHTML = pairs.length ? pairs.map(function(t){
+      return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span>' +
+        '<span class="sqty" style="font-size:12px;">'+[t.address, t.codes ? "Koder: "+t.codes : ""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' +
+        '<button class="del" data-editonly data-delteampair="'+t.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå.</p>';
+    byId("teamPairList").querySelectorAll("[data-delteampair]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne dette team-paret?")) deleteTeamPair(this.dataset.delteampair); });
+    });
+
+    var siteFields = [["Byggeplass", cur && cur.siteAddress], ["Spisested", cur && cur.eatingAddress], ["Møter", cur && cur.meetingAddress]].filter(function(f){ return f[1]; });
+    byId("siteInfoView").innerHTML = siteFields.length ? siteFields.map(function(f){ return '<div><strong>'+f[0]+':</strong> '+escapeHtml(f[1])+'</div>'; }).join("") : '<p class="empty-note">Ingen byggeplass-info lagt til ennå.</p>';
+    if(document.activeElement !== byId("siteAddressInput")) byId("siteAddressInput").value = (cur && cur.siteAddress) || "";
+    if(document.activeElement !== byId("eatingAddressInput")) byId("eatingAddressInput").value = (cur && cur.eatingAddress) || "";
+    if(document.activeElement !== byId("meetingAddressInput")) byId("meetingAddressInput").value = (cur && cur.meetingAddress) || "";
+
     var curWeek = currentPrivilegeWeek();
     var banner = byId("pwBanner");
     banner.textContent = curWeek
@@ -3092,6 +3136,17 @@
     input.value = "";
   });
   byId("spiritualInfoSave").addEventListener("click", function(){ saveSpiritualInfo(byId("spiritualInfoInput").value); });
+  byId("siteInfoSave").addEventListener("click", function(){
+    saveSiteInfo(byId("siteAddressInput").value.trim(), byId("eatingAddressInput").value.trim(), byId("meetingAddressInput").value.trim());
+  });
+  byId("addTeamPairForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var nameInput = byId("newTeamPairName"), addrInput = byId("newTeamPairAddress"), codesInput = byId("newTeamPairCodes"), fagInput = byId("newTeamPairFag");
+    var name = nameInput.value.trim();
+    if(!name) return;
+    addTeamPair(name, fagInput.value, addrInput.value.trim(), codesInput.value.trim());
+    nameInput.value = ""; addrInput.value = ""; codesInput.value = ""; fagInput.value = "";
+  });
   byId("addDutyForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var input = byId("newDutyText");
@@ -3122,6 +3177,11 @@
     openPwDialog(view.mwWeekId);
   });
 
+  function fillPwResponsiblePick(){
+    byId("pwResponsiblePick").innerHTML = '<option value="">— Velg fra teamet, eller skriv inn under —</option>' +
+      teamPairsForCurrentProject().map(function(t){ return '<option value="'+escapeHtml(t.name)+'">'+escapeHtml(t.name)+'</option>'; }).join("");
+  }
+  byId("pwResponsiblePick").addEventListener("change", function(){ if(this.value) byId("pwResponsible").value = this.value; });
   var pwDialog = byId("pwDialog");
   byId("pwNewBtn").addEventListener("click", function(){
     byId("pwDlgTitle").textContent = "Ny privilege-uke";
@@ -3130,6 +3190,7 @@
     byId("pwResponsible").value = ""; byId("pwLabel").value = "";
     byId("pwFamiliestudie").value = ""; byId("pwSikkerhetstale").value = "";
     byId("pwBibellesning").value = ""; byId("pwNote").value = "";
+    fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
     pwDialog.showModal();
   });
   function openPwDialog(id){
@@ -3141,6 +3202,7 @@
     byId("pwResponsible").value = w.responsible; byId("pwLabel").value = w.label;
     byId("pwFamiliestudie").value = w.familiestudie; byId("pwSikkerhetstale").value = w.sikkerhetstale;
     byId("pwBibellesning").value = w.bibellesning; byId("pwNote").value = w.note;
+    fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
     pwDialog.showModal();
   }
   byId("pwCancel").addEventListener("click", function(){ pwDialog.close(); });
@@ -3313,7 +3375,7 @@
       icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>' },
     { tab:"rom", name:"To-do", color:"var(--rose)",
       icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
-    { tab:"andelig", name:"Åndelig", color:"var(--warn)",
+    { tab:"andelig", name:"Team", color:"var(--warn)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' },
     { tab:"acgo", name:"ACGO", color:"var(--bad)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' },
@@ -3492,7 +3554,14 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", createdAt: row.created_at };
+  }
+  function rowToTeamPair(row){
+    return { id: row.id, project_id: row.project_id, name: row.name, fag: row.fag || "", address: row.address || "", codes: row.codes || "", createdAt: row.created_at };
+  }
+  function teamPairsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.teamPairs.filter(function(t){ return t.project_id === pid; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
   }
   function rowToDuty(row){
     return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -4690,6 +4759,13 @@
       renderAll();
     });
   }
+  function refetchTeamPairs(){
+    sb.from("team_pairs").select("*").order("name").then(function(res){
+      if(res.error){ return; }
+      state.teamPairs = res.data.map(rowToTeamPair);
+      renderAll();
+    });
+  }
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -4816,6 +4892,28 @@
     sb.from("shopping_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne varen: "+res.error.message); return; } refetchShopItems(); });
   }
 
+  function saveSiteInfo(siteAddress, eatingAddress, meetingAddress){
+    if(!sb) return;
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("projects").update({ site_address: siteAddress.slice(0,160) || null, eating_address: eatingAddress.slice(0,160) || null, meeting_address: meetingAddress.slice(0,160) || null }).eq("id", currentProjectId()).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("site_address") !== -1 ? "Databasen mangler kolonnene for byggeplass-info. Kjør sql/28-team.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      showInfo("Byggeplass-info lagret ✓");
+      refetchProjects();
+    });
+  }
+  function addTeamPair(name, fag, address, codes){
+    if(!sb) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("team_pairs").insert({ project_id: pid, name: name.slice(0,80), fag: fag || null, address: address.slice(0,160) || null, codes: codes.slice(0,120) || null }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("team_pairs") !== -1 ? "Databasen mangler tabellen for teamet. Kjør sql/28-team.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      refetchTeamPairs();
+    });
+  }
+  function deleteTeamPair(id){
+    if(!sb) return;
+    sb.from("team_pairs").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchTeamPairs(); });
+  }
   function saveSpiritualInfo(text){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
@@ -5487,6 +5585,7 @@
     refetchToSafetyLog();
     refetchToFollowups();
     refetchFagRequests();
+    refetchTeamPairs();
 
     sb.channel("public-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "people" }, refetchPeople)
@@ -5516,6 +5615,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "to_safety_log" }, refetchToSafetyLog)
       .on("postgres_changes", { event: "*", schema: "public", table: "to_followups" }, refetchToFollowups)
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_requests" }, refetchFagRequests)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_pairs" }, refetchTeamPairs)
       .subscribe(function(status){
         if(status === "SUBSCRIBED"){ byId("statusBanner").className = "status-banner ok"; }
         if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ showError("Mistet sanntidsforbindelsen. Last siden på nytt for å se nye endringer."); }
