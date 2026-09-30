@@ -4512,8 +4512,16 @@
     }
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(OVERVIEW_FAG_LIST.filter(function(f){ return f !== "team"; }));
     var anyRows = false;
+    var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamPairsForCurrentProject().filter(function(t){ return t.personId; }).map(function(t){ return t.personId; }) : [];
     fagsToList.forEach(function(fag){
-      var people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      var people;
+      if(fag === "team"){
+        var ids = teamPersonIds.slice();
+        state.people.forEach(function(p){ if(byPerson[p.id] && byPerson[p.id][fag] && ids.indexOf(p.id) === -1) ids.push(p.id); });
+        people = state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      } else {
+        people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+      }
       if(!people.length) return;
       anyRows = true;
       html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
