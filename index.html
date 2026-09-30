@@ -417,6 +417,18 @@
   .flex-cell:hover{ background:var(--surface-alt); }
   .flex-cell.pending{ background:var(--warn-soft); color:var(--warn-ink); border-color:transparent; }
   .flex-cell.approved{ background:var(--good-soft); color:var(--good-ink); border-color:transparent; font-weight:700; }
+  .flex-cell-static{
+    border:1px solid var(--border); border-radius:9px; padding:7px 4px; min-height:48px;
+    display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px;
+    background:var(--surface);
+  }
+  .flex-cell-period{ font-size:9.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; }
+  .flex-cell-names{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .flex-name{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--surface-alt); color:var(--text); }
+  .flex-name.approved{ background:var(--good-soft); color:var(--good-ink); }
+  .flex-name.pending{ background:var(--warn-soft); color:var(--warn-ink); border:1px dashed var(--warn-ink); }
+  .flex-name.pending[data-flexaction]{ cursor:pointer; }
+  .flex-name.pending[data-flexaction]:hover{ filter:brightness(0.95); }
   .ppl{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
   .ppl span{font-size:11px; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:1px 7px; white-space:nowrap;}
   .ppl span.conf{background:var(--bad-soft); border-color:var(--bad); color:var(--bad-ink); font-weight:700;}
@@ -1027,6 +1039,12 @@
       <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
     </div>
 
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
+      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken.</p>
+      <div id="flexOverviewGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
+    </div>
+
     <div class="cols2" style="margin-bottom:16px;">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
@@ -1209,9 +1227,9 @@
   <section id="panel-cgo" class="panel">
     <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Flex-forespørsler</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ventende forespørsler om flex fra teamet. Kun én kan godkjennes per person per uke.</p>
-      <div id="flexRequestList" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Klikk på en forespurt person for å godkjenne eller avslå. Kun én kan godkjennes per person per uke.</p>
+      <div id="flexCgoGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
@@ -1445,6 +1463,18 @@
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="confirmCancel">Avbryt</button>
       <button type="button" class="btn danger" id="confirmOk">Slett</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="flexActionDialog">
+  <div class="dlg-body">
+    <h3>Flex-forespørsel</h3>
+    <p id="flexActionMsg" style="font-size:13.5px; color:var(--muted); line-height:1.5; margin:0 0 4px;"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="flexActionClose">Lukk</button>
+      <button type="button" class="btn danger" id="flexActionReject">Avslå</button>
+      <button type="button" class="btn primary" id="flexActionApprove">Godkjenn</button>
     </div>
   </div>
 </dialog>
@@ -2144,6 +2174,26 @@
     if(fn) fn();
   });
 
+  var flexActionDialog = byId("flexActionDialog");
+  var flexActionId = null;
+  function askFlexAction(personName, dayLabel, periodLabel, id){
+    byId("flexActionMsg").textContent = personName+" har forespurt å ta flex "+dayLabel+" "+periodLabel+".";
+    flexActionId = id;
+    flexActionDialog.showModal();
+  }
+  byId("flexActionClose").addEventListener("click", function(){ flexActionDialog.close(); flexActionId = null; });
+  flexActionDialog.addEventListener("click", function(ev){ if(ev.target === flexActionDialog){ flexActionDialog.close(); flexActionId = null; } });
+  byId("flexActionApprove").addEventListener("click", function(){
+    var id = flexActionId;
+    flexActionDialog.close(); flexActionId = null;
+    if(id) approveFlexRequest(id);
+  });
+  byId("flexActionReject").addEventListener("click", function(){
+    var id = flexActionId;
+    flexActionDialog.close(); flexActionId = null;
+    if(id) rejectFlexRequest(id);
+  });
+
   function projectRange(){
     var els = elementsForCurrentProject().filter(isPlanned);
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
@@ -2415,6 +2465,7 @@
   // ---------- frivillige for én uke (låst til ukenummer) ----------
   var weekVolDialog = byId("weekVolDialog");
   var DAY_ABBR = ["Man","Tir","Ons","Tor","Fre"];
+  var DAY_FULL = ["mandag","tirsdag","onsdag","torsdag","fredag"];
   function renderWeekVol(){
     var monday = new Date(Number(weekVolDialog.dataset.monday));
     var days = weekDays(monday).map(toISODate);
@@ -3222,6 +3273,8 @@
       });
     }
 
+    byId("flexOverviewGrid").innerHTML = flexWeekGridHtml(mondayOf(new Date()), { showPending: false, clickable: false });
+
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
@@ -3902,9 +3955,43 @@
     var pid = currentProjectId();
     return state.flexRequests.filter(function(r){ return r.project_id === pid && r.personId === personId && r.weekStart === weekStart; });
   }
-  function pendingFlexRequestsForCurrentProject(){
+  function flexWeekGridHtml(weekMonday, opts){
+    opts = opts || {};
     var pid = currentProjectId();
-    return state.flexRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+    var wk = toISODate(weekMonday);
+    var reqs = state.flexRequests.filter(function(r){
+      return r.project_id === pid && r.weekStart === wk && (r.status === "approved" || (opts.showPending && r.status === "pending"));
+    });
+    return weekDays(weekMonday).map(function(d, i){
+      var iso = toISODate(d);
+      var cellsHtml = ["formiddag","ettermiddag"].map(function(period){
+        var here = reqs.filter(function(r){ return r.day === iso && r.period === period; });
+        var namesHtml = here.map(function(r){
+          var p = state.people.find(function(x){ return x.id === r.personId; });
+          var name = p ? p.name : "?";
+          var isPending = r.status === "pending";
+          var clickable = opts.clickable && isPending;
+          var cls = "flex-name " + (isPending ? "pending" : "approved");
+          var attr = clickable ? ' data-flexaction="'+r.id+'|'+escapeHtml(name)+'|'+iso+'|'+period+'"' : "";
+          return '<span class="'+cls+'"'+attr+'>'+escapeHtml(name)+'</span>';
+        }).join("");
+        var periodLabel = period === "formiddag" ? "Formiddag" : "Ettermiddag";
+        return '<div class="flex-cell-static"><div class="flex-cell-period">'+periodLabel+'</div><div class="flex-cell-names">'+namesHtml+'</div></div>';
+      }).join("");
+      return '<div class="flex-day"><div class="flex-daylabel">'+DAY_ABBR[i]+'</div>'+cellsHtml+'</div>';
+    }).join("");
+  }
+  function bindFlexActionCells(root){
+    root.querySelectorAll("[data-flexaction]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var parts = this.dataset.flexaction.split("|");
+        var id = parts[0], name = parts[1], iso = parts[2], period = parts[3];
+        var dayIdx = weekDays(mondayOf(fromISODate(iso))).findIndex(function(d){ return toISODate(d) === iso; });
+        var dayLabel = dayIdx >= 0 ? DAY_FULL[dayIdx] : iso;
+        var periodLabel = period === "formiddag" ? "formiddag" : "ettermiddag";
+        askFlexAction(name, dayLabel, periodLabel, id);
+      });
+    });
   }
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
@@ -4259,23 +4346,9 @@
     var cgoPerson = myLinkedPerson();
     byId("cgoIdentityLine").textContent = cgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+cgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
 
-    var pending = pendingFlexRequestsForCurrentProject();
-    byId("flexRequestList").innerHTML = pending.length ? pending.map(function(r){
-      var p = state.people.find(function(x){ return x.id === r.personId; });
-      var periodLabel = r.period === "formiddag" ? "Formiddag" : "Ettermiddag";
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(p ? p.name : "?")+'</span>' +
-        '<span class="sqty">'+fmtRange(r.day, r.day)+' · '+periodLabel+'</span>' +
-        '<span style="display:flex; gap:6px;">' +
-        '<button class="btn small primary" data-approveflexrequest="'+r.id+'">Godkjenn</button>' +
-        '<button class="btn small ghost" data-rejectflexrequest="'+r.id+'">Avslå</button>' +
-        '</span></div>';
-    }).join("") : '<p class="empty-note">Ingen ventende flex-forespørsler.</p>';
-    byId("flexRequestList").querySelectorAll("[data-approveflexrequest]").forEach(function(b){
-      b.addEventListener("click", function(){ approveFlexRequest(this.dataset.approveflexrequest); });
-    });
-    byId("flexRequestList").querySelectorAll("[data-rejectflexrequest]").forEach(function(b){
-      b.addEventListener("click", function(){ rejectFlexRequest(this.dataset.rejectflexrequest); });
-    });
+    var flexCgoGridEl = byId("flexCgoGrid");
+    flexCgoGridEl.innerHTML = flexWeekGridHtml(mondayOf(new Date()), { showPending: true, clickable: true });
+    bindFlexActionCells(flexCgoGridEl);
 
     var m = currentWeekTeamMeeting();
     var textarea = byId("cgoTeamMeetingAgenda");
