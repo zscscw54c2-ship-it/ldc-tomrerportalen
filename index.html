@@ -417,6 +417,8 @@
   .flex-cell:hover{ background:var(--surface-alt); }
   .flex-cell.pending{ background:var(--warn-soft); color:var(--warn-ink); border-color:transparent; }
   .flex-cell.approved{ background:var(--good-soft); color:var(--good-ink); border-color:transparent; font-weight:700; }
+  .flex-cell.rejected{ background:var(--bad-soft); color:var(--bad-ink); border-color:transparent; }
+  .flex-cell.static{ cursor:default; }
   .flex-cell-static{
     border:1px solid var(--border); border-radius:9px; padding:7px 4px; min-height:48px;
     display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px;
@@ -1033,16 +1035,10 @@
       </div>
     </div>
 
-    <div class="peoplecard" id="flexBox" hidden style="margin-bottom:16px;">
+    <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send forespørsel om å ta flex en halv dag denne uken. Du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
+      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken. Er du med i teamet kan du også sende egen forespørsel – du kan foreslå flere tidspunkt, men CGO godkjenner kun ett.</p>
       <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
-    </div>
-
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Godkjent flex i teamet denne uken.</p>
-      <div id="flexOverviewGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
     </div>
 
     <div class="cols2" style="margin-bottom:16px;">
@@ -3239,41 +3235,7 @@
       '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(sentMeeting.agenda)+'</div>' :
       '<p class="empty-note">Ingen teammøte-agenda sendt for denne uken ennå.</p>';
 
-    var flexPair = myTeamPair();
-    byId("flexBox").hidden = !flexPair;
-    if(flexPair){
-      var flexMonday = mondayOf(new Date());
-      var flexWk = toISODate(flexMonday);
-      var myFlex = flexRequestsForPersonWeek(flexPair.personId, flexWk);
-      byId("flexGrid").innerHTML = weekDays(flexMonday).map(function(d, i){
-        var iso = toISODate(d);
-        var cellHtml = ["formiddag","ettermiddag"].map(function(period){
-          var reqs = myFlex.filter(function(r){ return r.day === iso && r.period === period; });
-          var approved = reqs.find(function(r){ return r.status === "approved"; });
-          var pending = reqs.find(function(r){ return r.status === "pending"; });
-          var req = approved || pending;
-          var cls = "flex-cell" + (approved ? " approved" : pending ? " pending" : "");
-          var label = period === "formiddag" ? "Formiddag" : "Ettermiddag";
-          var content = approved ? "✓ "+label : (pending ? label+" …" : label);
-          return '<div class="'+cls+'" data-flexcell="'+iso+'|'+period+'|'+(req?req.id:"")+'">'+content+'</div>';
-        }).join("");
-        return '<div class="flex-day"><div class="flex-daylabel">'+DAY_ABBR[i]+'</div>'+cellHtml+'</div>';
-      }).join("");
-      byId("flexGrid").querySelectorAll("[data-flexcell]").forEach(function(el){
-        el.addEventListener("click", function(){
-          var parts = this.dataset.flexcell.split("|");
-          var iso = parts[0], period = parts[1], reqId = parts[2];
-          if(reqId){
-            askConfirm("Trekke tilbake denne flex-forespørselen?", function(){ withdrawFlexRequest(reqId); }, { title: "Trekk tilbake?", confirmLabel: "Trekk tilbake" });
-          } else {
-            var label = period === "formiddag" ? "formiddag" : "ettermiddag";
-            askConfirm("Send forespørsel om å ta flex "+DAY_ABBR[weekDays(flexMonday).findIndex(function(d){ return toISODate(d)===iso; })]+" "+label+"?", function(){ requestFlex(flexPair.personId, iso, period); }, { title: "Send flex-forespørsel?", confirmLabel: "Send forespørsel" });
-          }
-        });
-      });
-    }
-
-    byId("flexOverviewGrid").innerHTML = flexWeekGridHtml(mondayOf(new Date()), { showPending: false, clickable: false });
+    renderTeamFlexBox();
 
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
@@ -3990,6 +3952,58 @@
         var dayLabel = dayIdx >= 0 ? DAY_FULL[dayIdx] : iso;
         var periodLabel = period === "formiddag" ? "formiddag" : "ettermiddag";
         askFlexAction(name, dayLabel, periodLabel, id);
+      });
+    });
+  }
+  function renderTeamFlexBox(){
+    var flexPair = myTeamPair();
+    var flexMonday = mondayOf(new Date());
+    var flexWk = toISODate(flexMonday);
+    var pid = currentProjectId();
+    var weekReqs = state.flexRequests.filter(function(r){ return r.project_id === pid && r.weekStart === flexWk; });
+    byId("flexGrid").innerHTML = weekDays(flexMonday).map(function(d, i){
+      var iso = toISODate(d);
+      var cellsHtml = ["formiddag","ettermiddag"].map(function(period){
+        var here = weekReqs.filter(function(r){ return r.day === iso && r.period === period; });
+        var approved = here.filter(function(r){ return r.status === "approved"; });
+        var minePending = flexPair ? here.find(function(r){ return r.status === "pending" && r.personId === flexPair.personId; }) : null;
+        var mineApproved = flexPair ? approved.find(function(r){ return r.personId === flexPair.personId; }) : null;
+        var mineRejected = flexPair ? here.find(function(r){ return r.status === "rejected" && r.personId === flexPair.personId; }) : null;
+        var label = period === "formiddag" ? "Formiddag" : "Ettermiddag";
+        var cls = "flex-cell", content, status = "empty", reqId = "";
+        if(approved.length){
+          cls += " approved";
+          content = approved.map(function(r){ var p = state.people.find(function(x){ return x.id === r.personId; }); return escapeHtml(p ? p.name : "?"); }).join(", ");
+          if(mineApproved){ status = "approved"; reqId = mineApproved.id; }
+        } else if(minePending){
+          cls += " pending"; content = label+" …"; status = "pending"; reqId = minePending.id;
+        } else if(mineRejected){
+          cls += " rejected"; content = "Avslått"; status = "rejected"; reqId = mineRejected.id;
+        } else {
+          content = label;
+          if(flexPair) status = "request";
+        }
+        var dataAttr = status !== "empty" ? ' data-flexmerged="'+status+'|'+iso+'|'+period+'|'+reqId+'"' : "";
+        if(!dataAttr) cls += " static";
+        return '<div class="'+cls+'"'+dataAttr+'>'+content+'</div>';
+      }).join("");
+      return '<div class="flex-day"><div class="flex-daylabel">'+DAY_ABBR[i]+'</div>'+cellsHtml+'</div>';
+    }).join("");
+    byId("flexGrid").querySelectorAll("[data-flexmerged]").forEach(function(el){
+      el.addEventListener("click", function(){
+        var parts = this.dataset.flexmerged.split("|");
+        var status = parts[0], iso = parts[1], period = parts[2], reqId = parts[3];
+        var dayIdx = weekDays(flexMonday).findIndex(function(d){ return toISODate(d) === iso; });
+        var periodLabel = period === "formiddag" ? "formiddag" : "ettermiddag";
+        if(status === "request"){
+          askConfirm("Send forespørsel om å ta flex "+DAY_ABBR[dayIdx]+" "+periodLabel+"?", function(){ requestFlex(flexPair.personId, iso, period); }, { title: "Send flex-forespørsel?", confirmLabel: "Send forespørsel" });
+        } else if(status === "pending"){
+          askConfirm("Trekke tilbake denne flex-forespørselen?", function(){ withdrawFlexRequest(reqId); }, { title: "Trekk tilbake?", confirmLabel: "Trekk tilbake" });
+        } else if(status === "approved"){
+          askConfirm("Trekke tilbake denne godkjente flex-dagen?", function(){ withdrawFlexRequest(reqId); }, { title: "Trekk tilbake?", confirmLabel: "Trekk tilbake" });
+        } else if(status === "rejected"){
+          askConfirm("Fjerne det avslåtte forslaget?", function(){ withdrawFlexRequest(reqId); }, { title: "Fjern?", confirmLabel: "Fjern" });
+        }
       });
     });
   }
@@ -5557,7 +5571,7 @@
     sb.from("flex_requests").update({ status: "approved", resolved_at: new Date().toISOString() }).eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke godkjenne: "+res.error.message); return; }
       Promise.all(siblings.map(function(s){
-        return sb.from("flex_requests").update({ status: "rejected", resolved_at: new Date().toISOString() }).eq("id", s.id);
+        return sb.from("flex_requests").delete().eq("id", s.id);
       })).then(function(){ refetchFlexRequests(); });
     });
   }
