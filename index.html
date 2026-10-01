@@ -4388,6 +4388,15 @@
       renderAll();
     });
   }
+  function setUserAccountPerson(accountId, personId){
+    if(!sb) return;
+    var acc = state.userAccounts.find(function(u){ return u.id === accountId; });
+    if(acc) acc.person_id = personId;
+    renderAll();
+    sb.from("profiles").update({ person_id: personId }).eq("id", accountId).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("person_id") !== -1 ? "Databasen mangler kolonnen person_id på profiles, eller mangler rettigheter til å endre den. Kjør sql/41-koble-innlogging-til-person.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); refetchUserAccounts(); return; }
+    });
+  }
   function rowToProjectFag(row){
     return { id: row.id, project_id: row.project_id, fag: row.fag, active: !!row.active, start: row.start_date || "", end: row.end_date || "" };
   }
@@ -4496,13 +4505,21 @@
 
     var pfList = projectFagsForCurrentProject();
     var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
+    var peopleSorted = state.people.slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
     byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
       var relevant = u.role === "byggeleder" || (pfList.some(function(x){ return x.fag === u.role && x.active; }));
       var isFagRole = u.role === "byggeleder" || FAG_LIST.indexOf(u.role) !== -1;
       var dotColor = !isFagRole ? "var(--muted)" : (relevant ? "var(--good)" : "var(--border-strong)");
       var dotTitle = !isFagRole ? "" : (relevant ? "Relevant for dette prosjektet" : "Faget er ikke aktivt i dette prosjektet");
-      return '<div class="shoprow"><span class="sname"><i class="dot" style="background:'+dotColor+'; width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;" title="'+dotTitle+'"></i>'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
+      var personSelect = '<select data-useraccountperson="'+u.id+'" title="Hvilket teammedlem tilhører denne innloggingen" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
+        '<option value="">Ingen person</option>' +
+        peopleSorted.map(function(p){ return '<option value="'+p.id+'"'+(u.person_id===p.id?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+        '</select>';
+      return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname"><i class="dot" style="background:'+dotColor+'; width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;" title="'+dotTitle+'"></i>'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span>'+personSelect+'</div>';
     }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
+    byId("userAccountsList").querySelectorAll("[data-useraccountperson]").forEach(function(sel){
+      sel.addEventListener("change", function(){ setUserAccountPerson(this.dataset.useraccountperson, this.value || null); });
+    });
 
     byId("projectFagList").innerHTML = FAG_LIST.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f; });
