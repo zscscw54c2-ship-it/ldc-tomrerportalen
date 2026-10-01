@@ -542,7 +542,11 @@
     .wk{grid-template-columns:1fr;}
     .wkday{border-left:none; border-top:1px solid var(--border); min-height:0;}
     .wkday:first-child{border-top:none;}
-    .wkday.past{display:none;}
+    .wkday.past .wkday-body{display:none;}
+    .wkday.past.expanded .wkday-body{display:flex;}
+    .wkday.past .wkday-head{cursor:pointer;}
+    .wkday.past .wkday-head::after{content:"▾"; margin-left:4px; font-size:10px; color:var(--muted);}
+    .wkday.past.expanded .wkday-head::after{content:"▴";}
     .wkday-body{flex-direction:column;}
     .kpis{grid-template-columns:repeat(2,1fr);}
   }
@@ -2074,6 +2078,9 @@
     }
     grid.innerHTML = html;
     bindDetail(grid);
+    grid.querySelectorAll(".wkday.past .wkday-head").forEach(function(h){
+      h.addEventListener("click", function(){ h.closest(".wkday").classList.toggle("expanded"); });
+    });
     if(view.sel) markDroppable(view.sel.iso, view.sel.from);
   }
 
