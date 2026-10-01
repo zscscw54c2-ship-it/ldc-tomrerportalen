@@ -56,6 +56,7 @@
     --fag-audio-video:#d6568f;
     --fag-behov-menighet:#8a8f98;
     --fag-team:#2f9e6f;
+    --fag-ovrig:#9c8465;
     --shadow: 0 1px 2px rgba(27,36,48,0.05), 0 8px 20px -12px rgba(27,36,48,0.18);
     color-scheme: light;
   }
@@ -1683,11 +1684,11 @@
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()) };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
-  var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
+  var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
-  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)" };
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO", ovrig:"Øvrig" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)", ovrig:"var(--fag-ovrig)" };
   var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
   var TO_ROLE_LABELS = Object.assign({ prosjektleder:"Prosjektleder", arbeidsleder:"Arbeidsleder" }, FAG_LABELS);
   function toMeetingFagSections(){
