@@ -757,6 +757,7 @@
         <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
         <button role="tab" data-tab="cgo" aria-selected="false" hidden>CGO</button>
         <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
+        <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Prosjektinnstillinger</button>
         <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
       </nav>
     </div>
@@ -1221,28 +1222,11 @@
         <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <h2 style="font-size:14px; margin-bottom:8px;">Vis Team-siden for</h2>
-        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:8px;">Gjelder kun prosjektet som er valgt over.</p>
-        <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
+        <button type="button" class="btn" id="acgoOpenProsjektBtn" style="width:100%; justify-content:space-between;">Prosjektinnstillinger <span>→</span></button>
       </div>
     </div>
     <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
     <button type="button" class="subhome-back" id="acgoHomeBack">← Tilbake</button>
-
-    <div class="subhome-section" data-tiled data-sec="brukere">
-      <div class="cols2">
-        <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer og hvilket fag de tilhører.</p>
-          <div id="userAccountsList"></div>
-        </div>
-        <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
-          <div id="projectFagList"></div>
-        </div>
-      </div>
-    </div>
 
     <div class="subhome-section" data-tiled data-sec="referat">
       <div class="peoplecard">
@@ -1267,6 +1251,30 @@
           <button class="btn primary" type="submit">Legg til</button>
         </form>
       </div>
+    </div>
+  </section>
+
+  <section id="panel-prosjekt" class="panel">
+    <div style="margin-bottom:16px;">
+      <h2 style="font-size:18px; margin-bottom:2px;">Prosjektinnstillinger</h2>
+      <p class="sub" id="prosjektSubLabel" style="font-size:12.5px; color:var(--muted);"></p>
+    </div>
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer. Grønn prikk = faget er aktivt i dette prosjektet.</p>
+        <div id="userAccountsList"></div>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
+        <div id="projectFagList"></div>
+      </div>
+    </div>
+    <div class="peoplecard">
+      <h2 style="font-size:16px; margin-bottom:2px;">Vis Team-siden for</h2>
+      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:8px;">Gjelder kun dette prosjektet.</p>
+      <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
     </div>
   </section>
 
@@ -3893,9 +3901,6 @@
     renderSubHomeGrid(byId("panel-andelig"), "teamHomeGrid", "teamHomeBack", TEAM_HOME_TILES);
   }
   var ACGO_HOME_TILES = [
-    { key:"brukere", name:"Brukere & fag", color:"var(--accent)",
-      icon:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.5.4 4.5 2.6 4.5 5.3"/></svg>',
-      status:function(){ return { badge:0, text: state.userAccounts.length+" kontoer" }; } },
     { key:"referat", name:"Referat-arkiv", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><path d="M3 7l2-3h14l2 3"/><rect x="3" y="7" width="18" height="13" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
       status:function(){
@@ -3935,6 +3940,7 @@
     renderRoomTab();
     renderSpiritualTab();
     renderAcgoTab();
+    renderProsjektTab();
     renderCgoTab();
     renderToMoteTab();
     renderDashboardTab();
@@ -4392,16 +4398,6 @@
   function renderAcgoTab(){
     if(!isByggeleder()) return;
     renderAcgoHomeGrid();
-    var visMap = andeligVisibilityMapForCurrentProject();
-    var visList = byId("andeligVisibilityList");
-    visList.innerHTML = FAG_LIST.map(function(f){
-      var visible = visMap[f] !== false;
-      return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
-        '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
-    }).join("");
-    visList.querySelectorAll("[data-andeligvis]").forEach(function(cb){
-      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
-    });
     var acgoPerson = myLinkedPerson();
     byId("acgoIdentityLine").textContent = acgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+acgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
     var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
@@ -4426,13 +4422,59 @@
       a.addEventListener("click", function(ev){ ev.stopPropagation(); });
     });
 
-    var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
-    byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
-    }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
+    var pendingReq = pendingFagRequestsForCurrentProject();
+    byId("fagRequestList").innerHTML = pendingReq.length ? pendingReq.map(function(r){
+      return '<div class="shoprow"><span class="sname">'+
+        '<i class="dot" style="background:'+(FAG_COLORS[r.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block; margin-right:6px;"></i>' +
+        escapeHtml(FAG_LABELS[r.fag]||r.fag)+' · '+escapeHtml(personName(r.personId))+' · '+fmtRange(r.day,r.day)+
+        ' — '+(r.desiredPresent ? "sett tilgjengelig" : "fjern tilgjengelighet")+
+        (r.requestedBy ? ' <span style="color:var(--muted); font-size:11px;">('+escapeHtml(r.requestedBy)+')</span>' : '') +
+        '</span><span style="display:flex; gap:6px;">' +
+        '<button class="btn small primary" data-approvereq="'+r.id+'">Godkjenn</button>' +
+        '<button class="btn small ghost" data-rejectreq="'+r.id+'">Avslå</button>' +
+        '</span></div>';
+    }).join("") : '<p class="empty-note">Ingen ventende forespørsler.</p>';
+    byId("fagRequestList").querySelectorAll("[data-approvereq]").forEach(function(b){
+      b.addEventListener("click", function(){ approveFagRequest(this.dataset.approvereq); });
+    });
+    byId("fagRequestList").querySelectorAll("[data-rejectreq]").forEach(function(b){
+      b.addEventListener("click", function(){ rejectFagRequest(this.dataset.rejectreq); });
+    });
+
+    var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+    byId("portalSuggestionList").innerHTML = suggestions.length ? suggestions.map(function(s){
+      return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
+    byId("portalSuggestionList").querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
+      b.addEventListener("click", function(){
+        if(confirm("Slette dette forslaget?")) deletePortalSuggestion(this.dataset.delportalsuggestion);
+      });
+    });
+  }
+  byId("addPortalSuggestionForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var input = byId("newPortalSuggestionText");
+    var text = input.value.trim();
+    if(!text) return;
+    addPortalSuggestion(text);
+    input.value = "";
+  });
+
+  function renderProsjektTab(){
+    if(!isByggeleder()) return;
+    var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    byId("prosjektSubLabel").textContent = curProj ? (curProj.name+(curProj.isActive?' ★':'')+(curProj.start||curProj.end?' · '+fmtRange(curProj.start||curProj.end, curProj.end||curProj.start):'')) : "Ingen prosjekt valgt";
 
     var pfList = projectFagsForCurrentProject();
-    var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
+    byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
+      var relevant = u.role === "byggeleder" || (pfList.some(function(x){ return x.fag === u.role && x.active; }));
+      var isFagRole = u.role === "byggeleder" || FAG_LIST.indexOf(u.role) !== -1;
+      var dotColor = !isFagRole ? "var(--muted)" : (relevant ? "var(--good)" : "var(--border-strong)");
+      var dotTitle = !isFagRole ? "" : (relevant ? "Relevant for dette prosjektet" : "Faget er ikke aktivt i dette prosjektet");
+      return '<div class="shoprow"><span class="sname"><i class="dot" style="background:'+dotColor+'; width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;" title="'+dotTitle+'"></i>'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span></div>';
+    }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
+
     byId("projectFagList").innerHTML = FAG_LIST.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f; });
       var active = pf ? pf.active : false;
@@ -4491,43 +4533,18 @@
       });
     });
 
-    var pendingReq = pendingFagRequestsForCurrentProject();
-    byId("fagRequestList").innerHTML = pendingReq.length ? pendingReq.map(function(r){
-      return '<div class="shoprow"><span class="sname">'+
-        '<i class="dot" style="background:'+(FAG_COLORS[r.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block; margin-right:6px;"></i>' +
-        escapeHtml(FAG_LABELS[r.fag]||r.fag)+' · '+escapeHtml(personName(r.personId))+' · '+fmtRange(r.day,r.day)+
-        ' — '+(r.desiredPresent ? "sett tilgjengelig" : "fjern tilgjengelighet")+
-        (r.requestedBy ? ' <span style="color:var(--muted); font-size:11px;">('+escapeHtml(r.requestedBy)+')</span>' : '') +
-        '</span><span style="display:flex; gap:6px;">' +
-        '<button class="btn small primary" data-approvereq="'+r.id+'">Godkjenn</button>' +
-        '<button class="btn small ghost" data-rejectreq="'+r.id+'">Avslå</button>' +
-        '</span></div>';
-    }).join("") : '<p class="empty-note">Ingen ventende forespørsler.</p>';
-    byId("fagRequestList").querySelectorAll("[data-approvereq]").forEach(function(b){
-      b.addEventListener("click", function(){ approveFagRequest(this.dataset.approvereq); });
-    });
-    byId("fagRequestList").querySelectorAll("[data-rejectreq]").forEach(function(b){
-      b.addEventListener("click", function(){ rejectFagRequest(this.dataset.rejectreq); });
-    });
-
-    var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
-    byId("portalSuggestionList").innerHTML = suggestions.length ? suggestions.map(function(s){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
-    }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
-    byId("portalSuggestionList").querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
-      b.addEventListener("click", function(){
-        if(confirm("Slette dette forslaget?")) deletePortalSuggestion(this.dataset.delportalsuggestion);
-      });
+    var visMap = andeligVisibilityMapForCurrentProject();
+    var visList = byId("andeligVisibilityList");
+    visList.innerHTML = FAG_LIST.map(function(f){
+      var visible = visMap[f] !== false;
+      return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
+        '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
+    }).join("");
+    visList.querySelectorAll("[data-andeligvis]").forEach(function(cb){
+      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
     });
   }
-  byId("addPortalSuggestionForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var input = byId("newPortalSuggestionText");
-    var text = input.value.trim();
-    if(!text) return;
-    addPortalSuggestion(text);
-    input.value = "";
-  });
+  byId("acgoOpenProsjektBtn").addEventListener("click", function(){ switchTab("prosjekt"); });
 
   function renderCgoTab(){
     if(!isByggeleder()) return;
