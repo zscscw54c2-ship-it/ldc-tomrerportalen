@@ -1084,8 +1084,8 @@
     <div id="personerLogiBox" hidden>
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Logi</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Hvem i Teamet trenger logi, og status på hver. Trykk på en person for detaljer.</p>
-        <div id="personerLogiList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer.</p>
+        <div id="personerLogiList" class="gantt-wrap frivillige-grid"></div>
       </div>
     </div>
   </section>
@@ -3296,7 +3296,9 @@
       return;
     }
     if(showLogi){
-      renderLogiList("personerLogiList", {});
+      byId("personerLogiList").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: null, readOnly: !isByggeleder(), logiMode: true });
+      wireFrivilligeGridEvents("personerLogiList", { readOnly: !isByggeleder(), logiMode: true });
+      scrollGridToCurrentWeek("personerLogiList", cur);
       return;
     }
 
@@ -5199,7 +5201,14 @@
           var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
           cells += '<div class="'+cls+'" '+attr+'="'+p.id+'|'+iso+'|'+fag+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
-        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+escapeHtml(p.name)+'</div><div class="behov-track">'+cells+'</div></div>';
+        var nameCell = escapeHtml(p.name);
+        if(opts.logiMode){
+          var linfo = logiInfoForPerson(p.id);
+          var lstatus = linfo ? linfo.status : "ikke_vurdert";
+          nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for Logi-detaljer">'+escapeHtml(p.name)+'</span> ' +
+            '<span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
+        }
+        html += '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
       });
     });
     html += '</div>';
@@ -5208,6 +5217,11 @@
   }
   function wireFrivilligeGridEvents(containerId, opts){
     opts = opts || {};
+    if(opts.logiMode){
+      byId(containerId).querySelectorAll("[data-logiopen]").forEach(function(el){
+        el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
+      });
+    }
     if(opts.readOnly){
       byId(containerId).querySelectorAll("[data-requestavail]").forEach(function(el){
         el.addEventListener("click", function(){
@@ -5585,7 +5599,7 @@
     byId("kontaktBehovWrap").hidden = showLogi;
     byId("kontaktLogiWrap").hidden = !showLogi;
     if(showLogi){
-      renderLogiList("kontaktLogiList", { onlyNeeded: true });
+      renderLogiList("kontaktLogiList");
       return;
     }
     byId("kontaktBehovLabel").textContent = cur ? cur.name : "";
@@ -5734,13 +5748,8 @@
   function canSeeLogi(){
     return isByggeleder() || !!myTeamPair();
   }
-  // Teamet + alle som allerede har en logi-rad (slik at byggeleder kan flagge noen utenfor Teamet også).
-  function logiRosterForCurrentProject(){
-    var ids = teamPairsForCurrentProject().filter(function(t){ return t.personId; }).map(function(t){ return t.personId; });
-    logiInfoForCurrentProject().forEach(function(l){ if(ids.indexOf(l.personId) === -1) ids.push(l.personId); });
-    return state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-  }
-  // Kun de menighetens logikoordinator faktisk skal gjøre noe med.
+  // Kun de menighetens logikoordinator faktisk skal gjøre noe med (internt bruker Logi-fanen
+  // hele Frivillige-etter-fag-rutenettet i stedet, se buildFrivilligeGridHtml({logiMode:true})).
   function logiNeededRosterForCurrentProject(){
     var ids = logiInfoForCurrentProject().filter(function(l){ return l.status === "trenger_logi" || l.status === "logi_klart"; }).map(function(l){ return l.personId; });
     return state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
@@ -5769,13 +5778,12 @@
     });
   }
 
-  function renderLogiList(containerId, opts){
-    opts = opts || {};
-    var roster = opts.onlyNeeded ? logiNeededRosterForCurrentProject() : logiRosterForCurrentProject();
+  function renderLogiList(containerId){
+    var roster = logiNeededRosterForCurrentProject();
     var box = byId(containerId);
     if(!box) return;
     if(!roster.length){
-      box.innerHTML = '<p class="empty-note">'+(opts.onlyNeeded ? "Ingen trenger logi akkurat nå." : "Ingen i Teamet ennå. Legg til team-par under Team-siden.")+'</p>';
+      box.innerHTML = '<p class="empty-note">Ingen trenger logi akkurat nå.</p>';
       return;
     }
     box.innerHTML = roster.map(function(p){
