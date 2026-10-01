@@ -1022,11 +1022,6 @@
   </section>
 
   <section id="panel-andelig" class="panel">
-    <div class="peoplecard" id="andeligVisibilityBox" hidden style="margin-bottom:14px;">
-      <h2 style="font-size:14px; margin-bottom:8px;">Vis Team-siden for</h2>
-      <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
-    </div>
-
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
         <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25; flex:1; min-width:180px;"></div>
@@ -1223,6 +1218,11 @@
         <button type="button" class="btn small" id="acgoProjectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
         <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
         <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
+      </div>
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <h2 style="font-size:14px; margin-bottom:8px;">Vis Team-siden for</h2>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:8px;">Gjelder kun prosjektet som er valgt over.</p>
+        <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
       </div>
     </div>
     <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
@@ -1680,7 +1680,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: {}, userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()) };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon"];
@@ -1708,7 +1708,7 @@
   function matchesFag(item){ return activeFag() === "alle" || item.fag === activeFag(); }
   function andeligVisibleForMe(){
     if(isByggeleder()) return true;
-    var v = state.andeligVisibility[myRole()];
+    var v = andeligVisibilityMapForCurrentProject()[myRole()];
     return v !== false;
   }
   function fagBadgeHtml(fag){
@@ -3275,18 +3275,6 @@
   }
   function renderSpiritualTab(){
     renderTeamHomeGrid();
-    var visBox = byId("andeligVisibilityBox");
-    visBox.hidden = !isByggeleder();
-    if(isByggeleder()){
-      byId("andeligVisibilityList").innerHTML = FAG_LIST.map(function(f){
-        var visible = state.andeligVisibility[f] !== false;
-        return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
-          '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
-      }).join("");
-      visBox.querySelectorAll("[data-andeligvis]").forEach(function(cb){
-        cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
-      });
-    }
     var teamWeekMonday = view.teamWeekMonday;
     var isLiveTeamWeek = toISODate(teamWeekMonday) === toISODate(mondayOf(new Date()));
     byId("teamWeekLabel").textContent = "Uke "+isoWeekInfo(teamWeekMonday).week;
@@ -4333,17 +4321,24 @@
   function refetchAndeligVisibility(){
     sb.from("andelig_visibility").select("*").then(function(res){
       if(res.error){ return; }
-      var map = {};
-      res.data.forEach(function(r){ map[r.fag] = !!r.visible; });
-      state.andeligVisibility = map;
+      state.andeligVisibility = res.data;
       renderAll();
     });
   }
+  function andeligVisibilityMapForCurrentProject(){
+    var pid = currentProjectId();
+    var map = {};
+    state.andeligVisibility.filter(function(r){ return r.project_id === pid; }).forEach(function(r){ map[r.fag] = !!r.visible; });
+    return map;
+  }
   function setAndeligVisibility(fag, visible){
     if(!sb) return;
-    state.andeligVisibility[fag] = visible;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var row = state.andeligVisibility.find(function(r){ return r.project_id === pid && r.fag === fag; });
+    if(row) row.visible = visible; else state.andeligVisibility.push({ project_id: pid, fag: fag, visible: visible });
     renderAll();
-    sb.from("andelig_visibility").update({ visible: visible }).eq("fag", fag).then(function(res){
+    sb.from("andelig_visibility").upsert({ project_id: pid, fag: fag, visible: visible }, { onConflict: "project_id,fag" }).then(function(res){
       if(res.error){ showError("Kunne ikke oppdatere synlighet: "+res.error.message); refetchAndeligVisibility(); return; }
     });
   }
@@ -4396,6 +4391,16 @@
   function renderAcgoTab(){
     if(!isByggeleder()) return;
     renderAcgoHomeGrid();
+    var visMap = andeligVisibilityMapForCurrentProject();
+    var visList = byId("andeligVisibilityList");
+    visList.innerHTML = FAG_LIST.map(function(f){
+      var visible = visMap[f] !== false;
+      return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
+        '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
+    }).join("");
+    visList.querySelectorAll("[data-andeligvis]").forEach(function(cb){
+      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
+    });
     var acgoPerson = myLinkedPerson();
     byId("acgoIdentityLine").textContent = acgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+acgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
     var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
