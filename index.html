@@ -1373,9 +1373,29 @@
         <button type="button" class="btn small primary" id="cgoTeamMeetingSend"></button>
       </div>
     </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Prosjektoppstart – sjekkliste</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Malen for nytt prosjekt, fylt ut og krysset av for dette prosjektet. Trykk på en fase for å åpne den.</p>
+      <div id="cgoStartupChecklist"></div>
+    </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Ansvarlige brødre i menigheten</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Navn + e-post, og om preconbrevet er sendt.</p>
+      <div id="cgoStartupAnsvarlige" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="cols2" style="margin-bottom:16px;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Spørsmål til Precon</h2>
+        <textarea id="cgoStartup_sp_precon_notat" rows="6" placeholder="F.eks. mål, stillashøyder, rullegardiner, site set up …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Andre notater</h2>
+        <textarea id="cgoStartup_andre_notater" rows="6" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+      </div>
+    </div>
     <div class="peoplecard">
-      <h2 style="font-size:16px; margin-bottom:8px;">CGO</h2>
-      <p class="sub" style="font-size:13px; color:var(--muted); line-height:1.5;">Resten av denne siden er under oppbygging. Her skal koordinering av mat, losji og renhold legges til - detaljene kommer.</p>
+      <h2 style="font-size:16px; margin-bottom:8px;">E-postmaler</h2>
+      <div id="cgoStartupEmails"></div>
     </div>
   </section>
 
@@ -1793,7 +1813,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [] };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [] };
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
@@ -4721,6 +4741,8 @@
     if(document.activeElement !== textarea) textarea.value = (m && m.agenda) || "";
     byId("cgoTeamMeetingBadge").hidden = !(m && m.sent);
     byId("cgoTeamMeetingSend").textContent = (m && m.sent) ? "Trekk tilbake" : "Send til Team-siden";
+
+    renderStartupChecklist();
   }
   byId("cgoTeamMeetingSave").addEventListener("click", function(){ saveTeamMeetingAgenda(byId("cgoTeamMeetingAgenda").value); });
   byId("cgoTeamMeetingSend").addEventListener("click", function(){
@@ -5883,6 +5905,230 @@
       refetchProjectInvites();
     });
   }
+  // ---------- Prosjektoppstart-sjekkliste (CGOs "Mal til nytt prosjekt") ----------
+  var STARTUP_TEMPLATE = [
+    { key:"precon", title:"Precon", groups:[
+      { title:"Prosjekt", items:[
+        {key:"precon_preppe_mapper", label:"Preppe mapper"},
+        {key:"precon_pp_precon", label:"PP Precon"},
+        {key:"precon_preppe_regs", label:"Preppe Reg's"},
+        {key:"precon_brev", label:"Precon brev (Ronja hjelpe)"},
+        {key:"precon_kontakte_menighet", label:"Kontakte menigheten/nøkkelpersoner"},
+        {key:"precon_tidsplan", label:"Tidsplan"},
+        {key:"precon_tos", label:"TO's"},
+        {key:"precon_innkjop_oppstartsdok", label:"Innkjøp: Oppstartsdokument"}
+      ]},
+      { title:"Sjekkliste dokumenter – Oppslagstavle container", items:[
+        {key:"doc_dc83_design", label:"DC-83 (Fra design)"},
+        {key:"doc_dc83_daglig", label:"DC-83 (Daglig)"},
+        {key:"doc_amp", label:"AMP (Arbeidsmiljøplan)"},
+        {key:"doc_apd_container", label:"APD (Arbeidsplass disp.)"},
+        {key:"doc_ved_ulykke", label:"«Ved alvorlig ulykke»"},
+        {key:"doc_qr_sds", label:"QR-kode SDS"},
+        {key:"doc_qr_dc82", label:"QR-kode DC-82"},
+        {key:"doc_qr_whatsapp", label:"QR-kode Whats-app"}
+      ]},
+      { title:"Sjekkliste dokumenter – Oppslagstavle byggjerdet", items:[
+        {key:"doc_forhandsmelding", label:"Forhåndsmelding kommunen"},
+        {key:"doc_apd_byggjerdet", label:"APD"},
+        {key:"doc_tlf_leverans", label:"Tlf.nr leverans"},
+        {key:"doc_kontaktinfo_amp", label:"Kontaktinfo nøkkelpersoner fra AMP"}
+      ]},
+      { title:"Sjekkliste dokumenter – Kontor", items:[
+        {key:"doc_tidsplan_leveranser", label:"Tidsplan med leveranser"},
+        {key:"doc_andelig_skjema_kontor", label:"Åndelig skjema"},
+        {key:"doc_a3_tegninger", label:"A3 tegninger"}
+      ]},
+      { title:"Sjekkliste dokumenter – Whats app gruppechat", items:[
+        {key:"doc_andelig_skjema_whatsapp", label:"Åndelig skjema"},
+        {key:"doc_arbeidsfordeling", label:"Arbeidsfordeling"},
+        {key:"doc_evakueringsplan", label:"Evakueringsplan"},
+        {key:"doc_moteprogram", label:"Møteprogram"},
+        {key:"doc_oa_info", label:"OA info"}
+      ]}
+    ]},
+    { key:"foroppstart", title:"Før oppstart", groups:[
+      { title:"Teamet", items:[
+        {key:"fo_losji_byggruppen", label:"Losji byggruppen"},
+        {key:"fo_tildelt_gruppe", label:"Tildelt gruppe, oppgaver, møte, program"},
+        {key:"fo_tilganger_bcv", label:"Tilganger & BCV onboarding"},
+        {key:"fo_kjorekort", label:"Kjørekort (for LDC bilene)"}
+      ]},
+      { title:"Prosjekt", items:[
+        {key:"fo_prosjektoppgaver", label:"Prosjektoppgaver: PD, TO-inv, matterport, tegninger + materialister"},
+        {key:"fo_bcv_tilgang_ba", label:"BCV tilgang BA"},
+        {key:"fo_info_behold_kaste", label:"Info beholde/kaste menigheten"},
+        {key:"fo_losjiliste_kontakt", label:"Losjiliste & kontakt med losjikoordinator"},
+        {key:"fo_preppe_skrive_dok", label:"Preppe & skrive ut dokumenter"},
+        {key:"fo_sende_oppstartsmail", label:"Sende ut oppstartsmail frivillige i BA (husk frivilligekoordinator)"},
+        {key:"fo_stillasbrukerkurs", label:"Stillasbrukerkurs online"},
+        {key:"fo_el_egenkontroll", label:"El-arbeidere/egenkontrollprogram"},
+        {key:"fo_egenkontroll_protokoll", label:"Egenkontroll protokoll"},
+        {key:"fo_amp_bas_p", label:"AMP, kontakt med Bas-P"},
+        {key:"fo_tillatelser", label:"Tillatelser/søknader ok?"},
+        {key:"fo_handover_tos", label:"Handover TO's (husk commissioning)"}
+      ]},
+      { title:"Site set up", items:[
+        {key:"fo_oppdater_excel", label:"Oppdatere excel-liste med info til innkjøp"},
+        {key:"fo_kontor_spiseplass", label:"Kontor/Spiseplass/Leiemateriell/Avfall"}
+      ]}
+    ]},
+    { key:"closeout", title:"Close out", groups:[
+      { title:"Prosjekt", items:[
+        {key:"co_for_etter_pp", label:"Før/etter PP + punchlist"},
+        {key:"co_usb", label:"USB-stikk til forsamling"},
+        {key:"co_fdv", label:"FDV + oversikt fargekoder/material"},
+        {key:"co_miljodok", label:"Miljødokumentasjon"},
+        {key:"co_takkemail", label:"Takkemail med før/etter PP"},
+        {key:"co_ba_innkjop_design", label:"BA, innkjøp, design teamskanal"},
+        {key:"co_arkivering", label:"Arkivering (Project Folder Structure)"},
+        {key:"co_gjenstaende_kostnader", label:"Gjenstående kostnader?"},
+        {key:"co_punchlist", label:"Punchlist"},
+        {key:"co_commissioning", label:"Commissioning"},
+        {key:"co_egenkontroller_qc", label:"Egenkontroller/Quality Control"},
+        {key:"co_as_builts", label:"As-builts"},
+        {key:"co_lessons_learned", label:"Lessons learned (Ronja preppe)"},
+        {key:"co_close_out_dok", label:"Close out dokument"},
+        {key:"co_evaluering", label:"Evaluering"}
+      ]}
+    ]}
+  ];
+  var STARTUP_ANSVARLIGE = [
+    {key:"ab_losji", label:"Losji"},
+    {key:"ab_renhold", label:"Renhold"},
+    {key:"ab_mat", label:"Mat"},
+    {key:"ab_frivillige", label:"Frivillige"}
+  ];
+  var STARTUP_EMAILS = [
+    { title:"Oppstart prosjekt – e-post til menigheten", body:"Hei!\n\nNå er det snart tid for LDC-prosjektet i … Vi gleder oss til å komme og hjelpe til. Her kommer litt informasjon om prosjektet.\n\nVedlagt finner du Arbeidsmiljøplan. Det er et krav at alle som arbeider på prosjektet har lest den før de starter. Du finner også en invitasjon vedlagt med mer informasjon. Husk å lese gjennom sikkerhetsbrosjyren DC-82.\n\nDet er også viktig at du har med deg alle sertifikater som kan være nødvendige for …" },
+    { title:"Før/etter PP – takkemail etter prosjekt", body:"Hei kjære brødre og søstre!\n\nVi ønsker å takke for et vellykket og oppmuntrende prosjekt i …! Det ble et fint resultat, og menigheten var veldig fint og fornøyde.\n\nDet har vært et prosjekt som virkelig har gitt ære til Jehovas navn. Ved flere anledninger har vi fått anledning til å forkynne uformelt for leverandører som har vært på plassen, takket være din fine oppførsel og ditt varme smil :)\n\nHer kommer før og etterbilder!\n\nHvis du kjenner du har tid og energi til å være med på flere prosjekt i fremtiden, må du veldig gjerne sende oss en mail på InboxLDCCG1.dk@jw.org.\n\nOg fortsett gjerne å oppmuntre brødre og søstre rundt om i menighetene til å sende inn en A2." },
+    { title:"Behold/kast – info til menigheten", body:"Hei!\n\nVi gleder oss til prosjektet, og det begynner å nærme seg oppstart 😊 Vi har et lite ønske før vi er på plass, om dere har mulighet å rydde ut litt av salen slik at det blir mulig å etablere en byggeplass når vi kommer.\n\nHer er litt info om hva som skal spares og hva dere kan kvitte dere med.\n\nBEHOLDES\n(oppbevar i ?):\n· …\n\nKAST/SELG/GI BORT TIL VENNER\n· …\n\nTøm også for alt løst (litteratur, vaskeutstyr, printer, alt i kjøkkenskap og skuffer ol.). Dette må oppbevares en annen plass under byggeperioden så blir det ikke ødelagt, også blir det lettere å holde byggeplassen ryddig med minst mulig ting.\n\nTusen takk for hjelpen, bare ring om dere har noen spørsmål rundt dette." }
+  ];
+  function rowToProjectStartup(row){
+    return { id: row.id, project_id: row.project_id, itemKey: row.item_key, done: !!row.done, value: row.value||"" };
+  }
+  function refetchProjectStartup(){
+    if(!isByggeleder()) return;
+    sb.from("project_startup").select("*").then(function(res){
+      if(res.error){ return; }
+      state.projectStartup = res.data.map(rowToProjectStartup);
+      renderAll();
+    });
+  }
+  function startupItemsForCurrentProject(){
+    var pid = currentProjectId();
+    return state.projectStartup.filter(function(s){ return s.project_id === pid; });
+  }
+  function startupItem(key){
+    return startupItemsForCurrentProject().find(function(s){ return s.itemKey === key; }) || null;
+  }
+  function upsertStartupItem(key, patch){
+    if(!sb || !isByggeleder()) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var existing = startupItem(key);
+    var body = Object.assign({ project_id: pid, item_key: key, done: existing ? existing.done : false, value: existing ? existing.value : "" }, patch);
+    sb.from("project_startup").upsert(body, { onConflict: "project_id,item_key" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("project_startup") !== -1 ? "Databasen mangler sjekkliste-tabellen. Kjør sql/43-prosjekt-oppstart-sjekkliste.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchProjectStartup();
+    });
+  }
+  function startupPhaseCount(phase){
+    var total = 0, done = 0;
+    phase.groups.forEach(function(g){ g.items.forEach(function(it){
+      total++;
+      var row = startupItem(it.key);
+      if(row && row.done) done++;
+    }); });
+    return { done: done, total: total };
+  }
+  function renderStartupChecklist(){
+    var box = byId("cgoStartupChecklist");
+    if(!box) return;
+    box.innerHTML = STARTUP_TEMPLATE.map(function(phase){
+      var count = startupPhaseCount(phase);
+      var key = "phase|"+phase.key;
+      var isOpen = !!view.toFagOpen[key];
+      var groupsHtml = phase.groups.map(function(g){
+        var itemsHtml = g.items.map(function(it){
+          var row = startupItem(it.key);
+          var checked = row && row.done;
+          return '<label style="display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; font-size:13px;">' +
+            '<input type="checkbox" data-startupdone="'+it.key+'" '+(checked?'checked':'')+' /> <span'+(checked?' style="color:var(--muted); text-decoration:line-through;"':'')+'>'+escapeHtml(it.label)+'</span></label>';
+        }).join("");
+        return '<div style="margin-bottom:12px;"><div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">'+escapeHtml(g.title)+'</div>'+itemsHtml+'</div>';
+      }).join("");
+      return '<div class="peoplecard" style="margin-bottom:12px;">' +
+        '<button type="button" class="fagweek-toggle" data-fagtoggle="'+key+'" style="width:100%; justify-content:space-between; display:flex;">' +
+        '<span style="display:flex; align-items:center; gap:6px;"><span class="fagweek-chevron'+(isOpen?' open':'')+'">▸</span><b style="font-size:15px;">'+escapeHtml(phase.title)+'</b></span>' +
+        '<span class="badge" style="background:'+(count.done===count.total?'var(--good-soft)':'var(--surface-alt)')+'; color:'+(count.done===count.total?'var(--good-ink)':'var(--muted)')+';">'+count.done+' / '+count.total+'</span>' +
+        '</button>' +
+        (isOpen ? '<div style="margin-top:10px;">'+groupsHtml+'</div>' : '') +
+        '</div>';
+    }).join("");
+    box.querySelectorAll("[data-fagtoggle]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var key = this.dataset.fagtoggle;
+        view.toFagOpen[key] = !view.toFagOpen[key];
+        renderStartupChecklist();
+      });
+    });
+    box.querySelectorAll("[data-startupdone]").forEach(function(cb){
+      cb.addEventListener("change", function(){ upsertStartupItem(this.dataset.startupdone, { done: this.checked }); });
+    });
+
+    var ansvBox = byId("cgoStartupAnsvarlige");
+    if(ansvBox){
+      ansvBox.innerHTML = STARTUP_ANSVARLIGE.map(function(r){
+        var nameRow = startupItem(r.key+"_navn");
+        var sentRow = startupItem(r.key+"_sendt");
+        return '<div class="taskrow" style="flex-wrap:wrap;">' +
+          '<span style="min-width:90px; font-weight:600; font-size:13px;">'+escapeHtml(r.label)+'</span>' +
+          '<input type="text" data-startupvalue="'+r.key+'_navn" value="'+escapeHtml(nameRow?nameRow.value:"")+'" placeholder="Navn + e-post" style="flex:1; min-width:180px; border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+          '<label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" data-startupdone="'+r.key+'_sendt" '+(sentRow&&sentRow.done?'checked':'')+' /> Preconbrev sendt</label>' +
+          '</div>';
+      }).join("");
+      ansvBox.querySelectorAll("[data-startupvalue]").forEach(function(inp){
+        inp.addEventListener("change", function(){ upsertStartupItem(this.dataset.startupvalue, { value: this.value.trim() }); });
+      });
+      ansvBox.querySelectorAll("[data-startupdone]").forEach(function(cb){
+        cb.addEventListener("change", function(){ upsertStartupItem(this.dataset.startupdone, { done: this.checked }); });
+      });
+    }
+
+    ["sp_precon_notat","andre_notater"].forEach(function(key){
+      var el = byId("cgoStartup_"+key);
+      if(!el) return;
+      var row = startupItem(key);
+      if(document.activeElement !== el) el.value = row ? row.value : "";
+      if(!el.dataset.bound){
+        el.dataset.bound = "1";
+        el.addEventListener("change", function(){ upsertStartupItem(key, { value: this.value.trim() }); });
+      }
+    });
+
+    var emailsBox = byId("cgoStartupEmails");
+    if(emailsBox && !emailsBox.dataset.rendered){
+      emailsBox.dataset.rendered = "1";
+      emailsBox.innerHTML = STARTUP_EMAILS.map(function(e, i){
+        return '<div style="margin-bottom:10px;">' +
+          '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">' +
+          '<b style="font-size:13px;">'+escapeHtml(e.title)+'</b>' +
+          '<button type="button" class="btn small" data-copyemail="'+i+'">Kopier tekst</button>' +
+          '</div>' +
+          '<pre style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin:0; max-height:160px; overflow:auto;">'+escapeHtml(e.body)+'</pre>' +
+          '</div>';
+      }).join("");
+      emailsBox.querySelectorAll("[data-copyemail]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var body = STARTUP_EMAILS[parseInt(this.dataset.copyemail,10)].body;
+          if(navigator.clipboard) navigator.clipboard.writeText(body);
+          showInfo("Tekst kopiert.");
+        });
+      });
+    }
+  }
+
   function refetchFagRequests(){
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
@@ -6824,6 +7070,7 @@
     refetchFlexRequests();
     refetchLogiInfo();
     refetchProjectInvites();
+    refetchProjectStartup();
   }
   function startDataLayer(){
     if(dataLayerStarted) return;
@@ -6867,6 +7114,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
       .on("postgres_changes", { event: "*", schema: "public", table: "logi_info" }, refetchLogiInfo)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_invites" }, refetchProjectInvites)
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_startup" }, refetchProjectStartup)
       .subscribe(handleRealtimeStatus);
 
     setInterval(function(){ if(document.visibilityState !== "hidden") refetchAllData(); }, 120000);
