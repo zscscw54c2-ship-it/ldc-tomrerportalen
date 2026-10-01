@@ -187,13 +187,21 @@
   .btn.ghost{border-color:transparent; background:none;}
   .btn.danger{color:var(--bad-ink);}
 
+  .inline-add input[type="file"]{ font-size:12.5px; color:var(--muted); }
+  .inline-add input[type="file"]::file-selector-button{
+    border:1px solid var(--border-strong); background:var(--surface); border-radius:8px; padding:7px 12px; font-size:13px;
+    font-weight:600; cursor:pointer; font-family:inherit; color:var(--text); margin-right:10px;
+  }
+  .inline-add input[type="file"]::file-selector-button:hover{ background:var(--surface-alt); }
+
   .cols2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media (max-width:720px){ .cols2{grid-template-columns:1fr;} }
 
   .seccard{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
   .seccard > .sechead{padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--border);}
   .seccard > .sechead h2{font-size:15.5px; display:flex; align-items:center; gap:8px;}
-  .seccard .seclist{padding:12px; display:flex; flex-direction:column; gap:10px;}
+  .seccard .seclist{padding:12px; display:grid; grid-template-columns:1fr; gap:10px;}
+  @media (min-width:860px){ .seccard .seclist{ grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); align-items:start; } }
 
   .elcard{border:1px solid var(--border); border-radius:11px; padding:12px 13px; background:var(--surface-alt);}
   .elcard .top{display:flex; justify-content:space-between; gap:8px; align-items:flex-start;}
@@ -692,6 +700,13 @@
   @media (min-width:1400px){ .zone-grid{ grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); } }
   @media (max-width:720px){ .zone-grid{ grid-template-columns:1fr; } }
 
+  /* ---------- sammenleggbare fag-seksjoner (TO-møte "Status per fag") ---------- */
+  .fagweek-toggle{ display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:2px 0; font:inherit; text-align:left; }
+  .fagweek-chevron{ display:inline-block; font-size:11px; color:var(--muted); transition:transform .15s ease; }
+  .fagweek-chevron.open{ transform:rotate(90deg); }
+
+  @media (max-width:420px){ .teamweek-header{ flex-direction:column; align-items:stretch !important; } .teamweek-header > div:last-child{ justify-content:flex-end; } }
+
   @media (max-width:640px){
     #mobileHome{ display:block; }
     header.top nav.tabs{ display:none; }
@@ -1040,7 +1055,7 @@
 
   <section id="panel-andelig" class="panel">
     <div class="peoplecard" style="margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+      <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
         <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25; flex:1; min-width:180px;"></div>
         <div style="display:flex; align-items:center; gap:6px;">
           <button type="button" class="btn small ghost" id="teamWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
@@ -1274,7 +1289,7 @@
         <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
     </div>
-    <div class="cols2" style="margin-bottom:16px;">
+    <div class="cols2" style="margin-bottom:16px; align-items:start;">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer. Grønn prikk = faget er aktivt i dette prosjektet.</p>
@@ -1705,7 +1720,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()) };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {} };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -5205,18 +5220,30 @@
     } else {
       fagStatusBox.innerHTML = sections.map(function(s){
         var note = toFagStatusFor(meeting.id, s.fag, s.section);
+        var key = s.fag + "|" + (s.section || "");
+        var isOpen = !!view.toFagOpen[key];
         return '<div>' +
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
+          '<button type="button" class="fagweek-toggle" data-fagtoggle="'+key+'">' +
+          '<span class="fagweek-chevron'+(isOpen?' open':'')+'">▸</span>' +
           '<b style="font-size:13px; display:flex; align-items:center; gap:6px;"><i class="dot" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i>'+escapeHtml(s.label)+'</b>' +
+          '</button>' +
           '<span style="display:flex; gap:6px;">' +
           '<button type="button" class="btn small" data-newelfor="'+s.fag+'" data-newelsection="'+(s.section||"")+'">+ Ny oppgave</button>' +
           '<button type="button" class="btn small" data-gotoelements="'+s.fag+'">Gå til oppgaver</button>' +
           '</span>' +
           '</div>' +
           '<textarea data-fagnote="'+s.fag+'" data-fagsection="'+(s.section||"")+'" rows="2" placeholder="Status denne uken …" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:6px 8px; font:inherit; font-size:12.5px; resize:vertical; background:var(--surface);">'+escapeHtml(note)+'</textarea>' +
-          '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(fromISODate(meeting.weekStart), s.fag, s.section) + '</div>' +
+          (isOpen ? '<div style="margin-top:8px;">' + buildFagWeekCardsHtml(fromISODate(meeting.weekStart), s.fag, s.section) + '</div>' : '') +
           '</div>';
       }).join("");
+      fagStatusBox.querySelectorAll("[data-fagtoggle]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var key = this.dataset.fagtoggle;
+          view.toFagOpen[key] = !view.toFagOpen[key];
+          renderToMoteTab();
+        });
+      });
       bindStaffOpen(fagStatusBox);
     }
     if(!modeBtn.dataset.bound){
