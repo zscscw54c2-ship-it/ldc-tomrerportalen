@@ -661,29 +661,36 @@
   .mh-mdow{ font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; }
   .mh-mnum{ font-size:13px; font-weight:700; font-family:"IBM Plex Mono",monospace; }
 
-  /* ---------- "hjemskjerm" inni Team- og ACGO-siden ---------- */
+  /* ---------- mobil "hjemskjerm" inni Team- og ACGO-siden ---------- */
   .subhome-grid{ display:none; }
   .subhome-back{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:9px 2px; margin-bottom:6px; font-size:14.5px; font-weight:700; color:var(--accent); border:none; background:none; font-family:inherit; cursor:pointer; }
   .subhome-back .arrow{ font-size:17px; line-height:1; }
-
-  /* Team-siden: flisnavigasjon på alle skjermstørrelser (ikke bare mobil) */
-  #panel-andelig #teamHomeGrid.subhome-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); margin-bottom:16px; }
-  #panel-andelig .subhome-section[data-tiled]{ display:none; }
-  #panel-andelig .subhome-section[data-tiled].active{ display:block; }
-  #panel-andelig.subhome-open #teamHomeGrid.subhome-grid{ display:none; }
-  #panel-andelig.subhome-open .subhome-back{ display:flex; }
-
-  /* ACGO-siden: flisnavigasjon kun på mobil, som før */
   @media (min-width:641px){
-    #panel-acgo .subhome-grid, #panel-acgo .subhome-back{ display:none !important; }
+    .subhome-grid, .subhome-back{ display:none !important; }
   }
   @media (max-width:640px){
-    #panel-acgo .subhome-grid{ display:grid; margin-bottom:16px; }
-    #panel-acgo .subhome-section[data-tiled]{ display:none; }
-    #panel-acgo .subhome-section[data-tiled].active{ display:block; }
-    #panel-acgo.subhome-open .subhome-grid{ display:none; }
-    #panel-acgo.subhome-open .subhome-back{ display:flex; }
+    .subhome-grid{ display:grid; margin-bottom:16px; }
+    .subhome-section[data-tiled]{ display:none; }
+    .subhome-section[data-tiled].active{ display:block; }
+    .subhome-open .subhome-grid{ display:none; }
+    .subhome-open .subhome-back{ display:flex; }
   }
+
+  /* Team-siden på PC: tydelige sone-overskrifter over hver gruppe kort, i stedet for fliser */
+  .zone-head{ display:none; }
+  @media (min-width:641px){
+    .zone-head{
+      display:flex; align-items:center; gap:10px; margin:28px 0 12px;
+    }
+    .zone-head:first-of-type{ margin-top:4px; }
+    .zone-head .zone-icon{ width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--zc, var(--accent)); }
+    .zone-head .zone-icon svg{ width:16px; height:16px; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .zone-head h2{ font-size:15px; margin:0; }
+    .zone-head .zone-line{ flex:1; height:1px; background:var(--border); }
+  }
+  .zone-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (min-width:1400px){ .zone-grid{ grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); } }
+  @media (max-width:720px){ .zone-grid{ grid-template-columns:1fr; } }
 
   @media (max-width:640px){
     #mobileHome{ display:block; }
@@ -1055,6 +1062,7 @@
     <div class="mh-grid subhome-grid" id="teamHomeGrid"></div>
     <button type="button" class="subhome-back" id="teamHomeBack">← Tilbake</button>
 
+    <div class="zone-head" style="--zc:var(--accent);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M5 21V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg></span><h2>Ukas mål</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="ukasmaal">
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
@@ -1063,6 +1071,7 @@
       </div>
     </div>
 
+    <div class="zone-head" style="--zc:var(--warn);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span><h2>FLEX</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="flex">
       <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
         <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
@@ -1071,8 +1080,9 @@
       </div>
     </div>
 
+    <div class="zone-head" style="--zc:var(--utvendig);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg></span><h2>Byggeplass</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="byggeplass">
-      <div class="cols2" style="margin-bottom:16px;">
+      <div class="zone-grid" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
           <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
@@ -1095,9 +1105,7 @@
             <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
           </div>
         </div>
-      </div>
 
-      <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 style="font-size:16px; margin-bottom:2px;">Koder</h2>
           <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
@@ -1119,9 +1127,7 @@
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
-      </div>
 
-      <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
           <div id="toAgendaList"></div>
@@ -1140,9 +1146,7 @@
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
-      </div>
 
-      <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
             <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
@@ -1172,6 +1176,7 @@
       </div>
     </div>
 
+    <div class="zone-head" style="--zc:var(--good);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><h2>Privilege Week</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="pw">
       <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
