@@ -1355,7 +1355,11 @@
   </section>
 
   <section id="panel-cgo" class="panel">
-    <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+      <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0;"></p>
+      <button type="button" class="btn small" id="cgoEditTextsBtn">Rediger tekster</button>
+    </div>
+    <p class="empty-note" id="cgoEditTextsNote" hidden style="margin:-6px 0 12px;">Redigeringsmodus på – tekster merket med stiplet kant kan endres. Gjelder malen for alle prosjekter, ikke bare dette.</p>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Klikk på en forespurt person for å godkjenne eller avslå. Kun én kan godkjennes per person per uke.</p>
@@ -1363,15 +1367,34 @@
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-        <h2 style="font-size:16px; margin:0;">Teammøte-agenda</h2>
+        <h2 style="font-size:16px; margin:0;" id="cgoAgendaTitle">Teammøte-agenda</h2>
         <span id="cgoTeamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt til Team-siden</span>
       </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ukentlig agenda for teammøtet. Fyll ut og send når den er klar, så vises den på Team-siden.</p>
-      <textarea id="cgoTeamMeetingAgenda" rows="6" placeholder="F.eks. 1. Sikkerhet på plassen&#10;2. Status denne uken&#10;3. Fokus neste uke" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ukentlig agenda for teammøtet, etter malen. Fyll ut og send når den er klar, så vises den på Team-siden.</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="field"><label>Dag/tidspunkt</label><input type="text" id="agBonn_tidspunkt" placeholder="F.eks. Onsdag etter lunsj" maxlength="80" /></div>
+        <div class="cols2">
+          <div class="field"><label id="agLbl_bonn">Bønn – ansvarlig</label><input type="text" id="agBonn_ansvarlig" placeholder="Navn" maxlength="80" /></div>
+          <div class="field"><label id="agLbl_bibelsk">Bibelsk tanke – ansvarlig</label><input type="text" id="agBonn_bibelsk" placeholder="Navn" maxlength="80" /></div>
+        </div>
+        <div class="field"><label id="agLbl_rostakk">Ros &amp; takk</label><textarea id="agRosTakk" rows="3" placeholder="F.eks. Hvordan dere er gode representanter …"></textarea></div>
+        <div class="field"><label id="agLbl_praktisk">Praktisk info</label><textarea id="agPraktisk" rows="3"></textarea></div>
+        <div class="field"><label id="agLbl_fremdrift">Fremdrift: status nå, nye momenter for neste uke</label><textarea id="agFremdrift" rows="3"></textarea></div>
+        <div class="field"><label id="agLbl_mal">Mål – ekstra punkter denne uken (standardlisten tas alltid med)</label><textarea id="agMalTillegg" rows="2"></textarea></div>
+        <div class="field"><label id="agLbl_frukt">Ukens frukt</label><input type="text" id="agFrukt" placeholder="F.eks. Gal 5:22,23" maxlength="120" /></div>
+        <div class="field"><label id="agLbl_sporsmal">Spørsmål – stort og smått</label><textarea id="agSporsmal" rows="3"></textarea></div>
+      </div>
       <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
         <button type="button" class="btn small" id="cgoTeamMeetingSave">Lagre utkast</button>
         <button type="button" class="btn small primary" id="cgoTeamMeetingSend"></button>
+        <button type="button" class="btn small ghost" id="cgoAgendaPreviewBtn">Vis forhåndsvisning</button>
       </div>
+      <pre id="cgoAgendaPreview" hidden style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:10px;"></pre>
+    </div>
+    <div class="peoplecard" style="margin-bottom:16px;" id="cgoAgendaTemplateCard" hidden>
+      <h2 style="font-size:16px; margin-bottom:2px;">Agenda – malens faste tekster</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Overskrifter og standardtekst som følger med hver sendte agenda. Gjelder alle uker og prosjekter.</p>
+      <div id="cgoAgendaTemplateList" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Prosjektoppstart – sjekkliste</h2>
@@ -1813,8 +1836,8 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov" };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [], textOverrides: [] };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -3437,7 +3460,7 @@
     var sentMeeting = teamMeeting && teamMeeting.sent ? teamMeeting : null;
     byId("teamMeetingBadge").hidden = !sentMeeting;
     byId("teamMeetingView").innerHTML = sentMeeting ?
-      '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(sentMeeting.agenda)+'</div>' :
+      '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(teamMeetingAgendaText(sentMeeting))+'</div>' :
       '<p class="empty-note">Ingen teammøte-agenda sendt for denne uken ennå.</p>';
 
     renderTeamFlexBox();
@@ -4180,7 +4203,9 @@
     return state.weeklyScriptures.find(function(s){ return s.project_id === pid && s.weekStart === wk; }) || null;
   }
   function rowToTeamMeeting(row){
-    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, agenda: row.agenda || "", sent: !!row.sent, sentAt: row.sent_at, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, weekStart: row.week_start, agenda: row.agenda || "", sent: !!row.sent, sentAt: row.sent_at, createdAt: row.created_at,
+      tidspunkt: row.tidspunkt || "", bonnAnsvarlig: row.bonn_ansvarlig || "", bibelskTankeAnsvarlig: row.bibelsk_tanke_ansvarlig || "", rosTakk: row.ros_takk || "",
+      praktiskInfo: row.praktisk_info || "", fremdrift: row.fremdrift || "", malTillegg: row.mal_tillegg || "", ukensFrukt: row.ukens_frukt || "", sporsmal: row.sporsmal || "" };
   }
   function currentWeekTeamMeeting(weekMonday){
     var pid = currentProjectId(), wk = toISODate(weekMonday || mondayOf(new Date()));
@@ -4721,6 +4746,12 @@
     });
   }
   byId("acgoOpenProsjektBtn").addEventListener("click", function(){ switchTab("prosjekt"); });
+  byId("cgoEditTextsBtn").addEventListener("click", function(){
+    view.cgoEditTexts = !view.cgoEditTexts;
+    byId("cgoEditTextsBtn").classList.toggle("primary", view.cgoEditTexts);
+    byId("cgoEditTextsNote").hidden = !view.cgoEditTexts;
+    renderCgoTab();
+  });
   byId("addProjectInviteForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     createProjectInvite(byId("newInviteLabel").value.trim());
@@ -4737,18 +4768,27 @@
     bindFlexActionCells(flexCgoGridEl);
 
     var m = currentWeekTeamMeeting();
-    var textarea = byId("cgoTeamMeetingAgenda");
-    if(document.activeElement !== textarea) textarea.value = (m && m.agenda) || "";
+    var agendaFieldIds = { agBonn_tidspunkt:"tidspunkt", agBonn_ansvarlig:"bonnAnsvarlig", agBonn_bibelsk:"bibelskTankeAnsvarlig", agRosTakk:"rosTakk", agPraktisk:"praktiskInfo", agFremdrift:"fremdrift", agMalTillegg:"malTillegg", agFrukt:"ukensFrukt", agSporsmal:"sporsmal" };
+    Object.keys(agendaFieldIds).forEach(function(id){
+      var el = byId(id);
+      if(document.activeElement !== el) el.value = m ? (m[agendaFieldIds[id]] || "") : "";
+    });
     byId("cgoTeamMeetingBadge").hidden = !(m && m.sent);
     byId("cgoTeamMeetingSend").textContent = (m && m.sent) ? "Trekk tilbake" : "Send til Team-siden";
+    renderAgendaTemplateCard();
 
     renderStartupChecklist();
   }
-  byId("cgoTeamMeetingSave").addEventListener("click", function(){ saveTeamMeetingAgenda(byId("cgoTeamMeetingAgenda").value); });
+  byId("cgoTeamMeetingSave").addEventListener("click", function(){ saveTeamMeetingAgenda(collectAgendaFields()); });
+  byId("cgoAgendaPreviewBtn").addEventListener("click", function(){
+    var pre = byId("cgoAgendaPreview");
+    pre.hidden = !pre.hidden;
+    if(!pre.hidden) pre.textContent = teamMeetingAgendaText(collectAgendaFields());
+  });
   byId("cgoTeamMeetingSend").addEventListener("click", function(){
     var m = currentWeekTeamMeeting();
     if(!m || !m.sent){
-      saveTeamMeetingAgenda(byId("cgoTeamMeetingAgenda").value);
+      saveTeamMeetingAgenda(collectAgendaFields());
       setTeamMeetingSent(true);
     } else {
       setTeamMeetingSent(false);
@@ -6004,6 +6044,106 @@
     { title:"Før/etter PP – takkemail etter prosjekt", body:"Hei kjære brødre og søstre!\n\nVi ønsker å takke for et vellykket og oppmuntrende prosjekt i …! Det ble et fint resultat, og menigheten var veldig fint og fornøyde.\n\nDet har vært et prosjekt som virkelig har gitt ære til Jehovas navn. Ved flere anledninger har vi fått anledning til å forkynne uformelt for leverandører som har vært på plassen, takket være din fine oppførsel og ditt varme smil :)\n\nHer kommer før og etterbilder!\n\nHvis du kjenner du har tid og energi til å være med på flere prosjekt i fremtiden, må du veldig gjerne sende oss en mail på InboxLDCCG1.dk@jw.org.\n\nOg fortsett gjerne å oppmuntre brødre og søstre rundt om i menighetene til å sende inn en A2." },
     { title:"Behold/kast – info til menigheten", body:"Hei!\n\nVi gleder oss til prosjektet, og det begynner å nærme seg oppstart 😊 Vi har et lite ønske før vi er på plass, om dere har mulighet å rydde ut litt av salen slik at det blir mulig å etablere en byggeplass når vi kommer.\n\nHer er litt info om hva som skal spares og hva dere kan kvitte dere med.\n\nBEHOLDES\n(oppbevar i ?):\n· …\n\nKAST/SELG/GI BORT TIL VENNER\n· …\n\nTøm også for alt løst (litteratur, vaskeutstyr, printer, alt i kjøkkenskap og skuffer ol.). Dette må oppbevares en annen plass under byggeperioden så blir det ikke ødelagt, også blir det lettere å holde byggeplassen ryddig med minst mulig ting.\n\nTusen takk for hjelpen, bare ring om dere har noen spørsmål rundt dette." }
   ];
+  // ---------- globalt redigerbare tekster (sjekkliste-ord, e-postmaler, agenda-mal) ----------
+  function textOverride(key, fallback){
+    var row = state.textOverrides.find(function(t){ return t.key === key; });
+    return (row && row.value) ? row.value : fallback;
+  }
+  function refetchTextOverrides(){
+    sb.from("app_text_overrides").select("*").then(function(res){
+      if(res.error){ return; }
+      state.textOverrides = res.data;
+      renderAll();
+    });
+  }
+  function setTextOverride(key, value){
+    if(!sb || !isByggeleder()) return;
+    sb.from("app_text_overrides").upsert({ key: key, value: value }, { onConflict: "key" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("app_text_overrides") !== -1 ? "Databasen mangler tabellen for redigerbare tekster. Kjør sql/44-teammote-mal-og-redigerbare-tekster.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchTextOverrides();
+    });
+  }
+  function editableLabel(key, fallback){
+    var val = textOverride(key, fallback);
+    if(!view.cgoEditTexts) return escapeHtml(val);
+    return '<input type="text" data-textoverride="'+key+'" value="'+escapeHtml(val)+'" style="border:1px dashed var(--accent); border-radius:6px; padding:2px 6px; font:inherit; font-size:inherit; width:100%; max-width:460px; background:var(--surface);" />';
+  }
+  function editableBlock(key, fallback, rows){
+    var val = textOverride(key, fallback);
+    if(!view.cgoEditTexts) return '<pre style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin:0; max-height:200px; overflow:auto;">'+escapeHtml(val)+'</pre>';
+    return '<textarea data-textoverride="'+key+'" rows="'+(rows||6)+'" style="width:100%; border:1px dashed var(--accent); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit; font-size:12.5px;">'+escapeHtml(val)+'</textarea>';
+  }
+  function wireEditableTexts(container){
+    container.querySelectorAll("[data-textoverride]").forEach(function(el){
+      el.addEventListener("change", function(){ setTextOverride(this.dataset.textoverride, this.value); });
+    });
+  }
+
+  // ---------- Teammøte-agenda mal (Agenda_32.pdf) ----------
+  var AGENDA_TEMPLATE_KEYS = [
+    { key:"agenda_title", label:"Tittel", fallback:"Team-møte i byggegruppen", multiline:false },
+    { key:"agenda_heading_apning", label:"Overskrift: Åpning", fallback:"Åpning", multiline:false },
+    { key:"agenda_bonn_text", label:"Bønn – fast tekst", fallback:"Bønn – Vi starter med å legge arbeidet i Jehovas hender", multiline:false },
+    { key:"agenda_bibelsk_text", label:"Bibelsk tanke – fast tekst (bruk {navn} der ansvarlig skal stå)", fallback:"Bibelsk tanke – {navn} deler en oppmuntrende tanke", multiline:false },
+    { key:"agenda_heading_rostakk", label:"Overskrift: Ros & takk", fallback:"Ros & takk", multiline:false },
+    { key:"agenda_heading_praktisk", label:"Overskrift: Praktisk info", fallback:"Praktisk info", multiline:false },
+    { key:"agenda_heading_fremdrift", label:"Overskrift: Fremdrift", fallback:"Fremdrift: status nå, nye momenter for neste uke", multiline:false },
+    { key:"agenda_heading_mal", label:"Overskrift: Mål", fallback:"Mål: hva ønsker vi å oppnå sammen?", multiline:false },
+    { key:"agenda_mal_liste", label:"Mål – standardliste (tas alltid med)", fallback:"Oppmuntre noen til å sende inn: A-2, A-19, A-8 og G-8\nHa en god ånd på byggeplassen og i menigheten\nLær opp en ny\nGi en bibelsk tanke", multiline:true },
+    { key:"agenda_heading_frukt", label:"Overskrift: Ukens Frukt", fallback:"Ukens Frukt!", multiline:false },
+    { key:"agenda_heading_sporsmal", label:"Overskrift: Spørsmål", fallback:"Spørsmål Stort og smått", multiline:false },
+    { key:"agenda_heading_avslutning", label:"Overskrift: Avslutning", fallback:"Avslutning", multiline:false }
+  ];
+  function teamMeetingAgendaText(f){
+    if(!f) return "";
+    var hasStructured = f.tidspunkt || f.bonnAnsvarlig || f.bibelskTankeAnsvarlig || f.rosTakk || f.praktiskInfo || f.fremdrift || f.malTillegg || f.ukensFrukt || f.sporsmal;
+    if(!hasStructured) return f.agenda || "";
+    var out = [];
+    out.push(textOverride("agenda_title","Team-møte i byggegruppen") + (f.tidspunkt ? " – "+f.tidspunkt : ""));
+    out.push("");
+    out.push(textOverride("agenda_heading_apning","Åpning"));
+    out.push("• "+textOverride("agenda_bonn_text","Bønn – Vi starter med å legge arbeidet i Jehovas hender")+(f.bonnAnsvarlig ? " ("+f.bonnAnsvarlig+")" : ""));
+    out.push("• "+textOverride("agenda_bibelsk_text","Bibelsk tanke – {navn} deler en oppmuntrende tanke").replace("{navn}", f.bibelskTankeAnsvarlig || "…"));
+    out.push("");
+    if(f.rosTakk){ out.push(textOverride("agenda_heading_rostakk","Ros & takk")); out.push(f.rosTakk); out.push(""); }
+    if(f.praktiskInfo){ out.push(textOverride("agenda_heading_praktisk","Praktisk info")); out.push(f.praktiskInfo); out.push(""); }
+    if(f.fremdrift){ out.push(textOverride("agenda_heading_fremdrift","Fremdrift: status nå, nye momenter for neste uke")); out.push(f.fremdrift); out.push(""); }
+    out.push(textOverride("agenda_heading_mal","Mål: hva ønsker vi å oppnå sammen?"));
+    out.push(textOverride("agenda_mal_liste","Oppmuntre noen til å sende inn: A-2, A-19, A-8 og G-8\nHa en god ånd på byggeplassen og i menigheten\nLær opp en ny\nGi en bibelsk tanke"));
+    if(f.malTillegg) out.push(f.malTillegg);
+    out.push("");
+    if(f.ukensFrukt){ out.push(textOverride("agenda_heading_frukt","Ukens Frukt!")); out.push(f.ukensFrukt); out.push(""); }
+    if(f.sporsmal){ out.push(textOverride("agenda_heading_sporsmal","Spørsmål Stort og smått")); out.push(f.sporsmal); out.push(""); }
+    out.push(textOverride("agenda_heading_avslutning","Avslutning"));
+    return out.join("\n");
+  }
+  function collectAgendaFields(){
+    return {
+      tidspunkt: byId("agBonn_tidspunkt").value.trim(),
+      bonnAnsvarlig: byId("agBonn_ansvarlig").value.trim(),
+      bibelskTankeAnsvarlig: byId("agBonn_bibelsk").value.trim(),
+      rosTakk: byId("agRosTakk").value.trim(),
+      praktiskInfo: byId("agPraktisk").value.trim(),
+      fremdrift: byId("agFremdrift").value.trim(),
+      malTillegg: byId("agMalTillegg").value.trim(),
+      ukensFrukt: byId("agFrukt").value.trim(),
+      sporsmal: byId("agSporsmal").value.trim()
+    };
+  }
+  function renderAgendaTemplateCard(){
+    var card = byId("cgoAgendaTemplateCard");
+    var box = byId("cgoAgendaTemplateList");
+    if(!card || !box) return;
+    card.hidden = !view.cgoEditTexts;
+    if(!view.cgoEditTexts) return;
+    box.innerHTML = AGENDA_TEMPLATE_KEYS.map(function(k){
+      return '<div><div style="font-size:11.5px; color:var(--muted); margin-bottom:2px;">'+escapeHtml(k.label)+'</div>' +
+        (k.multiline ? editableBlock(k.key, k.fallback, 3) : editableLabel(k.key, k.fallback)) +
+        '</div>';
+    }).join("");
+    wireEditableTexts(box);
+  }
+
   function rowToProjectStartup(row){
     return { id: row.id, project_id: row.project_id, itemKey: row.item_key, done: !!row.done, value: row.value||"" };
   }
@@ -6049,25 +6189,27 @@
       var count = startupPhaseCount(phase);
       var key = "phase|"+phase.key;
       var isOpen = !!view.toFagOpen[key];
-      var groupsHtml = phase.groups.map(function(g){
+      var groupsHtml = phase.groups.map(function(g, gi){
+        var gkey = phase.key+"_g"+gi;
         var itemsHtml = g.items.map(function(it){
           var row = startupItem(it.key);
           var checked = row && row.done;
-          return '<label style="display:flex; align-items:center; gap:8px; padding:5px 0; cursor:pointer; font-size:13px;">' +
-            '<input type="checkbox" data-startupdone="'+it.key+'" '+(checked?'checked':'')+' /> <span'+(checked?' style="color:var(--muted); text-decoration:line-through;"':'')+'>'+escapeHtml(it.label)+'</span></label>';
+          return '<label style="display:flex; align-items:center; gap:8px; padding:5px 0;'+(view.cgoEditTexts?'':' cursor:pointer;')+' font-size:13px;">' +
+            '<input type="checkbox" data-startupdone="'+it.key+'" '+(checked?'checked':'')+' /> <span'+(checked&&!view.cgoEditTexts?' style="color:var(--muted); text-decoration:line-through;"':' style="flex:1;"')+'>'+editableLabel(it.key+"_lbl", it.label)+'</span></label>';
         }).join("");
-        return '<div style="margin-bottom:12px;"><div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">'+escapeHtml(g.title)+'</div>'+itemsHtml+'</div>';
+        return '<div style="margin-bottom:12px;"><div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">'+editableLabel("grp_"+gkey, g.title)+'</div>'+itemsHtml+'</div>';
       }).join("");
       return '<div class="peoplecard" style="margin-bottom:12px;">' +
         '<button type="button" class="fagweek-toggle" data-fagtoggle="'+key+'" style="width:100%; justify-content:space-between; display:flex;">' +
-        '<span style="display:flex; align-items:center; gap:6px;"><span class="fagweek-chevron'+(isOpen?' open':'')+'">▸</span><b style="font-size:15px;">'+escapeHtml(phase.title)+'</b></span>' +
+        '<span style="display:flex; align-items:center; gap:6px; flex:1;"><span class="fagweek-chevron'+(isOpen?' open':'')+'">▸</span><b style="font-size:15px; flex:1;">'+editableLabel("phasetitle_"+phase.key, phase.title)+'</b></span>' +
         '<span class="badge" style="background:'+(count.done===count.total?'var(--good-soft)':'var(--surface-alt)')+'; color:'+(count.done===count.total?'var(--good-ink)':'var(--muted)')+';">'+count.done+' / '+count.total+'</span>' +
         '</button>' +
         (isOpen ? '<div style="margin-top:10px;">'+groupsHtml+'</div>' : '') +
         '</div>';
     }).join("");
     box.querySelectorAll("[data-fagtoggle]").forEach(function(b){
-      b.addEventListener("click", function(){
+      b.addEventListener("click", function(ev){
+        if(ev.target.closest("[data-textoverride]")) return;
         var key = this.dataset.fagtoggle;
         view.toFagOpen[key] = !view.toFagOpen[key];
         renderStartupChecklist();
@@ -6076,6 +6218,7 @@
     box.querySelectorAll("[data-startupdone]").forEach(function(cb){
       cb.addEventListener("change", function(){ upsertStartupItem(this.dataset.startupdone, { done: this.checked }); });
     });
+    wireEditableTexts(box);
 
     var ansvBox = byId("cgoStartupAnsvarlige");
     if(ansvBox){
@@ -6083,7 +6226,7 @@
         var nameRow = startupItem(r.key+"_navn");
         var sentRow = startupItem(r.key+"_sendt");
         return '<div class="taskrow" style="flex-wrap:wrap;">' +
-          '<span style="min-width:90px; font-weight:600; font-size:13px;">'+escapeHtml(r.label)+'</span>' +
+          '<span style="min-width:90px; font-weight:600; font-size:13px;">'+editableLabel("ansv_"+r.key, r.label)+'</span>' +
           '<input type="text" data-startupvalue="'+r.key+'_navn" value="'+escapeHtml(nameRow?nameRow.value:"")+'" placeholder="Navn + e-post" style="flex:1; min-width:180px; border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
           '<label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" data-startupdone="'+r.key+'_sendt" '+(sentRow&&sentRow.done?'checked':'')+' /> Preconbrev sendt</label>' +
           '</div>';
@@ -6094,6 +6237,7 @@
       ansvBox.querySelectorAll("[data-startupdone]").forEach(function(cb){
         cb.addEventListener("change", function(){ upsertStartupItem(this.dataset.startupdone, { done: this.checked }); });
       });
+      wireEditableTexts(ansvBox);
     }
 
     ["sp_precon_notat","andre_notater"].forEach(function(key){
@@ -6108,24 +6252,25 @@
     });
 
     var emailsBox = byId("cgoStartupEmails");
-    if(emailsBox && !emailsBox.dataset.rendered){
-      emailsBox.dataset.rendered = "1";
+    if(emailsBox){
       emailsBox.innerHTML = STARTUP_EMAILS.map(function(e, i){
         return '<div style="margin-bottom:10px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px;">' +
-          '<b style="font-size:13px;">'+escapeHtml(e.title)+'</b>' +
+          '<b style="font-size:13px; flex:1;">'+editableLabel("email_"+i+"_title", e.title)+'</b>' +
           '<button type="button" class="btn small" data-copyemail="'+i+'">Kopier tekst</button>' +
           '</div>' +
-          '<pre style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin:0; max-height:160px; overflow:auto;">'+escapeHtml(e.body)+'</pre>' +
+          editableBlock("email_"+i+"_body", e.body, 8) +
           '</div>';
       }).join("");
       emailsBox.querySelectorAll("[data-copyemail]").forEach(function(b){
         b.addEventListener("click", function(){
-          var body = STARTUP_EMAILS[parseInt(this.dataset.copyemail,10)].body;
+          var i = parseInt(this.dataset.copyemail,10);
+          var body = textOverride("email_"+i+"_body", STARTUP_EMAILS[i].body);
           if(navigator.clipboard) navigator.clipboard.writeText(body);
           showInfo("Tekst kopiert.");
         });
       });
+      wireEditableTexts(emailsBox);
     }
   }
 
@@ -6324,13 +6469,20 @@
       refetchWeeklyScriptures();
     });
   }
-  function saveTeamMeetingAgenda(text){
+  function saveTeamMeetingAgenda(fields){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
     var wk = toISODate(mondayOf(new Date()));
     var existing = currentWeekTeamMeeting();
-    sb.from("team_meetings").upsert({ project_id: pid, week_start: wk, agenda: text.slice(0,4000), sent: existing ? existing.sent : false }, { onConflict: "project_id,week_start" }).then(function(res){
+    var body = {
+      project_id: pid, week_start: wk, sent: existing ? existing.sent : false,
+      agenda: teamMeetingAgendaText(fields).slice(0,4000),
+      tidspunkt: fields.tidspunkt || null, bonn_ansvarlig: fields.bonnAnsvarlig || null, bibelsk_tanke_ansvarlig: fields.bibelskTankeAnsvarlig || null,
+      ros_takk: fields.rosTakk || null, praktisk_info: fields.praktiskInfo || null, fremdrift: fields.fremdrift || null,
+      mal_tillegg: fields.malTillegg || null, ukens_frukt: fields.ukensFrukt || null, sporsmal: fields.sporsmal || null
+    };
+    sb.from("team_meetings").upsert(body, { onConflict: "project_id,week_start" }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("team_meetings") !== -1 ? "Databasen mangler tabellen for teammøte. Kjør sql/32-ukens-skriftsted-og-teammote.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchTeamMeetings();
     });
@@ -7071,6 +7223,7 @@
     refetchLogiInfo();
     refetchProjectInvites();
     refetchProjectStartup();
+    refetchTextOverrides();
   }
   function startDataLayer(){
     if(dataLayerStarted) return;
@@ -7115,6 +7268,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "logi_info" }, refetchLogiInfo)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_invites" }, refetchProjectInvites)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_startup" }, refetchProjectStartup)
+      .on("postgres_changes", { event: "*", schema: "public", table: "app_text_overrides" }, refetchTextOverrides)
       .subscribe(handleRealtimeStatus);
 
     setInterval(function(){ if(document.visibilityState !== "hidden") refetchAllData(); }, 120000);
