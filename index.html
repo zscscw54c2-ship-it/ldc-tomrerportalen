@@ -405,7 +405,6 @@
   .goalgroup .gg-chips{ display:flex; flex-wrap:wrap; gap:5px; flex:1; }
   .goalchip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:99px; background:var(--surface-alt); border:1px solid var(--border); }
   .goalchip .gc-status{ font-size:10px; font-weight:700; opacity:.8; }
-  .goalchip .gc-section{ font-size:10px; font-weight:500; opacity:.65; }
   .goalchip.s-mangler{ background:var(--bad-soft); color:var(--bad-ink); }
   .goalchip.s-pabegynt{ background:var(--warn-soft); color:var(--warn-ink); }
   .goalchip.s-ferdig{ background:var(--good-soft); color:var(--good-ink); }
@@ -3278,8 +3277,7 @@
           var late = isLate(e);
           var cls = late ? "late" : "s-"+e.status;
           var label = late ? "Forsinket" : STATUS_LABEL[e.status];
-          var sectionTag = e.fag === "tomrer" ? ' <span class="gc-section">('+(e.section==="innvendig"?"innvendig":"utvendig")+')</span>' : "";
-          return '<span class="goalchip '+cls+'">'+escapeHtml(e.name)+sectionTag+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
+          return '<span class="goalchip '+cls+'">'+escapeHtml(e.name)+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
         }).join("") + '</span>' +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen oppgaver skulle avsluttes denne uken.</p>';
