@@ -661,19 +661,28 @@
   .mh-mdow{ font-size:9.5px; color:var(--muted); font-weight:700; text-transform:uppercase; }
   .mh-mnum{ font-size:13px; font-weight:700; font-family:"IBM Plex Mono",monospace; }
 
-  /* ---------- mobil "hjemskjerm" inni Team- og ACGO-siden ---------- */
+  /* ---------- "hjemskjerm" inni Team- og ACGO-siden ---------- */
   .subhome-grid{ display:none; }
   .subhome-back{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:9px 2px; margin-bottom:6px; font-size:14.5px; font-weight:700; color:var(--accent); border:none; background:none; font-family:inherit; cursor:pointer; }
   .subhome-back .arrow{ font-size:17px; line-height:1; }
+
+  /* Team-siden: flisnavigasjon på alle skjermstørrelser (ikke bare mobil) */
+  #panel-andelig #teamHomeGrid.subhome-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); margin-bottom:16px; }
+  #panel-andelig .subhome-section[data-tiled]{ display:none; }
+  #panel-andelig .subhome-section[data-tiled].active{ display:block; }
+  #panel-andelig.subhome-open #teamHomeGrid.subhome-grid{ display:none; }
+  #panel-andelig.subhome-open .subhome-back{ display:flex; }
+
+  /* ACGO-siden: flisnavigasjon kun på mobil, som før */
   @media (min-width:641px){
-    .subhome-grid, .subhome-back{ display:none !important; }
+    #panel-acgo .subhome-grid, #panel-acgo .subhome-back{ display:none !important; }
   }
   @media (max-width:640px){
-    .subhome-grid{ display:grid; margin-bottom:16px; }
-    .subhome-section[data-tiled]{ display:none; }
-    .subhome-section[data-tiled].active{ display:block; }
-    .subhome-open .subhome-grid{ display:none; }
-    .subhome-open .subhome-back{ display:flex; }
+    #panel-acgo .subhome-grid{ display:grid; margin-bottom:16px; }
+    #panel-acgo .subhome-section[data-tiled]{ display:none; }
+    #panel-acgo .subhome-section[data-tiled].active{ display:block; }
+    #panel-acgo.subhome-open .subhome-grid{ display:none; }
+    #panel-acgo.subhome-open .subhome-back{ display:flex; }
   }
 
   @media (max-width:640px){
