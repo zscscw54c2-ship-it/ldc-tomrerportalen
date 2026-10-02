@@ -564,8 +564,13 @@
     .kpis{grid-template-columns:repeat(2,1fr);}
   }
   @media (max-width:640px){
-    body{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
-    header.top{position:static; backdrop-filter:none; clip-path:none; box-shadow:0 1px 0 var(--border); background:#fff; margin-inline:-16px; padding-inline:16px;}
+    /* Mindre luft i margene på mobil, så skjermen utnyttes bedre og det føles mer som en app. */
+    body{padding-inline:8px; padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+    .peoplecard, .seccard > .sechead, .seccard .seclist{padding:12px;}
+    .cal-head{padding:12px;}
+    .cal-foot{padding:9px 12px;}
+    .peoplecard, .cal-card, .seccard{border-radius:11px;}
+    header.top{position:static; backdrop-filter:none; clip-path:none; box-shadow:0 1px 0 var(--border); background:#fff; margin-inline:-8px; padding-inline:8px;}
     header.top .top-inner{display:block;}
     .kpis{gap:8px;}
     .kpi{padding:10px 12px;}
@@ -579,7 +584,7 @@
     .project-dates{display:none;}
     .cal-toolbar .seg{flex:1;}
     .cal-toolbar .seg button{flex:1; justify-content:center; padding:8px 6px;}
-    .gantt{--nw:118px; --dw:22px;}
+    .gantt{--nw:118px;} /* --dw settes inline fra JS, se currentBehovDw() */
     .g-bar{font-size:0; padding:0;}
     .elcard .midrow{flex-direction:column; align-items:stretch;}
     .elcard .actions{justify-content:flex-start;}
@@ -5150,13 +5155,15 @@
     addCustomBehovSlot(desc);
     descInput.value = "";
   });
-  var behovDw = 68;
+  // Dagcelle-bredden settes alltid inline fra JS (overstyrer dermed --dw i CSS), så den må
+  // selv ta hensyn til skjermbredden for at rutenettene skal bli kompakte nok på mobil.
+  function currentBehovDw(){ return window.matchMedia("(max-width:640px)").matches ? 40 : 68; }
   function buildBehovGridHtml(project, mode){
     if(!project || !project.start || !project.end){
       return '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
     }
     var range = behovProjectRange(project);
-    var dw = behovDw;
+    var dw = currentBehovDw();
     var css = "--days:"+range.workdays+"; --dw:"+dw+"px;";
     var bg = "";
     for(var w=0; w<range.workdays; w+=10){
@@ -5390,7 +5397,7 @@
       return '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
     }
     var range = behovProjectRange(project);
-    var dw = behovDw;
+    var dw = currentBehovDw();
     var startIdx = 0;
     if(opts.fromToday){
       var mondayIso0 = toISODate(mondayOf(new Date()));
@@ -5598,7 +5605,7 @@
     var range = behovProjectRange(project);
     var mondayIso = toISODate(mondayOf(new Date()));
     var ti = workdayIndex(range, mondayIso);
-    wrap.scrollLeft = Math.max(0, ti * behovDw);
+    wrap.scrollLeft = Math.max(0, ti * currentBehovDw());
     wrap.dataset.scrolled = "1";
   }
   function updateDashboardTabVisibility(){
