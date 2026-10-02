@@ -7680,6 +7680,28 @@
   byId("refreshBtn").addEventListener("click", function(){ window.location.reload(); });
 
   // ---------- boot ----------
+  // Midlertidig feilsøkingsboks for å avklare en mobil-marg-sak. Vises kun med ?debug=1 i
+  // lenken, og fjernes igjen når saken er løst. Se samtale rundt "luft på venstre siden".
+  if(/[?&]debug=1(&|$)/.test(location.search)){
+    var dbg = document.createElement("div");
+    dbg.style.cssText = "position:fixed; top:0; left:0; right:0; z-index:99999; background:#000; color:#0f0; font:11px monospace; padding:6px 8px; white-space:pre-wrap;";
+    function updateDbg(){
+      var bodyCs = getComputedStyle(document.body);
+      var card = document.querySelector(".peoplecard");
+      var cardCs = card ? getComputedStyle(card) : null;
+      var cardRect = card ? card.getBoundingClientRect() : null;
+      dbg.textContent =
+        "innerWidth=" + window.innerWidth + " devicePixelRatio=" + window.devicePixelRatio +
+        "\nbody padding-left=" + bodyCs.paddingLeft + " padding-right=" + bodyCs.paddingRight +
+        (cardCs ? "\n.peoplecard padding=" + cardCs.padding + " border-radius=" + cardCs.borderRadius : "") +
+        (cardRect ? "\n.peoplecard left=" + cardRect.left.toFixed(1) + "px right-gap=" + (window.innerWidth - cardRect.right).toFixed(1) + "px" : "") +
+        "\nmatchMedia(max-width:640px)=" + window.matchMedia("(max-width:640px)").matches;
+    }
+    document.body.appendChild(dbg);
+    updateDbg();
+    window.addEventListener("resize", updateDbg);
+    setInterval(updateDbg, 1000);
+  }
   renderAll();
 
   if(!sb){
