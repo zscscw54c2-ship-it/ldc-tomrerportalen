@@ -384,6 +384,8 @@
   .kpi.link{cursor:pointer;} .kpi.link:hover{border-color:var(--border-strong);}
 
   .wk{display:grid; grid-template-columns:repeat(5,minmax(0,1fr));}
+  .wk-single{grid-template-columns:1fr; max-width:420px;}
+  .wk-single .wkday{border-left:none;}
   .wkday{border-left:1px solid var(--border); min-height:170px; display:flex; flex-direction:column;}
   .wkday:first-child{border-left:none;}
   .wkday-head{padding:10px 12px 8px; display:flex; align-items:baseline; gap:6px; border-bottom:1px solid var(--border);}
@@ -891,6 +893,7 @@
   <section id="panel-kalender" class="panel active">
     <div class="cal-toolbar">
       <div class="seg" id="calViewSeg">
+        <button type="button" data-calview="dag" aria-pressed="false">Dag</button>
         <button type="button" data-calview="uke" aria-pressed="true">Uke</button>
         <button type="button" data-calview="prosjekt" aria-pressed="false">Hele prosjektet</button>
       </div>
@@ -916,6 +919,28 @@
       </div>
       <div class="unplanned-note" id="unplannedNote" hidden></div>
       <div class="wk" id="weekGrid"></div>
+      <div class="cal-foot">
+        <div class="legend">
+          <span><i class="dot good"></i> Nok folk</span>
+          <span><i class="dot warn"></i> For få folk</span>
+          <span><i class="dot bad"></i> Ingen satt opp</span>
+        </div>
+        <span>Dra et navn opp på en oppgave for å sette personen på · trykk på oppgaven for detaljer</span>
+      </div>
+    </div>
+
+    <div class="cal-card" id="dayView" hidden>
+      <div class="cal-head">
+        <div class="mo" id="dayLabel"></div>
+        <div class="wk-actions">
+          <div class="cal-nav">
+            <button id="dayPrev" title="Forrige ukedag" aria-label="Forrige ukedag">‹</button>
+            <button class="today-btn" id="dayToday">I dag</button>
+            <button id="dayNext" title="Neste ukedag" aria-label="Neste ukedag">›</button>
+          </div>
+        </div>
+      </div>
+      <div class="wk wk-single" id="dayGrid"></div>
       <div class="cal-foot">
         <div class="legend">
           <span><i class="dot good"></i> Nok folk</span>
@@ -1856,7 +1881,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [], textOverrides: [], peopleFagOrder: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())) };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -1890,7 +1915,7 @@
     if(activeFag() !== "alle" || !fag) return "";
     return '<span class="fag-badge" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[fag]||fag)+'</span>';
   }
-  try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt") view.calView = "prosjekt"; }catch(e){}
+  try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt" || savedView === "dag") view.calView = savedView; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
 
@@ -2214,49 +2239,64 @@
     byId("wkLabel").innerHTML = "Uke " + info.week + ' <span style="font-weight:500; color:var(--muted); font-size:13px;">' + fmtRange(toISODate(view.weekStart), toISODate(end)) + '</span>';
   }
 
+  // Ukedagsnavn for en vilkårlig dato (0=man..6=søn), brukt av både Uke- og Dag-visningen.
+  function weekdayName(d){
+    var dow = (d.getDay()+6)%7;
+    return dow < 5 ? DAY_NAMES[dow] : (dow === 5 ? "Lørdag" : "Søndag");
+  }
+  // Bygger ett enkelt dagkort (.wkday) – delt mellom Uke-visningen (fem kort på rad) og
+  // Dag-visningen (ett kort, for mer luft på mobil). opts.collapsePast styrer om dagen vises
+  // sammenklappet når den er en passert dag i inneværende uke; opts.neverCollapse slår dette helt av.
+  function buildDayCardHtml(iso, opts){
+    opts = opts || {};
+    var todayIso = toISODate(new Date());
+    var d = fromISODate(iso);
+    var els = activeElementsOn(iso, calSection());
+    var ppl = peopleAssignedOn(iso, els);
+    var status = dayStatus(els.length, ppl.size);
+    var conflicts = conflictsForDate(iso);
+    var isPast = !opts.neverCollapse && iso < todayIso && opts.collapsePast;
+    var html = '<div class="wkday'+(iso===todayIso?' today':'')+(isPast?' past':'')+'">' +
+      '<div class="wkday-head"><span class="dn">'+weekdayName(d)+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
+      (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+      '</div><div class="wkday-body">';
+    if(els.length === 0){
+      html += '<div class="none">Ingenting planlagt</div>';
+    } else {
+      els.forEach(function(e){
+        var ids = (e.assignments && e.assignments[iso]) || [];
+        var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
+        html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
+          '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
+          '<div class="ppl">' + (ids.length ? ids.map(function(pid){
+            var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
+            return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
+          }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
+      });
+    }
+    var present = presentOn(iso);
+    if(present.size){
+      var missing = presentWithoutTask(iso);
+      html += '<div class="present">'+present.size+' til stede' +
+        '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
+          (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
+            missing.map(function(id){
+              var sel = view.sel && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
+              return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
+            }).join("")
+          : '<b>Alle har oppgave</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
+        '</div>';
+    }
+    html += '</div></div>';
+    return html;
+  }
   function renderWeekGrid(){
     var grid = byId("weekGrid");
-    var todayIso = toISODate(new Date());
+    var isCurrentWeek = view.weekStart.getTime() === mondayOf(new Date()).getTime();
     var html = "";
     for(var i=0;i<5;i++){
       var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
-      var iso = toISODate(d);
-      var els = activeElementsOn(iso, calSection());
-      var ppl = peopleAssignedOn(iso, els);
-      var status = dayStatus(els.length, ppl.size);
-      var conflicts = conflictsForDate(iso);
-      html += '<div class="wkday'+(iso===todayIso?' today':'')+(iso<todayIso && view.weekStart.getTime()===mondayOf(new Date()).getTime()?' past':'')+'">' +
-        '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-        (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
-        '</div><div class="wkday-body">';
-      if(els.length === 0){
-        html += '<div class="none">Ingenting planlagt</div>';
-      } else {
-        els.forEach(function(e){
-          var ids = (e.assignments && e.assignments[iso]) || [];
-          var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
-            '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
-            '<div class="ppl">' + (ids.length ? ids.map(function(pid){
-              var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
-              return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
-            }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div></div>';
-        });
-      }
-      var present = presentOn(iso);
-      if(present.size){
-        var missing = presentWithoutTask(iso);
-        html += '<div class="present">'+present.size+' til stede' +
-          '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-            (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
-              missing.map(function(id){
-                var sel = view.sel && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
-                return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
-              }).join("")
-            : '<b>Alle har oppgave</b><span class="hint">Dra et navn hit for å ta personen av</span>') + '</div>' +
-          '</div>';
-      }
-      html += '</div></div>';
+      html += buildDayCardHtml(toISODate(d), { collapsePast: isCurrentWeek });
     }
     grid.innerHTML = html;
     bindDetail(grid);
@@ -2264,6 +2304,31 @@
       h.addEventListener("click", function(){ h.closest(".wkday").classList.toggle("expanded"); });
     });
     if(view.sel) markDroppable(view.sel.iso, view.sel.from);
+  }
+  // Hopper over helg: finner nærmeste ukedag (i dag selv hvis den allerede er man-fre).
+  function nearestWeekday(iso){
+    var d = fromISODate(iso);
+    while(((d.getDay()+6)%7) >= 5){ d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1); }
+    return toISODate(d);
+  }
+  function addWeekdays(iso, dir){
+    var d = fromISODate(iso);
+    do { d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+dir); } while(((d.getDay()+6)%7) >= 5);
+    return toISODate(d);
+  }
+  function renderDayLabel(){
+    var d = fromISODate(view.dayIso);
+    byId("dayLabel").innerHTML = weekdayName(d) + ' <span style="font-weight:500; color:var(--muted); font-size:13px;">' + d.getDate()+'. '+NB_MONTHS[d.getMonth()]+' '+d.getFullYear() + '</span>';
+  }
+  function renderDayGrid(){
+    var grid = byId("dayGrid");
+    grid.innerHTML = buildDayCardHtml(view.dayIso, { neverCollapse: true });
+    bindDetail(grid);
+    if(view.sel) markDroppable(view.sel.iso, view.sel.from);
+  }
+  function goToDay(iso){
+    view.dayIso = iso;
+    renderCalView();
   }
 
   // ---------- dra og slipp / trykk-for-å-velge: sett personer på elementer ----------
@@ -2297,10 +2362,10 @@
       unassignPerson(from, iso, pid);
     }
   }
-  // Både Kalender-uken (#weekGrid) og TO-møtets ukekort (#toFagStatusList) bruker samme
-  // dra-og-slipp-/trykk-for-å-velge-system; "sone" bestemmer hvilken av dem som rerendres etterpå.
+  // Kalenderens Uke- og Dag-visning (#weekGrid/#dayGrid) og TO-møtets ukekort (#toFagStatusList)
+  // bruker samme dra-og-slipp-/trykk-for-å-velge-system; "sone" bestemmer hvilken som rerendres etterpå.
   function rerenderDragZone(zone){
-    if(zone === "tomote") renderToMoteTab(); else renderWeekGrid();
+    if(zone === "tomote") renderToMoteTab(); else renderCalView();
   }
   function setSel(sel){
     view.sel = sel;
@@ -2379,6 +2444,7 @@
   document.addEventListener("pointerup", function(ev){ endDrag(ev, false); });
   document.addEventListener("pointercancel", function(ev){ endDrag(ev, true); });
   bindWeekDragZone(byId("weekGrid"), "weekGrid");
+  bindWeekDragZone(byId("dayGrid"), "weekGrid");
   bindWeekDragZone(byId("toFagStatusList"), "tomote");
 
   function bindDetail(root){
@@ -2619,12 +2685,14 @@
     periodBanner.hidden = !period;
     if(period) periodBanner.textContent = FAG_LABELS[activeFag()]+" er aktivt i dette prosjektet "+fmtRange(period.start, period.end)+".";
     byId("weekView").hidden = view.calView !== "uke";
+    byId("dayView").hidden = view.calView !== "dag";
     byId("ganttView").hidden = view.calView !== "prosjekt";
     document.querySelectorAll("#calViewSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calview===view.calView ? "true":"false"); });
     byId("calSecSeg").hidden = activeFag() !== "tomrer";
     if(activeFag() !== "tomrer") view.calSec = "alle";
     document.querySelectorAll("#calSecSeg button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.calsec===view.calSec ? "true":"false"); });
     if(view.calView === "uke"){ renderWeekLabel(); renderWeekGrid(); renderConflictBanner(); }
+    else if(view.calView === "dag"){ renderDayLabel(); renderDayGrid(); byId("conflictBanner").hidden = true; }
     else { renderGantt(); byId("conflictBanner").hidden = true; }
     renderUnplannedNote();
   }
@@ -2894,7 +2962,7 @@
   function renderUnplannedNote(){
     var box = byId("unplannedNote");
     var list = elementsForCurrentProject().filter(function(e){ return (!calSection() || e.section === calSection()) && !isPlanned(e) && e.status !== "ferdig"; });
-    if(list.length === 0 || view.calView !== "uke"){ box.hidden = true; box.innerHTML = ""; return; }
+    if(list.length === 0 || view.calView === "prosjekt"){ box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
     box.innerHTML = '<b>'+list.length+'</b> oppgave'+(list.length===1?'':'r')+' er ikke lagt inn i planen ennå · <button type="button" id="showUnplanned">vis</button>';
     byId("showUnplanned").addEventListener("click", function(){ view.elFilter = "ikkeplanlagt"; renderElementsTab(); switchTab("elementer"); });
@@ -4201,6 +4269,9 @@
     goToWeek(new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+7));
   });
   byId("wkToday").addEventListener("click", function(){ goToWeek(mondayOf(new Date())); });
+  byId("dayPrev").addEventListener("click", function(){ goToDay(addWeekdays(view.dayIso, -1)); });
+  byId("dayNext").addEventListener("click", function(){ goToDay(addWeekdays(view.dayIso, 1)); });
+  byId("dayToday").addEventListener("click", function(){ goToDay(nearestWeekday(toISODate(new Date()))); });
   var resizeT = null;
   window.addEventListener("resize", function(){ clearTimeout(resizeT); resizeT = setTimeout(function(){ if(view.calView==="prosjekt") renderGantt(); }, 150); });
 
