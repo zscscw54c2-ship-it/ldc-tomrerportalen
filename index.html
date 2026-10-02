@@ -2133,7 +2133,7 @@
       if(res.error){ return; }   // tabellen finnes kanskje ikke ennå
       if(seq !== attendanceFetchSeq) return; // en nyere forespørsel er allerede underveis/ferdig – ikke overskriv med utdatert data
       state.attendance = res.data.map(function(r){ return { id: r.id, project_id: r.project_id, person_id: r.person_id, day: r.day, fag: r.fag || "tomrer" }; });
-      renderAll();
+      scheduleRender();
     });
   }
 
@@ -4083,6 +4083,14 @@
     renderSubHomeGrid(byId("panel-acgo"), "acgoHomeGrid", "acgoHomeBack", ACGO_HOME_TILES);
   }
 
+  // Flere refetch-kall som blir ferdige tett i tid (f.eks. ved oppstart eller det periodiske
+  // 2-minutters-oppfrisk) skal bare gi ÉN omtegning av siden, ikke én per tabell.
+  var renderScheduled = false;
+  function scheduleRender(){
+    if(renderScheduled) return;
+    renderScheduled = true;
+    setTimeout(function(){ renderScheduled = false; renderAll(); }, 30);
+  }
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAndeligTabVisibility();
@@ -4164,14 +4172,14 @@
     sb.from("people").select("*").order("created_at").then(function(res){
       if(res.error){ showError("Klarte ikke å hente personer: "+res.error.message); return; }
       state.people = res.data.map(rowToPerson).sort(function(a,b){ return a.name.localeCompare(b.name, "no"); });
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchElements(){
     sb.from("elements").select("*").order("created_at").then(function(res){
       if(res.error){ showError("Klarte ikke å hente oppgaver: "+res.error.message); return; }
       state.elements = res.data.map(rowToElement);
-      renderAll();
+      scheduleRender();
     });
   }
 
@@ -4473,28 +4481,28 @@
       state.projects = res.data.map(rowToProject);
       pickCurrentProject();
       if(byId("statusBanner").className === "status-banner") hideBanner();
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchShopItems(){
     sb.from("shopping_items").select("*").order("created_at").then(function(res){
       if(res.error){ showError("Klarte ikke å hente handlelisten: "+res.error.message); return; }
       state.shopItems = res.data.map(rowToShopItem);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchDuties(){
     sb.from("spiritual_duties").select("*").order("sort_order").order("created_at").then(function(res){
       if(res.error){ return; }
       state.spiritualDuties = res.data.map(rowToDuty);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchAndeligVisibility(){
     sb.from("andelig_visibility").select("*").then(function(res){
       if(res.error){ return; }
       state.andeligVisibility = res.data;
-      renderAll();
+      scheduleRender();
     });
   }
   function andeligVisibilityMapForCurrentProject(){
@@ -4521,7 +4529,7 @@
     sb.from("user_accounts").select("*").then(function(res){
       if(res.error){ return; }
       state.userAccounts = res.data;
-      renderAll();
+      scheduleRender();
     });
   }
   function setUserAccountPerson(accountId, personId){
@@ -4544,7 +4552,7 @@
     sb.from("project_fags").select("*").then(function(res){
       if(res.error){ return; }
       state.projectFags = res.data.map(rowToProjectFag);
-      renderAll();
+      scheduleRender();
     });
   }
   function fagIsLocked(fag){
@@ -4873,14 +4881,14 @@
     sb.from("behov_slot").select("*").order("fag").order("slot_index").then(function(res){
       if(res.error){ return; }
       state.behovSlots = res.data.map(rowToBehovSlot);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchBehovDays(){
     sb.from("behov_day").select("*").then(function(res){
       if(res.error){ return; }
       state.behovDays = res.data.map(rowToBehovDay);
-      renderAll();
+      scheduleRender();
     });
   }
   function setBehovSlotCount(fag, count){
@@ -5705,84 +5713,84 @@
     sb.from("spiritual_overview").select("*").order("sort_order").order("created_at").then(function(res){
       if(res.error){ return; }
       state.spiritualOverview = res.data.map(rowToOverview);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchPrivilegeWeeks(){
     sb.from("privilege_weeks").select("*").order("start_date").then(function(res){
       if(res.error){ return; }
       state.privilegeWeeks = res.data.map(rowToPrivilegeWeek);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchMorningWorship(){
     sb.from("morning_worship").select("*").then(function(res){
       if(res.error){ return; }
       state.morningWorship = res.data.map(rowToMW);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchPwDutyStatus(){
     sb.from("privilege_week_duty_status").select("*").then(function(res){
       if(res.error){ return; }
       state.pwDutyStatus = res.data.map(rowToPwDutyStatus);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToAgenda(){
     sb.from("to_agenda_items").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.toAgenda = res.data.map(rowToToAgenda);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchPortalSuggestions(){
     sb.from("portal_suggestions").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.portalSuggestions = res.data.map(rowToPortalSuggestion);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchTeamPairs(){
     sb.from("team_pairs").select("*").order("name").then(function(res){
       if(res.error){ return; }
       state.teamPairs = res.data.map(rowToTeamPair);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchOpenAccounts(){
     sb.from("open_accounts").select("*").order("leverandor").then(function(res){
       if(res.error){ return; }
       state.openAccounts = res.data.map(rowToOpenAccount);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchSiteCodes(){
     sb.from("site_codes").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.siteCodes = res.data.map(rowToSiteCode);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchWeeklyScriptures(){
     sb.from("weekly_scriptures").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
       state.weeklyScriptures = res.data.map(rowToWeeklyScripture);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchTeamMeetings(){
     sb.from("team_meetings").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
       state.teamMeetings = res.data.map(rowToTeamMeeting);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchFlexRequests(){
     sb.from("flex_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.flexRequests = res.data.map(rowToFlexRequest);
-      renderAll();
+      scheduleRender();
     });
   }
 
@@ -5796,7 +5804,7 @@
     sb.from("logi_info").select("*").then(function(res){
       if(res.error){ return; }
       state.logiInfo = res.data.map(rowToLogiInfo);
-      renderAll();
+      scheduleRender();
     });
   }
   function logiInfoForCurrentProject(){
@@ -5918,7 +5926,7 @@
     sb.from("project_invites").select("*").order("created_at",{ ascending:false }).then(function(res){
       if(res.error){ return; }
       state.projectInvites = res.data.map(rowToProjectInvite);
-      renderAll();
+      scheduleRender();
     });
   }
   function invitesForCurrentProject(){
@@ -6053,7 +6061,7 @@
     sb.from("app_text_overrides").select("*").then(function(res){
       if(res.error){ return; }
       state.textOverrides = res.data;
-      renderAll();
+      scheduleRender();
     });
   }
   function setTextOverride(key, value){
@@ -6152,7 +6160,7 @@
     sb.from("project_startup").select("*").then(function(res){
       if(res.error){ return; }
       state.projectStartup = res.data.map(rowToProjectStartup);
-      renderAll();
+      scheduleRender();
     });
   }
   function startupItemsForCurrentProject(){
@@ -6278,63 +6286,63 @@
     sb.from("fag_requests").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.fagRequests = res.data.map(rowToFagRequest);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToTopics(){
     sb.from("to_topics").select("*").order("sort_order").then(function(res){
       if(res.error){ return; }
       state.toTopics = res.data.map(rowToToTopic);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToMeetings(){
     sb.from("to_meetings").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
       state.toMeetings = res.data.map(rowToToMeeting);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToAttendance(){
     sb.from("to_meeting_attendance").select("*").then(function(res){
       if(res.error){ return; }
       state.toAttendance = res.data.map(rowToToAttendance);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToTopicNotes(){
     sb.from("to_meeting_topic_notes").select("*").then(function(res){
       if(res.error){ return; }
       state.toTopicNotes = res.data.map(rowToToTopicNote);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToFagStatus(){
     sb.from("to_meeting_fag_status").select("*").then(function(res){
       if(res.error){ return; }
       state.toFagStatus = res.data.map(rowToToFagStatus);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToSafetyLog(){
     sb.from("to_safety_log").select("*").order("day", { ascending:false }).then(function(res){
       if(res.error){ return; }
       state.toSafetyLog = res.data.map(rowToToSafety);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchToFollowups(){
     sb.from("to_followups").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.toFollowups = res.data.map(rowToToFollowup);
-      renderAll();
+      scheduleRender();
     });
   }
   function refetchRoomTodos(){
     sb.from("room_todos").select("*").order("created_at").then(function(res){
       if(res.error){ return; }
       state.roomTodos = res.data.map(rowToRoomTodo);
-      renderAll();
+      scheduleRender();
     });
   }
 
@@ -6935,7 +6943,7 @@
     sb.from("drawings").select("*").order("created_at", { ascending:false }).then(function(res){
       if(res.error){ showError("Klarte ikke å hente tegninger: "+res.error.message); return; }
       state.drawings = res.data.map(rowToDrawing);
-      renderAll();
+      scheduleRender();
     });
   }
   function drawingPublicUrl(path){
@@ -6997,7 +7005,7 @@
     sb.from("documentation_photos").select("*").order("created_at", { ascending:false }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("documentation_photos") !== -1 ? "Databasen mangler tabellen for dokumentasjonsbilder. Kjør sql/12-dokumentasjon.sql i Supabase." : "Klarte ikke å hente dokumentasjonsbilder: "+res.error.message); return; }
       state.dokuPhotos = res.data.map(rowToDokuPhoto);
-      renderAll();
+      scheduleRender();
     });
   }
   function dokuPhotoPublicUrl(path){
