@@ -1366,30 +1366,32 @@
       <div id="flexCgoGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-        <h2 style="font-size:16px; margin:0;" id="cgoAgendaTitle">Teammøte-agenda</h2>
+      <button type="button" class="fagweek-toggle" id="cgoAgendaToggle" style="width:100%; justify-content:space-between; display:flex;">
+        <span style="display:flex; align-items:center; gap:6px;"><span class="fagweek-chevron" id="cgoAgendaChevron">▸</span><b style="font-size:16px;" id="cgoAgendaTitle">Teammøte-agenda</b></span>
         <span id="cgoTeamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt til Team-siden</span>
-      </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ukentlig agenda for teammøtet, etter malen. Fyll ut og send når den er klar, så vises den på Team-siden.</p>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <div class="field"><label>Dag/tidspunkt</label><input type="text" id="agBonn_tidspunkt" placeholder="F.eks. Onsdag etter lunsj" maxlength="80" /></div>
-        <div class="cols2">
-          <div class="field"><label id="agLbl_bonn">Bønn – ansvarlig</label><input type="text" id="agBonn_ansvarlig" placeholder="Navn" maxlength="80" /></div>
-          <div class="field"><label id="agLbl_bibelsk">Bibelsk tanke – ansvarlig</label><input type="text" id="agBonn_bibelsk" placeholder="Navn" maxlength="80" /></div>
+      </button>
+      <div id="cgoAgendaBody" hidden style="margin-top:10px;">
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Ukentlig agenda for teammøtet, etter malen. Fyll ut og send når den er klar, så vises den på Team-siden.</p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="field"><label>Dag/tidspunkt</label><input type="text" id="agBonn_tidspunkt" placeholder="F.eks. Onsdag etter lunsj" maxlength="80" /></div>
+          <div class="cols2">
+            <div class="field"><label id="agLbl_bonn">Bønn – ansvarlig</label><input type="text" id="agBonn_ansvarlig" placeholder="Navn" maxlength="80" /></div>
+            <div class="field"><label id="agLbl_bibelsk">Bibelsk tanke – ansvarlig</label><input type="text" id="agBonn_bibelsk" placeholder="Navn" maxlength="80" /></div>
+          </div>
+          <div class="field"><label id="agLbl_rostakk">Ros &amp; takk</label><textarea id="agRosTakk" rows="3" placeholder="F.eks. Hvordan dere er gode representanter …"></textarea></div>
+          <div class="field"><label id="agLbl_praktisk">Praktisk info</label><textarea id="agPraktisk" rows="3"></textarea></div>
+          <div class="field"><label id="agLbl_fremdrift">Fremdrift: status nå, nye momenter for neste uke</label><textarea id="agFremdrift" rows="3"></textarea></div>
+          <div class="field"><label id="agLbl_mal">Mål – ekstra punkter denne uken (standardlisten tas alltid med)</label><textarea id="agMalTillegg" rows="2"></textarea></div>
+          <div class="field"><label id="agLbl_frukt">Ukens frukt</label><input type="text" id="agFrukt" placeholder="F.eks. Gal 5:22,23" maxlength="120" /></div>
+          <div class="field"><label id="agLbl_sporsmal">Spørsmål – stort og smått</label><textarea id="agSporsmal" rows="3"></textarea></div>
         </div>
-        <div class="field"><label id="agLbl_rostakk">Ros &amp; takk</label><textarea id="agRosTakk" rows="3" placeholder="F.eks. Hvordan dere er gode representanter …"></textarea></div>
-        <div class="field"><label id="agLbl_praktisk">Praktisk info</label><textarea id="agPraktisk" rows="3"></textarea></div>
-        <div class="field"><label id="agLbl_fremdrift">Fremdrift: status nå, nye momenter for neste uke</label><textarea id="agFremdrift" rows="3"></textarea></div>
-        <div class="field"><label id="agLbl_mal">Mål – ekstra punkter denne uken (standardlisten tas alltid med)</label><textarea id="agMalTillegg" rows="2"></textarea></div>
-        <div class="field"><label id="agLbl_frukt">Ukens frukt</label><input type="text" id="agFrukt" placeholder="F.eks. Gal 5:22,23" maxlength="120" /></div>
-        <div class="field"><label id="agLbl_sporsmal">Spørsmål – stort og smått</label><textarea id="agSporsmal" rows="3"></textarea></div>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+          <button type="button" class="btn small" id="cgoTeamMeetingSave">Lagre utkast</button>
+          <button type="button" class="btn small primary" id="cgoTeamMeetingSend"></button>
+          <button type="button" class="btn small ghost" id="cgoAgendaPreviewBtn">Vis forhåndsvisning</button>
+        </div>
+        <pre id="cgoAgendaPreview" hidden style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:10px;"></pre>
       </div>
-      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-        <button type="button" class="btn small" id="cgoTeamMeetingSave">Lagre utkast</button>
-        <button type="button" class="btn small primary" id="cgoTeamMeetingSend"></button>
-        <button type="button" class="btn small ghost" id="cgoAgendaPreviewBtn">Vis forhåndsvisning</button>
-      </div>
-      <pre id="cgoAgendaPreview" hidden style="white-space:pre-wrap; font:inherit; font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:10px;"></pre>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;" id="cgoAgendaTemplateCard" hidden>
       <h2 style="font-size:16px; margin-bottom:2px;">Agenda – malens faste tekster</h2>
@@ -4765,6 +4767,11 @@
     createProjectInvite(byId("newInviteLabel").value.trim());
     byId("newInviteLabel").value = "";
   });
+  byId("cgoAgendaToggle").addEventListener("click", function(){
+    view.toFagOpen["cgo_agenda"] = !view.toFagOpen["cgo_agenda"];
+    byId("cgoAgendaBody").hidden = !view.toFagOpen["cgo_agenda"];
+    byId("cgoAgendaChevron").classList.toggle("open", !!view.toFagOpen["cgo_agenda"]);
+  });
 
   function renderCgoTab(){
     if(!isByggeleder()) return;
@@ -4783,6 +4790,8 @@
     });
     byId("cgoTeamMeetingBadge").hidden = !(m && m.sent);
     byId("cgoTeamMeetingSend").textContent = (m && m.sent) ? "Trekk tilbake" : "Send til Team-siden";
+    byId("cgoAgendaBody").hidden = !view.toFagOpen["cgo_agenda"];
+    byId("cgoAgendaChevron").classList.toggle("open", !!view.toFagOpen["cgo_agenda"]);
     renderAgendaTemplateCard();
 
     renderStartupChecklist();
