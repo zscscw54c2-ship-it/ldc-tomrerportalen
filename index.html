@@ -1042,11 +1042,6 @@
 
     <div id="personerFrivilligeBox">
       <div class="peoplecard" style="margin-bottom:14px;">
-        <h2 style="font-size:16px; margin-bottom:2px;">Frivillige etter fag</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Tilgjengelighet per dag, gruppert etter fag.</p>
-        <div id="peopleByFag" class="gantt-wrap frivillige-grid"></div>
-      </div>
-      <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:4px;">Søk i listen</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1059,6 +1054,17 @@
           <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
           <button class="btn primary" type="submit">Legg til</button>
         </form>
+      </div>
+      <div class="peoplecard">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
+          <h2 style="font-size:16px;">Frivillige etter fag</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn small" id="frivilligeFullViewBtn">Vis hele prosjektet</button>
+            <button type="button" class="btn small" id="frivilligeEditModeBtn" hidden>Gjør endringer</button>
+          </div>
+        </div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Tilgjengelighet per dag, gruppert etter fag. Viser som standard kun fra inneværende uke og fremover.</p>
+        <div id="peopleByFag" class="gantt-wrap frivillige-grid"></div>
       </div>
     </div>
 
@@ -1086,8 +1092,14 @@
 
     <div id="personerLogiBox" hidden>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Logi</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer.</p>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
+          <h2 style="font-size:16px;">Logi</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
+            <button type="button" class="btn small" id="logiEditModeBtn" hidden>Gjør endringer</button>
+          </div>
+        </div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover.</p>
         <div id="personerLogiList" class="gantt-wrap frivillige-grid"></div>
       </div>
     </div>
@@ -1842,7 +1854,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [], textOverrides: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -3344,9 +3356,13 @@
       return;
     }
     if(showLogi){
-      byId("personerLogiList").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: null, readOnly: !isByggeleder(), logiMode: true });
+      byId("logiEditModeBtn").hidden = !isByggeleder();
+      byId("logiEditModeBtn").textContent = view.frivilligeEditMode ? "Avslutt redigering" : "Gjør endringer";
+      byId("logiEditModeBtn").classList.toggle("primary", view.frivilligeEditMode);
+      byId("logiFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
+      byId("personerLogiList").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: null, readOnly: !isByggeleder(), logiMode: true, fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode });
       wireFrivilligeGridEvents("personerLogiList", { readOnly: !isByggeleder(), logiMode: true });
-      scrollGridToCurrentWeek("personerLogiList", cur);
+      if(view.frivilligeFullView) scrollGridToCurrentWeek("personerLogiList", cur); else byId("personerLogiList").scrollLeft = 0;
       return;
     }
 
@@ -3355,10 +3371,14 @@
     if(state.people.length === 0){
       byId("peopleByFag").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
     } else {
+      byId("frivilligeEditModeBtn").hidden = !isByggeleder();
+      byId("frivilligeEditModeBtn").textContent = view.frivilligeEditMode ? "Avslutt redigering" : "Gjør endringer";
+      byId("frivilligeEditModeBtn").classList.toggle("primary", view.frivilligeEditMode);
+      byId("frivilligeFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
       var fagFilter = isByggeleder() ? null : activeFag();
-      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder() });
+      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder(), fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode });
       wireFrivilligeGridEvents("peopleByFag", { readOnly: !isByggeleder() });
-      scrollGridToCurrentWeek("peopleByFag", cur);
+      if(view.frivilligeFullView) scrollGridToCurrentWeek("peopleByFag", cur); else byId("peopleByFag").scrollLeft = 0;
     }
 
     var box = byId("peopleList");
@@ -3384,6 +3404,20 @@
     b.addEventListener("click", function(){ view.personerSection = this.dataset.personersection; renderPeopleTab(); });
   });
   byId("peopleShowAllBtn").addEventListener("click", function(){ view.peopleShowAll = !view.peopleShowAll; renderPeopleTab(); });
+  function toggleFrivilligeFullView(){
+    view.frivilligeFullView = !view.frivilligeFullView;
+    byId("peopleByFag").dataset.scrolled = "";
+    byId("personerLogiList").dataset.scrolled = "";
+    renderPeopleTab();
+  }
+  function toggleFrivilligeEditMode(){
+    view.frivilligeEditMode = !view.frivilligeEditMode;
+    renderPeopleTab();
+  }
+  byId("frivilligeFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
+  byId("logiFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
+  byId("frivilligeEditModeBtn").addEventListener("click", toggleFrivilligeEditMode);
+  byId("logiEditModeBtn").addEventListener("click", toggleFrivilligeEditMode);
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
@@ -5218,10 +5252,19 @@
     }
     var range = behovProjectRange(project);
     var dw = behovDw;
-    var css = "--days:"+range.workdays+"; --dw:"+dw+"px;";
+    var startIdx = 0;
+    if(opts.fromToday){
+      var mondayIso0 = toISODate(mondayOf(new Date()));
+      var wi0 = workdayIndex(range, mondayIso0);
+      if(wi0 > 0 && wi0 < range.workdays) startIdx = wi0;
+    }
+    var visibleWorkdays = range.workdays - startIdx;
+    var css = "--days:"+visibleWorkdays+"; --dw:"+dw+"px;";
     var bg = "";
     for(var w=0; w<range.workdays; w+=10){
-      bg += '<div class="g-weekband" style="left:'+(w*dw)+'px; width:'+(Math.min(5,range.workdays-w)*dw)+'px"></div>';
+      var visStart = Math.max(w, startIdx), visEnd = Math.min(w+5, range.workdays);
+      if(visEnd <= visStart) continue;
+      bg += '<div class="g-weekband" style="left:'+((visStart-startIdx)*dw)+'px; width:'+((visEnd-visStart)*dw)+'px"></div>';
     }
     var todayIso = toISODate(new Date());
     var todayOffset = Math.round((fromISODate(todayIso) - range.start)/86400000);
@@ -5229,21 +5272,21 @@
     var todayLine = "";
     if(todayOffset >= 0 && todayOffset < range.days && todayDow < 5){
       var ti = workdayIndex(range, todayIso);
-      todayLine = '<div class="g-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+      if(ti >= startIdx) todayLine = '<div class="g-today" style="left:'+((ti-startIdx)*dw + dw/2 - 1)+'px"></div>';
     }
     var months = "", weeks = "";
-    var m0 = 0;
-    for(var j=0;j<=range.workdays;j++){
+    var m0 = startIdx;
+    for(var j=startIdx;j<=range.workdays;j++){
       var dj = workdayDate(range, Math.min(j, range.workdays-1));
       var d0 = workdayDate(range, m0);
       if(j === range.workdays || dj.getMonth() !== d0.getMonth()){
-        months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
+        months += '<div style="left:'+((m0-startIdx)*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
         m0 = j;
       }
     }
-    for(var wi=0; wi<range.workdays; wi+=5){
+    for(var wi=startIdx; wi<range.workdays; wi+=5){
       var wStart = workdayDate(range, wi);
-      weeks += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
+      weeks += '<div style="left:'+((wi-startIdx)*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
     }
     var html = '<div class="gantt" style="'+css+'">';
     html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
@@ -5257,6 +5300,12 @@
     if(opts.readOnly){
       pendingFagRequestsForCurrentProject().forEach(function(r){ pendingSet[r.personId+"|"+r.day+"|"+r.fag] = true; });
     }
+    function hasFutureAvailability(personId, fag){
+      for(var k=startIdx;k<range.workdays;k++){
+        if(isPresentForFag(personId, toISODate(workdayDate(range,k)), fag)) return true;
+      }
+      return false;
+    }
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(OVERVIEW_FAG_LIST.filter(function(f){ return f !== "team"; }));
     var anyRows = false;
     var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamPairsForCurrentProject().filter(function(t){ return t.personId; }).map(function(t){ return t.personId; }) : [];
@@ -5268,23 +5317,27 @@
         people = state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
       } else {
         people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+        if(opts.fromToday && startIdx > 0){
+          people = people.filter(function(p){ return hasFutureAvailability(p.id, fag); });
+        }
       }
       if(!people.length) return;
       anyRows = true;
       html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
       people.forEach(function(p){
         var cells = "";
-        for(var i=0;i<range.workdays;i++){
+        for(var i=startIdx;i<range.workdays;i++){
           var d = workdayDate(range, i);
           var iso = toISODate(d);
           var present = isPresentForFag(p.id, iso, fag);
           var pending = opts.readOnly && pendingSet[p.id+"|"+iso+"|"+fag];
-          var cls = "behov-cell clickable-empty" + (present ? " filled" : "") + (pending ? " pending" : "");
+          var canEdit = !opts.readOnly && opts.editMode;
+          var cls = "behov-cell" + ((opts.readOnly || canEdit) ? " clickable-empty" : "") + (present ? " filled" : "") + (pending ? " pending" : "");
           var content = present ? '<span class="who">✓</span>' : "";
           if(pending) content = '<span class="who" title="Venter på godkjenning fra ACGO">…</span>';
-          var attr = opts.readOnly ? "data-requestavail" : "data-toggleavail";
+          var attr = opts.readOnly ? ' data-requestavail="'+p.id+'|'+iso+'|'+fag+'"' : (canEdit ? ' data-toggleavail="'+p.id+'|'+iso+'|'+fag+'"' : "");
           var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
-          cells += '<div class="'+cls+'" '+attr+'="'+p.id+'|'+iso+'|'+fag+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
+          cells += '<div class="'+cls+'"'+attr+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
         var nameCell = escapeHtml(p.name);
         if(opts.logiMode){
@@ -5297,7 +5350,7 @@
       });
     });
     html += '</div>';
-    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">Ingen frivillige er satt opp på noe fag ennå.</p>';
+    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp på noe fag ennå.')+'</p>';
     return html;
   }
   function wireFrivilligeGridEvents(containerId, opts){
