@@ -7596,6 +7596,12 @@
       return;
     }
     sb.from("profiles").select("role, person_id, project_id").eq("id", session.user.id).single().then(function(res){
+      if(res.error && res.error.code !== "PGRST116"){
+        // Noe annet enn "ingen rad finnes" (f.eks. et forbigående nettverksproblem - vanlig på
+        // mobil ved bytte mellom WiFi/mobildata) - ikke logg ut, bare prøv på nytt om litt.
+        setTimeout(function(){ handleSession(session); }, 3000);
+        return;
+      }
       if(res.error || !res.data){
         if(pendingInviteToken){
           sb.rpc("claim_project_invite", { invite_token: pendingInviteToken }).then(function(claimRes){
