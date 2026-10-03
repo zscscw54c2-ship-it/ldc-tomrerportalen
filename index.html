@@ -502,31 +502,26 @@
   @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent);} 100%{box-shadow:none;}}
   dialog.wide{width:min(560px, calc(100vw - 24px));}
 
-  /* ---------- dra-velg periode-plukker (start/slutt på en oppgave) ---------- */
-  .drp{ border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-  .drp-head{ display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:var(--surface-alt); border-bottom:1px solid var(--border); }
-  .drp-label{ font-size:12.5px; font-weight:700; }
-  .drp-nav{ border:1px solid var(--border-strong); background:var(--surface); width:26px; height:26px; border-radius:7px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; padding:0; }
-  .drp-nav:hover{ background:var(--surface-alt); }
-  .drp-strip{ display:grid; grid-template-columns:repeat(10,1fr); gap:3px; padding:8px; user-select:none; touch-action:none; }
-  .drp-day{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:6px 2px; border-radius:7px; cursor:pointer; background:var(--surface); border:1px solid var(--border); font-variant-numeric:tabular-nums; }
-  .drp-day .dn{ font-size:9.5px; font-weight:700; color:var(--muted); text-transform:uppercase; }
-  .drp-day .dd{ font-size:13.5px; font-weight:700; }
-  .drp-day:hover{ border-color:var(--border-strong); }
-  .drp-day.past{ opacity:.4; }
-  .drp-day.today{ box-shadow:inset 0 0 0 1.5px var(--accent); }
-  .drp-day.closeout::after{ content:""; position:absolute; top:2px; right:2px; width:5px; height:5px; border-radius:50%; background:var(--bad); }
-  .drp-day.in-range{ background:var(--accent-soft); border-color:var(--accent-soft); border-radius:0; }
-  .drp-day.range-start{ background:var(--accent); border-color:var(--accent); border-radius:7px 0 0 7px; }
-  .drp-day.range-end{ background:var(--accent); border-color:var(--accent); border-radius:0 7px 7px 0; }
-  .drp-day.range-start.range-end{ border-radius:7px; }
-  .drp-day.range-start .dn, .drp-day.range-start .dd, .drp-day.range-end .dn, .drp-day.range-end .dd{ color:#fff; }
-  .drp-summary{ padding:7px 10px; font-size:12.5px; color:var(--muted); border-top:1px solid var(--border); background:var(--surface-alt); }
+  /* ---------- periode-plukker (start/slutt på en oppgave) ---------- */
+  .drp-compact{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; border:1px solid var(--border); border-radius:10px; padding:9px 12px; background:var(--surface-alt); }
+  .drp-summary{ font-size:12.5px; color:var(--muted); }
   .drp-summary b{ color:var(--text); }
-  @media (max-width:480px){
-    .drp-day .dd{ font-size:12px; }
-    .drp-day .dn{ font-size:8.5px; }
-  }
+  /* hele prosjektet, i egen dialog (drpBigDialog) */
+  .drp-big-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; -webkit-overflow-scrolling:touch; background:var(--surface); }
+  .drp-big-months, .drp-big-weeks{ position:relative; height:20px; border-bottom:1px solid var(--border); }
+  .drp-big-months div, .drp-big-weeks div{ position:absolute; top:0; height:100%; display:flex; align-items:center; padding-left:4px; font-size:10.5px; font-weight:700; color:var(--muted); border-left:1px solid var(--border); box-sizing:border-box; white-space:nowrap; overflow:hidden; text-transform:capitalize; }
+  .drp-big-track{ position:relative; height:52px; }
+  .drp-big-weekband{ position:absolute; top:0; bottom:0; background:rgba(104,117,136,.06); }
+  .drp-big-today{ position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:2; }
+  .drp-big-closeout{ position:absolute; top:0; bottom:0; width:2px; background:var(--bad); z-index:2; opacity:.85; background-image:repeating-linear-gradient(180deg, var(--bad) 0 6px, transparent 6px 10px); }
+  .drp-big-day{ position:absolute; top:4px; bottom:4px; display:flex; align-items:center; justify-content:center; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; box-sizing:border-box; border:1px solid transparent; user-select:none; touch-action:none; z-index:1; }
+  .drp-big-day:hover{ border-color:var(--border-strong); }
+  .drp-big-day.past{ opacity:.4; }
+  .drp-big-day.today{ box-shadow:inset 0 0 0 1.5px var(--accent); }
+  .drp-big-day.in-range{ background:var(--accent-soft); border-radius:0; }
+  .drp-big-day.range-start{ background:var(--accent); color:#fff; border-radius:6px 0 0 6px; }
+  .drp-big-day.range-end{ background:var(--accent); color:#fff; border-radius:0 6px 6px 0; }
+  .drp-big-day.range-start.range-end{ border-radius:6px; }
 
   /* oppmøte */
   .wk-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
@@ -1748,14 +1743,9 @@
     <label class="checkrow"><input type="checkbox" id="elPlanned" /> Legg inn i fremdriftsplanen</label>
     <div class="field" id="elDates">
       <label>Periode</label>
-      <div class="drp">
-        <div class="drp-head">
-          <button type="button" class="drp-nav" id="drpPrev" aria-label="Forrige uker">‹</button>
-          <div class="drp-label" id="drpLabel"></div>
-          <button type="button" class="drp-nav" id="drpNext" aria-label="Neste uker">›</button>
-        </div>
-        <div class="drp-strip" id="drpStrip"></div>
+      <div class="drp-compact">
         <div class="drp-summary" id="drpSummary"></div>
+        <button type="button" class="btn small primary" id="drpOpenBig">Velg periode i kalenderen</button>
       </div>
       <input type="date" id="elStart" hidden />
       <input type="date" id="elEnd" hidden />
@@ -1770,6 +1760,19 @@
       <button type="submit" class="btn primary">Lagre</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="drpBigDialog" class="wide">
+  <div class="dlg-body">
+    <h3>Velg periode</h3>
+    <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px; margin-bottom:10px;">Dra over flere dager for å velge start og slutt, eller trykk for én dag. Scroll sidelengs for å se hele prosjektet.</p>
+    <div class="drp-big-wrap" id="drpBigWrap"></div>
+    <div class="drp-summary" id="drpBigSummary" style="margin-top:10px;"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="drpBigCancel">Avbryt</button>
+      <button type="button" class="btn primary" id="drpBigUse">Bruk periode</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="pwDialog" class="wide">
@@ -3845,85 +3848,133 @@
       var today = toISODate(new Date());
       if(!byId("elStart").value) byId("elStart").value = today;
       if(!byId("elEnd").value) byId("elEnd").value = byId("elStart").value;
-      drpWindowMonday = mondayOf(fromISODate(byId("elStart").value));
-      renderDateRangeWidget();
+      renderDateRangeSummary();
     }
   }
   byId("elPlanned").addEventListener("change", syncPlanned);
 
-  // ---------- dra-velg periode-plukker (start/slutt på en oppgave) ----------
-  var drpWindowMonday = mondayOf(new Date());
-  var drpDragging = false;
-  var drpDragAnchor = null;
-  function drpDaysInWindow(){
-    var out = [];
-    for(var w=0; w<2; w++){
-      for(var i=0; i<5; i++){
-        out.push(new Date(drpWindowMonday.getFullYear(), drpWindowMonday.getMonth(), drpWindowMonday.getDate() + w*7 + i));
-      }
-    }
-    return out;
-  }
-  function drpCommit(aIso, bIso){
-    var s = aIso <= bIso ? aIso : bIso, e = aIso <= bIso ? bIso : aIso;
-    byId("elStart").value = s;
-    byId("elEnd").value = e;
-  }
-  function renderDateRangeWidget(){
-    var days = drpDaysInWindow();
-    var todayIso = toISODate(new Date());
+  // ---------- periode-plukker (start/slutt på en oppgave) ----------
+  function renderDateRangeSummary(){
     var startIso = byId("elStart").value, endIso = byId("elEnd").value;
-    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    var closeOut = cur && cur.closeOut;
-    var w0 = isoWeekInfo(days[0]).week, w1 = isoWeekInfo(days[days.length-1]).week;
-    byId("drpLabel").textContent = "Uke "+w0+(w1!==w0 ? "–"+w1 : "")+" · "+fmtRange(toISODate(days[0]), toISODate(days[days.length-1]));
-    byId("drpStrip").innerHTML = days.map(function(d, i){
-      var iso = toISODate(d);
-      var cls = ["drp-day"];
-      if(iso < todayIso) cls.push("past");
-      if(iso === todayIso) cls.push("today");
-      if(closeOut && iso === closeOut) cls.push("closeout");
-      if(startIso && endIso && iso >= startIso && iso <= endIso) cls.push("in-range");
-      if(startIso && iso === startIso) cls.push("range-start");
-      if(endIso && iso === endIso) cls.push("range-end");
-      var tt = fmtRange(iso,iso) + (closeOut && iso === closeOut ? " · Close out" : "");
-      return '<div class="'+cls.join(" ")+'" data-drpday="'+iso+'" title="'+escapeHtml(tt)+'"><span class="dn">'+DAY_ABBR[i%5].charAt(0)+'</span><span class="dd">'+d.getDate()+'</span></div>';
-    }).join("");
-    byId("drpSummary").innerHTML = !startIso ? "Ingen periode valgt ennå. Trykk eller dra over dager for å velge." :
+    byId("drpSummary").innerHTML = !startIso ? "Ingen periode valgt ennå." :
       "Valgt: <b>"+fmtRange(startIso,endIso)+"</b>"+(startIso!==endIso ? " · "+workdays({start:startIso,end:endIso}).length+" dager" : "");
   }
-  function drpCellAt(x, y){
-    var el = document.elementFromPoint(x, y);
-    var cell = el && el.closest("[data-drpday]");
-    return cell ? cell.dataset.drpday : null;
+  var drpBigDialog = byId("drpBigDialog");
+  var drpBigStart = null, drpBigEnd = null;
+  var drpBigDragging = false, drpBigDragAnchor = null;
+  var DRP_BIG_DW = 36;
+  function drpBigRender(){
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    if(!cur || !cur.start || !cur.end){
+      byId("drpBigWrap").innerHTML = '<p class="empty-note" style="padding:14px;">Prosjektet mangler start- og sluttdato.</p>';
+      return;
+    }
+    var range = behovProjectRange(cur);
+    var dw = DRP_BIG_DW;
+    var todayIso = toISODate(new Date());
+    var months = "", weeksRow = "";
+    var m0 = 0;
+    for(var j=0;j<=range.workdays;j++){
+      var dj = workdayDate(range, Math.min(j, range.workdays-1));
+      var d0 = workdayDate(range, m0);
+      if(j === range.workdays || dj.getMonth() !== d0.getMonth()){
+        months += '<div style="left:'+(m0*dw)+'px; width:'+((j-m0)*dw)+'px">'+NB_MONTHS[d0.getMonth()]+'</div>';
+        m0 = j;
+      }
+    }
+    for(var wi=0; wi<range.workdays; wi+=5){
+      var wStart = workdayDate(range, wi);
+      weeksRow += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
+    }
+    var bands = "";
+    for(var w=0; w<range.workdays; w+=10){
+      bands += '<div class="drp-big-weekband" style="left:'+(w*dw)+'px; width:'+(Math.min(5,range.workdays-w)*dw)+'px"></div>';
+    }
+    var todayLine = "";
+    var todayOffset = Math.round((fromISODate(todayIso) - range.start)/86400000);
+    if(todayOffset >= 0 && todayOffset < range.days){
+      var ti = workdayIndex(range, todayIso);
+      todayLine = '<div class="drp-big-today" style="left:'+(ti*dw + dw/2 - 1)+'px"></div>';
+    }
+    var closeoutLine = "";
+    if(cur.closeOut){
+      var coIdx = workdayIndex(range, cur.closeOut);
+      closeoutLine = '<div class="drp-big-closeout" style="left:'+(coIdx*dw + dw/2 - 1)+'px" title="Close out: '+fmtRange(cur.closeOut,cur.closeOut)+'"></div>';
+    }
+    var cells = "";
+    for(var i=0;i<range.workdays;i++){
+      var d = workdayDate(range, i);
+      var iso = toISODate(d);
+      var cls = ["drp-big-day"];
+      if(iso < todayIso) cls.push("past");
+      if(iso === todayIso) cls.push("today");
+      if(drpBigStart && drpBigEnd && iso >= drpBigStart && iso <= drpBigEnd) cls.push("in-range");
+      if(drpBigStart && iso === drpBigStart) cls.push("range-start");
+      if(drpBigEnd && iso === drpBigEnd) cls.push("range-end");
+      cells += '<div class="'+cls.join(" ")+'" data-drpbigday="'+iso+'" style="left:'+(i*dw)+'px; width:'+dw+'px;" title="'+fmtRange(iso,iso)+'">'+d.getDate()+'</div>';
+    }
+    var totalW = range.workdays*dw;
+    byId("drpBigWrap").innerHTML =
+      '<div style="width:'+totalW+'px;">' +
+        '<div class="drp-big-months" style="width:'+totalW+'px;">'+months+'</div>' +
+        '<div class="drp-big-weeks" style="width:'+totalW+'px;">'+weeksRow+'</div>' +
+        '<div class="drp-big-track" style="width:'+totalW+'px;">'+bands+todayLine+closeoutLine+cells+'</div>' +
+      '</div>';
+    byId("drpBigSummary").innerHTML = !drpBigStart ? "Ingen periode valgt ennå." :
+      "Valgt: <b>"+fmtRange(drpBigStart,drpBigEnd)+"</b>"+(drpBigStart!==drpBigEnd ? " · "+workdays({start:drpBigStart,end:drpBigEnd}).length+" dager" : "");
   }
-  byId("drpStrip").addEventListener("pointerdown", function(ev){
-    var cell = ev.target.closest("[data-drpday]");
+  function drpBigCellAt(x, y){
+    var el = document.elementFromPoint(x, y);
+    var cell = el && el.closest("[data-drpbigday]");
+    return cell ? cell.dataset.drpbigday : null;
+  }
+  function drpBigCommit(aIso, bIso){
+    drpBigStart = aIso <= bIso ? aIso : bIso;
+    drpBigEnd = aIso <= bIso ? bIso : aIso;
+  }
+  byId("drpBigWrap").addEventListener("pointerdown", function(ev){
+    var cell = ev.target.closest("[data-drpbigday]");
     if(!cell || (ev.pointerType === "mouse" && ev.button !== 0)) return;
     ev.preventDefault();
-    drpDragAnchor = cell.dataset.drpday;
-    drpDragging = true;
-    drpCommit(drpDragAnchor, drpDragAnchor);
-    renderDateRangeWidget();
+    drpBigDragAnchor = cell.dataset.drpbigday;
+    drpBigDragging = true;
+    drpBigCommit(drpBigDragAnchor, drpBigDragAnchor);
+    drpBigRender();
   });
   document.addEventListener("pointermove", function(ev){
-    if(!drpDragging || !drpDragAnchor) return;
-    var iso = drpCellAt(ev.clientX, ev.clientY);
+    if(!drpBigDragging || !drpBigDragAnchor) return;
+    var iso = drpBigCellAt(ev.clientX, ev.clientY);
     if(!iso) return;
-    drpCommit(drpDragAnchor, iso);
-    renderDateRangeWidget();
+    drpBigCommit(drpBigDragAnchor, iso);
+    drpBigRender();
   });
   document.addEventListener("pointerup", function(){
-    drpDragging = false;
-    drpDragAnchor = null;
+    drpBigDragging = false;
+    drpBigDragAnchor = null;
   });
-  byId("drpPrev").addEventListener("click", function(){
-    drpWindowMonday = new Date(drpWindowMonday.getFullYear(), drpWindowMonday.getMonth(), drpWindowMonday.getDate()-14);
-    renderDateRangeWidget();
+  byId("drpOpenBig").addEventListener("click", function(){
+    drpBigStart = byId("elStart").value || null;
+    drpBigEnd = byId("elEnd").value || null;
+    drpBigRender();
+    drpBigDialog.showModal();
+    requestAnimationFrame(function(){
+      var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+      if(!cur || !cur.start || !cur.end) return;
+      var range = behovProjectRange(cur);
+      var anchorIso = drpBigStart || toISODate(new Date());
+      var idx = workdayIndex(range, anchorIso);
+      byId("drpBigWrap").scrollLeft = Math.max(0, idx*DRP_BIG_DW - 150);
+    });
   });
-  byId("drpNext").addEventListener("click", function(){
-    drpWindowMonday = new Date(drpWindowMonday.getFullYear(), drpWindowMonday.getMonth(), drpWindowMonday.getDate()+14);
-    renderDateRangeWidget();
+  byId("drpBigCancel").addEventListener("click", function(){ drpBigDialog.close(); });
+  drpBigDialog.addEventListener("click", function(ev){ if(ev.target === drpBigDialog) drpBigDialog.close(); });
+  byId("drpBigUse").addEventListener("click", function(){
+    if(drpBigStart){
+      byId("elStart").value = drpBigStart;
+      byId("elEnd").value = drpBigEnd || drpBigStart;
+      renderDateRangeSummary();
+    }
+    drpBigDialog.close();
   });
   function fillElForm(e){
     byId("elName").value = e.name;
@@ -3944,8 +3995,7 @@
     byId("elDlgTitle").textContent = "Legg oppgave i planen";
     fillElForm(e);
     byId("elStart").value = pickDate; byId("elEnd").value = pickDate;
-    drpWindowMonday = mondayOf(fromISODate(pickDate));
-    renderDateRangeWidget();
+    renderDateRangeSummary();
   });
 
   // elementId: rediger eksisterende · prefillDate: åpnet fra en dag i kalenderen · planNow: åpne med datoer slått på
@@ -3987,11 +4037,8 @@
         }
       }
     }
-    drpDragging = false;
-    drpDragAnchor = null;
-    drpWindowMonday = mondayOf(fromISODate(byId("elStart").value || toISODate(new Date())));
     syncPlanned();
-    renderDateRangeWidget();
+    renderDateRangeSummary();
     var pastNames = [];
     state.elements.forEach(function(e){ if(e.name && pastNames.indexOf(e.name) === -1) pastNames.push(e.name); });
     pastNames.sort(function(a,b){ return a.localeCompare(b,"no"); });
