@@ -413,7 +413,8 @@
   .goalgroup:last-child{ border-bottom:none; }
   .goalgroup .gg-label{ font-weight:600; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; flex:none; min-width:90px; }
   .goalgroup .gg-chips{ display:flex; flex-wrap:wrap; gap:5px; flex:1; }
-  .goalchip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:99px; background:var(--surface-alt); border:1px solid var(--border); }
+  .goalchip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:3px 9px; border-radius:99px; background:var(--surface-alt); border:1px solid var(--border); cursor:pointer; }
+  .goalchip:hover{ border-color:var(--border-strong); }
   .goalchip .gc-status{ font-size:10px; font-weight:700; opacity:.8; }
   .goalchip.s-mangler{ background:var(--bad-soft); color:var(--bad-ink); }
   .goalchip.s-pabegynt{ background:var(--warn-soft); color:var(--warn-ink); }
@@ -1622,24 +1623,6 @@
   </form>
 </dialog>
 
-<dialog id="detailDialog" class="wide">
-  <div class="dlg-body">
-    <h3 id="detTitle"></h3>
-    <div class="det-meta" id="detMeta"></div>
-    <div class="statuspicker big" id="detStatusPicker" style="margin-bottom:10px;">
-      <button type="button" data-detstatus="mangler">Mangler</button>
-      <button type="button" data-detstatus="pabegynt">Påbegynt</button>
-      <button type="button" data-detstatus="ferdig">Ferdig</button>
-    </div>
-    <div id="detNotes"></div>
-    <div class="det-days" id="detDays"></div>
-    <div class="dlg-actions">
-      <button type="button" class="btn ghost" id="detClose">Lukk</button>
-      <button type="button" class="btn primary" id="detGoto">Gå til oppgaven</button>
-    </div>
-  </div>
-</dialog>
-
 <div class="selbar" id="selBar" hidden><span id="selText"></span><button type="button" id="selCancel">Avbryt</button></div>
 
 <dialog id="weekVolDialog" class="wide">
@@ -1752,6 +1735,7 @@
       <textarea id="elNotes" maxlength="400" placeholder="Materialer, avhengigheter, kommentarer …"></textarea>
     </div>
     <div class="dlg-actions">
+      <button type="button" class="btn danger" id="elDelete" hidden style="margin-right:auto;">Slett</button>
       <button type="button" class="btn ghost" id="elCancel">Avbryt</button>
       <button type="submit" class="btn primary">Lagre</button>
     </div>
@@ -2439,8 +2423,8 @@
 
   function bindDetail(root){
     root.querySelectorAll("[data-detail]").forEach(function(el){
-      el.addEventListener("click", function(){ openDetail(this.dataset.detail); });
-      el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openDetail(this.dataset.detail); });
+      el.addEventListener("click", function(){ openElDialog(this.dataset.detail); });
+      el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openElDialog(this.dataset.detail); });
     });
   }
   function bindStaffOpen(root){
@@ -2698,7 +2682,6 @@
   });
 
   // ---------- detaljvindu (kun visning) ----------
-  var detailDialog = byId("detailDialog");
   function workdays(e){
     var out = [];
     if(!isPlanned(e)) return out;
@@ -2709,56 +2692,6 @@
     return out;
   }
   function dayLabel(d){ return '<div class="dl">'+DAY_SHORT[d.getDay()].replace(/^./, function(c){return c.toUpperCase();})+'<small>'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</small></div>'; }
-  function sectionOrFagBadge(e){
-    if(e.fag === "tomrer"){
-      return '<span><i class="dot" style="background:var(--'+e.section+'); border-radius:3px;"></i> '+(e.section==="innvendig"?"Innvendig":"Utvendig")+'</span>';
-    }
-    if(activeFag() === "alle"){
-      return '<span><i class="dot" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'; border-radius:3px;"></i> '+(FAG_LABELS[e.fag]||e.fag)+'</span>';
-    }
-    return "";
-  }
-  function openDetail(id){
-    var e = state.elements.find(function(x){ return x.id === id; });
-    if(!e) return;
-    detailDialog.dataset.id = id;
-    byId("detTitle").textContent = e.name;
-    byId("detMeta").innerHTML = statusPill(e) + sectionOrFagBadge(e) +
-      '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
-    byId("detStatusPicker").querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.detstatus === e.status); });
-    byId("detNotes").innerHTML = e.notes ? '<div class="det-notes">'+escapeHtml(e.notes)+'</div>' : '';
-    var days = workdays(e);
-    byId("detDays").innerHTML = days.map(function(d){
-      var iso = toISODate(d), ids = (e.assignments && e.assignments[iso]) || [];
-      return '<div class="det-day">'+dayLabel(d)+'<div class="ppl">'+(ids.length ? ids.map(function(pid){ return '<span>'+escapeHtml(personName(pid))+'</span>'; }).join("") : '<span class="nobody">Ingen satt opp</span>')+'</div></div>';
-    }).join("");
-    detailDialog.showModal();
-  }
-  byId("detStatusPicker").querySelectorAll("[data-detstatus]").forEach(function(b){
-    b.addEventListener("click", function(){
-      var id = detailDialog.dataset.id;
-      if(!id) return;
-      setElementStatus(id, this.dataset.detstatus);
-      byId("detStatusPicker").querySelectorAll("button").forEach(function(x){ x.classList.toggle("active", x===b); });
-      var e = state.elements.find(function(x){ return x.id === id; });
-      if(e) byId("detMeta").innerHTML = statusPill(e) + sectionOrFagBadge(e) +
-        '<span class="mono">'+(isPlanned(e) ? fmtRange(e.start, e.end) : 'Ikke lagt inn i planen')+'</span>';
-    });
-  });
-  byId("detClose").addEventListener("click", function(){ detailDialog.close(); });
-  detailDialog.addEventListener("click", function(ev){ if(ev.target === detailDialog) detailDialog.close(); });
-  byId("detGoto").addEventListener("click", function(){
-    var id = detailDialog.dataset.id;
-    detailDialog.close();
-    gotoElement(id);
-  });
-  function gotoElement(id){
-    view.elFilter = "alle";
-    renderElementsTab();
-    switchTab("elementer");
-    var card = document.querySelector('[data-elcard="'+id+'"]');
-    if(card){ card.scrollIntoView({block:"center"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); }
-  }
 
   // ---------- frivillige for én uke (låst til ukenummer) ----------
   var weekVolDialog = byId("weekVolDialog");
@@ -3540,7 +3473,7 @@
           var late = isLate(e);
           var cls = late ? "late" : "s-"+e.status;
           var label = late ? "Forsinket" : STATUS_LABEL[e.status];
-          return '<span class="goalchip '+cls+'">'+escapeHtml(e.name)+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
+          return '<span class="goalchip '+cls+'" data-detail="'+e.id+'" role="button" tabindex="0">'+escapeHtml(e.name)+' <span class="gc-status">'+escapeHtml(label)+'</span></span>';
         }).join("") + '</span>' +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen oppgaver skulle avsluttes denne uken.</p>';
@@ -3553,6 +3486,7 @@
     byId("teamWeekToday").hidden = isLiveTeamWeek;
 
     byId("weeklyGoalsList").innerHTML = goalsChipsHtml(teamWeekMonday);
+    bindDetail(byId("weeklyGoalsList"));
 
     var scripture = currentWeekScripture(teamWeekMonday);
     byId("weeklyScriptureView").textContent = scripture ? scripture.text : "Ingen skriftsted lagt inn ennå.";
@@ -3914,6 +3848,7 @@
     elDialog.dataset.prefillDate = prefillDate || "";
     byId("elId").value = elementId || "";
     byId("elPickWrap").hidden = true;
+    byId("elDelete").hidden = !isEdit;
     if(isEdit){
       var e = state.elements.find(function(x){ return x.id === elementId; });
       if(!e){ showError("Fant ikke oppgaven – den kan ha blitt slettet."); return; }
@@ -3954,6 +3889,15 @@
     elDialog.showModal();
   }
   byId("elCancel").addEventListener("click", function(){ elDialog.close(); });
+  byId("elDelete").addEventListener("click", function(){
+    var id = byId("elId").value;
+    if(!id) return;
+    askConfirm(
+      "Slette denne oppgaven? Dette fjerner også alle personer satt opp på den.",
+      function(){ deleteElement(id); elDialog.close(); },
+      { title: "Slette oppgave?", confirmLabel: "Slett" }
+    );
+  });
   elDialog.addEventListener("click", function(ev){ if(ev.target === elDialog) elDialog.close(); });
   byId("elForm").addEventListener("submit", function(ev){
     ev.preventDefault();
