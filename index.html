@@ -747,7 +747,6 @@
     <form id="loginForm">
       <input type="email" id="loginEmail" placeholder="E-post" required autocomplete="username" />
       <input type="password" id="loginPassword" placeholder="Passord" required autocomplete="current-password" />
-      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); margin:6px 0 2px;"><input type="checkbox" id="loginRemember" checked /> Husk meg på denne enheten</label>
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
     <p class="err" id="loginError"></p>
@@ -1863,27 +1862,12 @@
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12anhudHNtcnpjdGtzbmVxZWF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5ODUyNzQsImV4cCI6MjEwNTU2MTI3NH0.M_1-uErd_wIQPZskQK87kRGJlC3SPD5mCN0ofn3702c";
   // ---------------------------------------------------------------------
 
-  // "Husk meg"-preferansen (1/0) ligger alltid i localStorage (bare et flagg, ikke selve
-  // innloggingen), og styrer om selve økten lagres i localStorage (overlever restart av
-  // nettleseren) eller sessionStorage (forsvinner når fanen/nettleseren lukkes).
-  var REMEMBER_ME_KEY = "ldc_remember_me";
-  function rememberMePreferred(){
-    try{ return localStorage.getItem(REMEMBER_ME_KEY) !== "0"; }catch(e){ return true; }
-  }
-  var authStorage = {
-    getItem: function(key){
-      try{ return (rememberMePreferred() ? window.localStorage : window.sessionStorage).getItem(key); }catch(e){ return null; }
-    },
-    setItem: function(key, value){
-      try{ (rememberMePreferred() ? window.localStorage : window.sessionStorage).setItem(key, value); }catch(e){}
-    },
-    removeItem: function(key){
-      try{ window.localStorage.removeItem(key); window.sessionStorage.removeItem(key); }catch(e){}
-    }
-  };
+  // Økten lagres alltid i localStorage (overlever at fanen/nettleseren lukkes) - supabase-js sin
+  // egen standardoppførsel når ingen egen "storage" er satt, så innlogging holder seg til man
+  // aktivt logger ut.
   var sb = null;
   if(window.supabase && SUPABASE_URL.indexOf("REPLACE_WITH") !== 0){
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storage: authStorage } });
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [], textOverrides: [], peopleFagOrder: [] };
@@ -7638,7 +7622,6 @@
     var email = byId("loginEmail").value.trim();
     var password = byId("loginPassword").value;
     byId("loginError").textContent = "";
-    try{ localStorage.setItem(REMEMBER_ME_KEY, byId("loginRemember").checked ? "1" : "0"); }catch(e){}
     sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
       if(res.error){ byId("loginError").textContent = "Feil e-post eller passord."; return; }
       byId("loginPassword").value = "";
