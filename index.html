@@ -4024,6 +4024,11 @@
     pastNames.sort(function(a,b){ return a.localeCompare(b,"no"); });
     byId("elNameSuggestions").innerHTML = pastNames.map(function(n){ return '<option value="'+escapeHtml(n)+'"></option>'; }).join("");
     elDialog.showModal();
+    var dlgTitleEl = byId("elDlgTitle");
+    if(dlgTitleEl){
+      dlgTitleEl.setAttribute("tabindex", "-1");
+      dlgTitleEl.focus({ preventScroll: true });
+    }
   }
   byId("elCancel").addEventListener("click", function(){ elDialog.close(); });
   byId("elDelete").addEventListener("click", function(){
