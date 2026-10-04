@@ -4163,6 +4163,15 @@
     });
     return Object.keys(fags).map(function(f){ return FAG_LABELS[f] || f; }).join(", ");
   }
+  function singleCurrentTradeFagForPerson(personId){
+    var pid = state.currentProjectId;
+    var fags = {};
+    state.attendance.forEach(function(a){
+      if(a.project_id === pid && a.person_id === personId && FAG_LIST.indexOf(a.fag) !== -1) fags[a.fag] = true;
+    });
+    var keys = Object.keys(fags);
+    return keys.length === 1 ? keys[0] : "";
+  }
   function projectWorkdayIsoList(cur){
     if(!cur || !cur.start || !cur.end) return [];
     var range = behovProjectRange(cur);
@@ -4262,7 +4271,9 @@
       var status = deltok ? "Deltok" : (ja ? "Har svart ja" : (lokal ? "Lokal frivillig" : ""));
       var confirmed = impPeople.hasMarkerCols ? (deltok || ja || lokal) : true;
       var matchId = findExistingPersonByName(name);
-      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: "", matchId: matchId, currentFagLabel: matchId ? currentFagLabelForPerson(matchId) : "" };
+      var originalFag = matchId ? singleCurrentTradeFagForPerson(matchId) : "";
+      var fallbackLabel = matchId && !originalFag ? currentFagLabelForPerson(matchId) : "";
+      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: originalFag, originalFag: originalFag, matchId: matchId, currentFagLabel: fallbackLabel };
     });
     byId("impPeopleShowUnconfirmedWrap").style.display = impPeople.hasMarkerCols ? "flex" : "none";
     renderImpPeopleTable();
@@ -4350,7 +4361,7 @@
       if(r.phone.trim() && r.phone.trim() !== (existing.phone||"")) patch.phone = r.phone.trim().slice(0,40);
       if(r.address.trim() && r.address.trim() !== (existing.address||"")) patch.address = r.address.trim().slice(0,160);
       if(r.congregation.trim() && r.congregation.trim() !== (existing.congregation||"")) patch.congregation = r.congregation.trim().slice(0,120);
-      return { id: r.matchId, patch: patch, fag: r.fag };
+      return { id: r.matchId, patch: patch, fag: r.fag, originalFag: r.originalFag };
     });
     var workdays = projectWorkdayIsoList(cur);
     var insertPromise = toInsert.length
@@ -4366,11 +4377,19 @@
     insertPromise.then(function(res){
       if(res.error) throw res.error;
       var inserted = res.data || [];
-      var fagRows = [];
+      var fagRows = [];       // brukes til nye, fulle oppmøte-rader (nye personer, eller eksisterende uten tidligere fag)
+      var fagRenames = [];    // bytter fag på eksisterende oppmøte-rader (eksisterende person som endrer fag)
       inserted.forEach(function(row, i){ if(toInsert[i] && toInsert[i].fag) fagRows.push({ personId: row.id, fag: toInsert[i].fag }); });
-      toPatch.forEach(function(r){ if(r.fag) fagRows.push({ personId: r.id, fag: r.fag }); });
+      toPatch.forEach(function(r){
+        if(r.fag === r.originalFag || !r.fag) return;
+        if(r.originalFag) fagRenames.push({ personId: r.id, fromFag: r.originalFag, toFag: r.fag });
+        else fagRows.push({ personId: r.id, fag: r.fag });
+      });
       var patchPromises = toPatch.filter(function(r){ return Object.keys(r.patch).length; })
         .map(function(r){ return sb.from("people").update(r.patch).eq("id", r.id); });
+      var renamePromises = fagRenames.map(function(rn){
+        return sb.from("attendance").update({ fag: rn.toFag }).eq("project_id", cur.id).eq("person_id", rn.personId).eq("fag", rn.fromFag);
+      });
       var attendanceRows = [];
       if(workdays.length){
         fagRows.forEach(function(fr){
@@ -4380,12 +4399,12 @@
         });
       }
       var attendanceChunks = chunkArray(attendanceRows, 1000);
-      return Promise.all(patchPromises).then(function(){
+      return Promise.all(patchPromises.concat(renamePromises)).then(function(){
         return attendanceChunks.reduce(function(p, chunk){
           return p.then(function(){ return sb.from("attendance").upsert(chunk, { onConflict: "project_id,person_id,day" }); });
         }, Promise.resolve());
       }).then(function(){
-        return { insertedCount: inserted.length, patchedCount: toPatch.length, fagCount: fagRows.length, skippedAttendance: !workdays.length && fagRows.length > 0 };
+        return { insertedCount: inserted.length, patchedCount: toPatch.length, fagCount: fagRows.length + fagRenames.length, skippedAttendance: !workdays.length && fagRows.length > 0 };
       });
     }).then(function(summary){
       refetchPeople();
