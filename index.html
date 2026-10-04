@@ -406,6 +406,7 @@
   .wkel.st-ferdig .wkel-name{text-decoration:line-through;}
   .wkel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:6px;}
   .wkel-name{font-weight:600; font-size:13px; line-height:1.3;}
+  .cont-ind{color:var(--accent); font-weight:700; padding:0 1px;}
   .stpill{font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; white-space:nowrap; flex:none;}
   .stpill.s-mangler{background:var(--bad-soft); color:var(--bad-ink);}
   .stpill.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink);}
@@ -2438,8 +2439,13 @@
       els.forEach(function(e){
         var ids = (e.assignments && e.assignments[iso]) || [];
         var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
+        // Liten pil foran/etter navnet når oppgaven strekker seg over flere dager, så man kjenner
+        // igjen at det er samme oppgave som i går/i morgen - uten å tvinge kortene til å stå på
+        // linje på tvers av dagene (det ga for mye tomrom i praksis).
+        var contPrev = e.start < iso ? '<span class="cont-ind" title="Fortsetter fra forrige dag">‹</span>' : '';
+        var contNext = e.end > iso ? '<span class="cont-ind" title="Fortsetter neste dag">›</span>' : '';
         html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
-          '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
+          '<div class="wkel-top"><span class="wkel-name">'+contPrev+escapeHtml(e.name)+contNext+'</span>'+fagBadgeHtml(e.fag)+statusPill(e)+'</div>' +
           '<div class="ppl">' + (ids.length ? ids.map(function(pid){
             var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===e.id;
             return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+e.id+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
