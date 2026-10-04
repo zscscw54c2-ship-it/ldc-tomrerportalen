@@ -404,11 +404,6 @@
   .wkel.sec-utvendig{border-left-color:var(--utvendig);}
   .wkel.st-ferdig{opacity:.62;}
   .wkel.st-ferdig .wkel-name{text-decoration:line-through;}
-  /* Usynlig plassholder (samme høyde som et enkeltlinjers oppgavekort) for dagene en flerdagers-
-     oppgave ikke er aktiv, så den likevel havner på samme rad i nabokolonnene. Kun på PC, der
-     dagene vises side om side – på mobil (dagene stables) ville dette bare vært tomrom. */
-  .wkel-placeholder{ height:60px; }
-  @media (max-width:640px){ .wkel-placeholder{ display:none; } }
   .wkel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:6px;}
   .wkel-name{font-weight:600; font-size:13px; line-height:1.3;}
   .stpill{font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; white-space:nowrap; flex:none;}
@@ -2429,7 +2424,6 @@
     var todayIso = toISODate(new Date());
     var d = fromISODate(iso);
     var els = activeElementsOn(iso, calSection());
-    var elIds = new Set(els.map(function(e){ return e.id; }));
     var ppl = peopleAssignedOn(iso, els);
     var status = dayStatus(els.length, ppl.size);
     var conflicts = conflictsForDate(iso);
@@ -2438,18 +2432,10 @@
       '<div class="wkday-head"><span class="dn">'+weekdayName(d)+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
       (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
       '</div><div class="wkday-body">';
-    // Ved ukevisning (opts.order) går vi gjennom SAMME oppgaverekkefølge for alle 5 dagene, slik
-    // at en oppgave som strekker seg over flere dager havner på samme rad i hver dag-kolonne.
-    // Dager der oppgaven ikke er aktiv får en usynlig plassholder i stedet for hull i rekkefølgen.
-    var list = opts.order || els;
-    if(list.length === 0){
+    if(els.length === 0){
       html += '<div class="none">Ingenting planlagt</div>';
     } else {
-      list.forEach(function(e){
-        if(!elIds.has(e.id)){
-          html += '<div class="wkel-placeholder" aria-hidden="true"></div>';
-          return;
-        }
+      els.forEach(function(e){
         var ids = (e.assignments && e.assignments[iso]) || [];
         var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
         html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-detail="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0">' +
@@ -2479,23 +2465,11 @@
   function renderWeekGrid(){
     var grid = byId("weekGrid");
     var isCurrentWeek = view.weekStart.getTime() === mondayOf(new Date()).getTime();
-    var weekIsos = [];
-    for(var i=0;i<5;i++){
-      weekIsos.push(toISODate(new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i)));
-    }
-    // Felles rekkefølge for hele uken (sortert på startdato, så navn), så en oppgave som strekker
-    // seg over flere dager havner på samme rad i hver dag-kolonne – se buildDayCardHtml.
-    var section = calSection();
-    var byId_ = {};
-    weekIsos.forEach(function(iso){ activeElementsOn(iso, section).forEach(function(e){ byId_[e.id] = e; }); });
-    var sharedOrder = Object.keys(byId_).map(function(id){ return byId_[id]; }).sort(function(a,b){
-      if(a.start !== b.start) return a.start < b.start ? -1 : 1;
-      return a.name.localeCompare(b.name, "no");
-    });
     var html = "";
-    weekIsos.forEach(function(iso){
-      html += buildDayCardHtml(iso, { collapsePast: isCurrentWeek, order: sharedOrder });
-    });
+    for(var i=0;i<5;i++){
+      var d = new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i);
+      html += buildDayCardHtml(toISODate(d), { collapsePast: isCurrentWeek });
+    }
     grid.innerHTML = html;
     bindDetail(grid);
     grid.querySelectorAll(".wkday.past .wkday-head").forEach(function(h){
