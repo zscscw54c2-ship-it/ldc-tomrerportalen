@@ -545,6 +545,7 @@
   .imp-badge.new{ background:var(--good-soft); color:var(--good-ink); }
   .imp-badge.match{ background:var(--warn-soft); color:var(--warn-ink); }
   .imp-status-chip{ margin-top:4px; font-size:9.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
+  .imp-status-chip.unconfirmed{ color:var(--warn-ink); }
   .imp-rowremove{ background:none; border:none; color:var(--bad); cursor:pointer; font-size:17px; line-height:1; padding:2px 8px; }
   .imp-rowremove:hover{ color:var(--bad-ink); }
   .imp-dropzone{ border:1.5px dashed var(--border-strong); border-radius:10px; padding:18px 14px; text-align:center; color:var(--muted); font-size:13px; }
@@ -1821,10 +1822,13 @@
         <div class="field"><label>Hvilken kolonne er telefon? (valgfritt)</label><select id="impPeopleMapTelefon"></select></div>
         <div class="field"><label>Hvilken kolonne er adresse? (valgfritt)</label><select id="impPeopleMapAdresse"></select></div>
         <div class="field"><label>Hvilken kolonne er menighet? (valgfritt)</label><select id="impPeopleMapMenighet"></select></div>
-        <div class="field"><label>Status-kolonne å vise som merkelapp? (valgfritt, f.eks. «Deltok»)</label><select id="impPeopleMapStatus"></select></div>
       </div>
+      <p class="sub" id="impPeopleMarkerNote" style="font-size:12px; color:var(--muted); margin-top:10px; display:none;"></p>
     </div>
     <div id="impPeopleStep2" hidden>
+      <label id="impPeopleShowUnconfirmedWrap" style="display:none; align-items:center; gap:6px; font-size:12.5px; margin-bottom:8px;">
+        <input type="checkbox" id="impPeopleShowUnconfirmed" /> Vis også uavklarte personer (<span id="impPeopleUnconfirmedCount">0</span> stk)
+      </label>
       <p class="sub" id="impPeopleSummary" style="font-size:12.5px; color:var(--muted); margin-top:-6px;"></p>
       <div class="imp-table-wrap"><table class="imp-table" id="impPeopleTable"></table></div>
     </div>
@@ -4164,9 +4168,13 @@
   var impPeople = { headers: [], fileRows: [], rows: [] };
   function impPeopleResetToStep1(){
     impPeople.headers = []; impPeople.fileRows = []; impPeople.rows = [];
+    impPeople.deltokCol = ""; impPeople.jaCol = ""; impPeople.lokalCol = ""; impPeople.hasMarkerCols = false; impPeople.showUnconfirmed = false;
     byId("impPeopleFile").value = "";
     byId("impPeopleMapWrap").hidden = true;
+    byId("impPeopleMarkerNote").style.display = "none";
     byId("impPeopleParseError").style.display = "none";
+    byId("impPeopleShowUnconfirmed").checked = false;
+    byId("impPeopleShowUnconfirmedWrap").style.display = "none";
     byId("impPeopleStep1").hidden = false;
     byId("impPeopleStep2").hidden = true;
     byId("impPeopleBack").hidden = true;
@@ -4201,40 +4209,63 @@
       var telCol = guessColumn(parsed.headers, ["telefon","tlf","mobil","phone"]);
       var adrCol = guessColumn(parsed.headers, ["adresse","address","bosted"]);
       var menCol = guessColumn(parsed.headers, ["menighet","congregation"]);
-      var statusCol = guessColumn(parsed.headers, ["deltok","har svart ja","invitert","lokal frivillig"]);
+      impPeople.deltokCol = guessColumn(parsed.headers, ["deltok"]);
+      impPeople.jaCol = guessColumn(parsed.headers, ["har svart ja","svarte ja"]);
+      impPeople.lokalCol = guessColumn(parsed.headers, ["lokal frivillig"]);
+      impPeople.hasMarkerCols = !!(impPeople.deltokCol || impPeople.jaCol || impPeople.lokalCol);
       byId("impPeopleMapNavn").innerHTML = colSelectHtml(parsed.headers, navnCol, false);
       byId("impPeopleMapTelefon").innerHTML = colSelectHtml(parsed.headers, telCol, true);
       byId("impPeopleMapAdresse").innerHTML = colSelectHtml(parsed.headers, adrCol, true);
       byId("impPeopleMapMenighet").innerHTML = colSelectHtml(parsed.headers, menCol, true);
-      byId("impPeopleMapStatus").innerHTML = colSelectHtml(parsed.headers, statusCol, true);
       byId("impPeopleMapWrap").hidden = false;
+      var markerNote = byId("impPeopleMarkerNote");
+      if(impPeople.hasMarkerCols){
+        var usedCols = [impPeople.deltokCol, impPeople.jaCol, impPeople.lokalCol].filter(Boolean);
+        markerNote.textContent = "Fant kolonnene «" + usedCols.join("», «") + "» – kun personer merket i minst én av disse tas med i forhåndsvisningen (resten kan vises med en avkrysning i neste steg).";
+        markerNote.style.display = "block";
+      } else {
+        markerNote.style.display = "none";
+      }
       byId("impPeopleNext").disabled = false;
     }).catch(function(err){
       byId("impPeopleParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
       byId("impPeopleParseError").style.display = "block";
     });
   });
+  function cellMarked(v){ return !!String(v==null?"":v).trim(); }
   byId("impPeopleNext").addEventListener("click", function(){
     var navnCol = byId("impPeopleMapNavn").value;
     if(!navnCol) return;
     var telCol = byId("impPeopleMapTelefon").value;
     var adrCol = byId("impPeopleMapAdresse").value;
     var menCol = byId("impPeopleMapMenighet").value;
-    var statusCol = byId("impPeopleMapStatus").value;
-    impPeople.rows = impPeople.fileRows.map(function(row){
+    var deltokCol = impPeople.deltokCol, jaCol = impPeople.jaCol, lokalCol = impPeople.lokalCol;
+    impPeople.showUnconfirmed = false;
+    impPeople.rows = impPeople.fileRows.filter(function(row){
+      return normalizePersonName(row[navnCol]);
+    }).map(function(row){
       var name = normalizePersonName(row[navnCol]);
       var phone = telCol ? String(row[telCol]==null?"":row[telCol]).trim() : "";
       var address = adrCol ? String(row[adrCol]==null?"":row[adrCol]).trim() : "";
       var congregation = menCol ? String(row[menCol]==null?"":row[menCol]).trim() : "";
-      var status = statusCol && String(row[statusCol]==null?"":row[statusCol]).trim() ? statusCol : "";
-      return { name: name, phone: phone, address: address, congregation: congregation, status: status, fag: "", matchId: findExistingPersonByName(name), include: !!name };
+      var deltok = deltokCol && cellMarked(row[deltokCol]);
+      var ja = jaCol && cellMarked(row[jaCol]);
+      var lokal = lokalCol && cellMarked(row[lokalCol]);
+      var status = deltok ? "Deltok" : (ja ? "Har svart ja" : (lokal ? "Lokal frivillig" : ""));
+      var confirmed = impPeople.hasMarkerCols ? (deltok || ja || lokal) : true;
+      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: "", matchId: findExistingPersonByName(name) };
     });
+    byId("impPeopleShowUnconfirmedWrap").style.display = impPeople.hasMarkerCols ? "flex" : "none";
     renderImpPeopleTable();
     byId("impPeopleStep1").hidden = true;
     byId("impPeopleStep2").hidden = false;
     byId("impPeopleBack").hidden = false;
     byId("impPeopleNext").hidden = true;
     byId("impPeopleUpload").hidden = false;
+  });
+  byId("impPeopleShowUnconfirmed").addEventListener("change", function(){
+    impPeople.showUnconfirmed = this.checked;
+    renderImpPeopleTable();
   });
   byId("impPeopleBack").addEventListener("click", function(){
     byId("impPeopleStep1").hidden = false;
@@ -4243,16 +4274,24 @@
     byId("impPeopleNext").hidden = false;
     byId("impPeopleUpload").hidden = true;
   });
+  function impPeopleRowShown(r){
+    return !r.removed && (r.confirmed || impPeople.showUnconfirmed);
+  }
   function renderImpPeopleTable(){
     var rows = impPeople.rows;
-    var visible = rows.filter(function(r){ return r.include; });
+    var visible = rows.filter(impPeopleRowShown);
     var newCount = visible.filter(function(r){ return !r.matchId; }).length;
     var matchCount = visible.length - newCount;
-    byId("impPeopleSummary").textContent = visible.length + " personer i filen – " + newCount + " nye, " + matchCount + " finnes fra før. Fag er valgfritt – sett det bare på de du vil sette opp i kalenderen med en gang.";
+    var hiddenUnconfirmed = impPeople.hasMarkerCols ? rows.filter(function(r){ return !r.removed && !r.confirmed; }).length : 0;
+    byId("impPeopleUnconfirmedCount").textContent = hiddenUnconfirmed;
+    var summary = visible.length + " personer vises – " + newCount + " nye, " + matchCount + " finnes fra før.";
+    if(impPeople.hasMarkerCols && !impPeople.showUnconfirmed) summary += " " + hiddenUnconfirmed + " uten kryss i «Deltok»/«Har svart ja»/«Lokal frivillig» er utelatt.";
+    summary += " Fag er valgfritt – sett det bare på de du vil sette opp i kalenderen med en gang.";
+    byId("impPeopleSummary").textContent = summary;
     var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Menighet</th><th>Fag</th><th></th></tr></thead><tbody>";
     rows.forEach(function(r, idx){
-      if(!r.include) return;
-      var statusChip = r.status ? '<div class="imp-status-chip">'+escapeHtml(r.status)+'</div>' : "";
+      if(!impPeopleRowShown(r)) return;
+      var statusChip = r.status ? '<div class="imp-status-chip">'+escapeHtml(r.status)+'</div>' : (impPeople.hasMarkerCols ? '<div class="imp-status-chip unconfirmed">Ikke avklart</div>' : "");
       html += '<tr class="'+(r.matchId?'imp-match':'imp-new')+'" data-improw="'+idx+'">' +
         '<td><span class="imp-badge '+(r.matchId?'match':'new')+'">'+(r.matchId?'Finnes':'Ny')+'</span>'+statusChip+'</td>' +
         '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="60" /></td>' +
@@ -4275,21 +4314,21 @@
     });
     byId("impPeopleTable").querySelectorAll("[data-improwremove]").forEach(function(b){
       b.addEventListener("click", function(){
-        impPeople.rows[+this.dataset.improwremove].include = false;
+        impPeople.rows[+this.dataset.improwremove].removed = true;
         renderImpPeopleTable();
       });
     });
     updateImpPeopleUploadState();
   }
   function updateImpPeopleUploadState(){
-    var visible = impPeople.rows.filter(function(r){ return r.include; });
+    var visible = impPeople.rows.filter(impPeopleRowShown);
     var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim(); });
     byId("impPeopleUpload").disabled = !ready;
   }
   byId("impPeopleUpload").addEventListener("click", function(){
     if(!sb) return;
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    var visible = impPeople.rows.filter(function(r){ return r.include && r.name.trim(); });
+    var visible = impPeople.rows.filter(function(r){ return impPeopleRowShown(r) && r.name.trim(); });
     if(!visible.length) return;
     var uploadBtn = byId("impPeopleUpload");
     uploadBtn.disabled = true;
