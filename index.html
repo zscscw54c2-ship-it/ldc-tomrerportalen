@@ -2202,7 +2202,8 @@
   }
   function shopItemsForCurrentProject(){
     var items = state.shopItems.filter(inCurrentProject);
-    if(activeFag() === "alle" || myTeamPair()) return items;
+    if(activeFag() === "alle") return items;
+    if(!isByggeleder() && myTeamPair()) return items;
     return items.filter(matchesFag);
   }
   function drawingsForCurrentProject(){
@@ -6613,7 +6614,7 @@
       fagStatusBox.innerHTML = sections.map(function(s){
         var note = toFagStatusFor(meeting.id, s.fag, s.section);
         var key = s.fag + "|" + (s.section || "");
-        var isOpen = !!view.toFagOpen[key];
+        var isOpen = view.toFagOpen[key] !== false;
         return '<div>' +
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
           '<button type="button" class="fagweek-toggle" data-fagtoggle="'+key+'">' +
