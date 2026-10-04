@@ -261,6 +261,7 @@
   .personrow .pname{font-weight:600; font-size:14px;}
   .personrow .pmeta{font-size:11.5px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
   .badge.group{background:var(--surface-alt); border:1px solid var(--border); color:var(--muted); font-size:10.5px; font-weight:600; padding:1px 7px; margin-left:6px; vertical-align:1px;}
+  .badge.congregation{background:var(--accent-soft); border:1px solid transparent; color:var(--accent); font-size:10.5px; font-weight:600; padding:1px 7px; margin-left:6px; vertical-align:1px;}
 
   form.inline-add{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
   form.inline-add input[type=text]{flex:1; min-width:160px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);}
@@ -543,6 +544,7 @@
   .imp-badge{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; }
   .imp-badge.new{ background:var(--good-soft); color:var(--good-ink); }
   .imp-badge.match{ background:var(--warn-soft); color:var(--warn-ink); }
+  .imp-status-chip{ margin-top:4px; font-size:9.5px; font-weight:600; color:var(--muted); white-space:nowrap; }
   .imp-rowremove{ background:none; border:none; color:var(--bad); cursor:pointer; font-size:17px; line-height:1; padding:2px 8px; }
   .imp-rowremove:hover{ color:var(--bad-ink); }
   .imp-dropzone{ border:1.5px dashed var(--border-strong); border-radius:10px; padding:18px 14px; text-align:center; color:var(--muted); font-size:13px; }
@@ -1808,7 +1810,7 @@
   <div class="dlg-body">
     <h3>Importer mannskapsliste</h3>
     <div id="impPeopleStep1">
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Last opp en fil (Excel eller CSV) med navn og kontaktinfo. Filen trenger ikke å si noe om fag – det velger du selv for hver person i neste steg.</p>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Last opp en fil (Excel eller CSV) med navn og kontaktinfo – f.eks. prosjektmannskapslisten. Fag er valgfritt og kan settes per person i neste steg. Personer som finnes fra før gjenkjennes på navn og blir ikke duplisert.</p>
       <div class="imp-dropzone">
         Velg fil
         <div><input type="file" id="impPeopleFile" accept=".xlsx,.xls,.csv" /></div>
@@ -1818,6 +1820,8 @@
         <div class="field"><label>Hvilken kolonne er navn?</label><select id="impPeopleMapNavn"></select></div>
         <div class="field"><label>Hvilken kolonne er telefon? (valgfritt)</label><select id="impPeopleMapTelefon"></select></div>
         <div class="field"><label>Hvilken kolonne er adresse? (valgfritt)</label><select id="impPeopleMapAdresse"></select></div>
+        <div class="field"><label>Hvilken kolonne er menighet? (valgfritt)</label><select id="impPeopleMapMenighet"></select></div>
+        <div class="field"><label>Status-kolonne å vise som merkelapp? (valgfritt, f.eks. «Deltok»)</label><select id="impPeopleMapStatus"></select></div>
       </div>
     </div>
     <div id="impPeopleStep2" hidden>
@@ -3436,7 +3440,7 @@
       });
     });
     var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
-    return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+'</span>' +
+    return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+(p.congregation ? ' <span class="badge congregation">'+escapeHtml(p.congregation)+'</span>' : '')+'</span>' +
       '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
       (isByggeleder() ? '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
       '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button>' : '') + '</span></div>';
@@ -4049,7 +4053,22 @@
     for(var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
     return out;
   }
-  function normText(s){ return String(s||"").toLowerCase().replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a").trim(); }
+  function normText(s){
+    var t = String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+    return t.replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a").replace(/\s+/g," ").trim();
+  }
+  function normalizePersonName(raw){
+    var s = String(raw||"").trim();
+    if(!s) return "";
+    s = s.split(/[\r\n]+/)[0].trim();
+    var ci = s.indexOf(",");
+    if(ci !== -1){
+      var last = s.slice(0, ci).trim();
+      var first = s.slice(ci+1).trim();
+      if(last && first) s = first + " " + last;
+    }
+    return s.replace(/\s+/g, " ").trim();
+  }
   function cellToIso(v){
     if(v instanceof Date) return toISODate(v);
     var s = String(v==null?"":v).trim();
@@ -4181,9 +4200,13 @@
       var navnCol = guessColumn(parsed.headers, ["navn","name","fullt navn"]);
       var telCol = guessColumn(parsed.headers, ["telefon","tlf","mobil","phone"]);
       var adrCol = guessColumn(parsed.headers, ["adresse","address","bosted"]);
+      var menCol = guessColumn(parsed.headers, ["menighet","congregation"]);
+      var statusCol = guessColumn(parsed.headers, ["deltok","har svart ja","invitert","lokal frivillig"]);
       byId("impPeopleMapNavn").innerHTML = colSelectHtml(parsed.headers, navnCol, false);
       byId("impPeopleMapTelefon").innerHTML = colSelectHtml(parsed.headers, telCol, true);
       byId("impPeopleMapAdresse").innerHTML = colSelectHtml(parsed.headers, adrCol, true);
+      byId("impPeopleMapMenighet").innerHTML = colSelectHtml(parsed.headers, menCol, true);
+      byId("impPeopleMapStatus").innerHTML = colSelectHtml(parsed.headers, statusCol, true);
       byId("impPeopleMapWrap").hidden = false;
       byId("impPeopleNext").disabled = false;
     }).catch(function(err){
@@ -4196,11 +4219,15 @@
     if(!navnCol) return;
     var telCol = byId("impPeopleMapTelefon").value;
     var adrCol = byId("impPeopleMapAdresse").value;
+    var menCol = byId("impPeopleMapMenighet").value;
+    var statusCol = byId("impPeopleMapStatus").value;
     impPeople.rows = impPeople.fileRows.map(function(row){
-      var name = String(row[navnCol]==null?"":row[navnCol]).trim();
+      var name = normalizePersonName(row[navnCol]);
       var phone = telCol ? String(row[telCol]==null?"":row[telCol]).trim() : "";
       var address = adrCol ? String(row[adrCol]==null?"":row[adrCol]).trim() : "";
-      return { name: name, phone: phone, address: address, fag: "", matchId: findExistingPersonByName(name), include: !!name };
+      var congregation = menCol ? String(row[menCol]==null?"":row[menCol]).trim() : "";
+      var status = statusCol && String(row[statusCol]==null?"":row[statusCol]).trim() ? statusCol : "";
+      return { name: name, phone: phone, address: address, congregation: congregation, status: status, fag: "", matchId: findExistingPersonByName(name), include: !!name };
     });
     renderImpPeopleTable();
     byId("impPeopleStep1").hidden = true;
@@ -4221,15 +4248,17 @@
     var visible = rows.filter(function(r){ return r.include; });
     var newCount = visible.filter(function(r){ return !r.matchId; }).length;
     var matchCount = visible.length - newCount;
-    byId("impPeopleSummary").textContent = visible.length + " personer i filen – " + newCount + " nye, " + matchCount + " finnes fra før. Nye personer må ha fag valgt før du kan laste opp.";
-    var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Fag</th><th></th></tr></thead><tbody>";
+    byId("impPeopleSummary").textContent = visible.length + " personer i filen – " + newCount + " nye, " + matchCount + " finnes fra før. Fag er valgfritt – sett det bare på de du vil sette opp i kalenderen med en gang.";
+    var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Menighet</th><th>Fag</th><th></th></tr></thead><tbody>";
     rows.forEach(function(r, idx){
       if(!r.include) return;
+      var statusChip = r.status ? '<div class="imp-status-chip">'+escapeHtml(r.status)+'</div>' : "";
       html += '<tr class="'+(r.matchId?'imp-match':'imp-new')+'" data-improw="'+idx+'">' +
-        '<td><span class="imp-badge '+(r.matchId?'match':'new')+'">'+(r.matchId?'Finnes':'Ny')+'</span></td>' +
+        '<td><span class="imp-badge '+(r.matchId?'match':'new')+'">'+(r.matchId?'Finnes':'Ny')+'</span>'+statusChip+'</td>' +
         '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="60" /></td>' +
         '<td><input type="text" data-impfield="phone" value="'+escapeHtml(r.phone)+'" maxlength="40" /></td>' +
         '<td><input type="text" data-impfield="address" value="'+escapeHtml(r.address)+'" maxlength="160" /></td>' +
+        '<td><input type="text" data-impfield="congregation" value="'+escapeHtml(r.congregation)+'" maxlength="120" /></td>' +
         '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select></td>' +
         '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
       '</tr>';
@@ -4254,7 +4283,7 @@
   }
   function updateImpPeopleUploadState(){
     var visible = impPeople.rows.filter(function(r){ return r.include; });
-    var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim() && (r.matchId || r.fag); });
+    var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim(); });
     byId("impPeopleUpload").disabled = !ready;
   }
   byId("impPeopleUpload").addEventListener("click", function(){
@@ -4262,19 +4291,28 @@
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var visible = impPeople.rows.filter(function(r){ return r.include && r.name.trim(); });
     if(!visible.length) return;
-    byId("impPeopleUpload").disabled = true;
+    var uploadBtn = byId("impPeopleUpload");
+    uploadBtn.disabled = true;
+    var origLabel = uploadBtn.textContent;
+    uploadBtn.textContent = "Laster opp …";
     var toInsert = visible.filter(function(r){ return !r.matchId; });
     var toPatch = visible.filter(function(r){ return r.matchId; }).map(function(r){
       var existing = state.people.find(function(p){ return p.id === r.matchId; });
       var patch = {};
       if(r.phone.trim() && r.phone.trim() !== (existing.phone||"")) patch.phone = r.phone.trim().slice(0,40);
       if(r.address.trim() && r.address.trim() !== (existing.address||"")) patch.address = r.address.trim().slice(0,160);
+      if(r.congregation.trim() && r.congregation.trim() !== (existing.congregation||"")) patch.congregation = r.congregation.trim().slice(0,120);
       return { id: r.matchId, patch: patch, fag: r.fag };
     });
     var workdays = projectWorkdayIsoList(cur);
     var insertPromise = toInsert.length
       ? sb.from("people").insert(toInsert.map(function(r){
-          return { name: r.name.trim().slice(0,60), phone: r.phone.trim().slice(0,40) || null, address: r.address.trim().slice(0,160) || null };
+          return {
+            name: r.name.trim().slice(0,60),
+            phone: r.phone.trim().slice(0,40) || null,
+            address: r.address.trim().slice(0,160) || null,
+            congregation: r.congregation.trim().slice(0,120) || null
+          };
         })).select()
       : Promise.resolve({ data: [] });
     insertPromise.then(function(res){
@@ -4293,7 +4331,7 @@
           });
         });
       }
-      var attendanceChunks = chunkArray(attendanceRows, 500);
+      var attendanceChunks = chunkArray(attendanceRows, 1000);
       return Promise.all(patchPromises).then(function(){
         return attendanceChunks.reduce(function(p, chunk){
           return p.then(function(){ return sb.from("attendance").upsert(chunk, { onConflict: "project_id,person_id,day" }); });
@@ -4305,12 +4343,14 @@
       refetchPeople();
       if(summary.fagCount) refetchAttendance();
       impPeopleDialog.close();
+      uploadBtn.textContent = origLabel;
       var msg = summary.insertedCount + " nye personer lagt til, " + summary.patchedCount + " oppdatert.";
       if(summary.skippedAttendance) msg += " Prosjektet mangler start-/sluttdato, så fag kunne ikke settes i kalenderen – sett det fra «Frivillige etter fag» etter at datoene er lagt inn.";
       showInfo(msg);
     }).catch(function(err){
       showError("Import feilet: " + (err && err.message ? err.message : err));
-      byId("impPeopleUpload").disabled = false;
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = origLabel;
     });
   });
 
@@ -4871,7 +4911,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", createdAt: row.created_at };
   }
   function rowToElement(row){
     return {
