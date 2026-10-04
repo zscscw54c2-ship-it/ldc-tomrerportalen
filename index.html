@@ -4244,13 +4244,21 @@
         markerNote.style.display = "none";
       }
       byId("impPeopleNext").disabled = false;
+      if(isExactAliasMatch(navnCol, ["navn","name","fullt navn"])){
+        impPeopleAdvanceToPreview();
+      }
     }).catch(function(err){
       byId("impPeopleParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
       byId("impPeopleParseError").style.display = "block";
     });
   });
   function cellMarked(v){ return !!String(v==null?"":v).trim(); }
-  byId("impPeopleNext").addEventListener("click", function(){
+  function isExactAliasMatch(col, aliases){
+    if(!col) return false;
+    var n = normText(col);
+    return aliases.some(function(a){ return normText(a) === n; });
+  }
+  function impPeopleAdvanceToPreview(){
     var navnCol = byId("impPeopleMapNavn").value;
     if(!navnCol) return;
     var telCol = byId("impPeopleMapTelefon").value;
@@ -4282,7 +4290,8 @@
     byId("impPeopleBack").hidden = false;
     byId("impPeopleNext").hidden = true;
     byId("impPeopleUpload").hidden = false;
-  });
+  }
+  byId("impPeopleNext").addEventListener("click", impPeopleAdvanceToPreview);
   byId("impPeopleShowUnconfirmed").addEventListener("change", function(){
     impPeople.showUnconfirmed = this.checked;
     renderImpPeopleTable();
@@ -4309,8 +4318,10 @@
     summary += " Fag er valgfritt – sett det bare på de du vil sette opp i kalenderen med en gang.";
     byId("impPeopleSummary").textContent = summary;
     var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Menighet</th><th>Fag</th><th></th></tr></thead><tbody>";
-    rows.forEach(function(r, idx){
-      if(!impPeopleRowShown(r)) return;
+    var shown = rows.map(function(r, idx){ return { r: r, idx: idx }; }).filter(function(x){ return impPeopleRowShown(x.r); });
+    shown.sort(function(a, b){ return (a.r.matchId ? 1 : 0) - (b.r.matchId ? 1 : 0); });
+    shown.forEach(function(x){
+      var r = x.r, idx = x.idx;
       var statusChip = r.status ? '<div class="imp-status-chip">'+escapeHtml(r.status)+'</div>' : (impPeople.hasMarkerCols ? '<div class="imp-status-chip unconfirmed">Ikke avklart</div>' : "");
       html += '<tr class="'+(r.matchId?'imp-match':'imp-new')+'" data-improw="'+idx+'">' +
         '<td><span class="imp-badge '+(r.matchId?'match':'new')+'">'+(r.matchId?'Finnes':'Ny')+'</span>'+statusChip+'</td>' +
