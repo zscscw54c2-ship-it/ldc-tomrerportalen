@@ -411,48 +411,6 @@
   .stpill.s-pabegynt{background:var(--warn-soft); color:var(--warn-ink);}
   .stpill.s-ferdig{background:var(--good-soft); color:var(--good-ink);}
   .stpill.late{background:var(--bad); color:#fff;}
-
-  /* Ukevisning som tabell (PC): én fast rad per oppgave på tvers av alle 5 dagene, i stedet for
-     at flerdagers-oppgaver gjentas som løsrevne kort i hver dag-kolonne (mobil bruker fortsatt
-     .wk/.wkday over, siden 6 kolonner ikke er lesbart på smal skjerm). */
-  .weekgantt{ display:none; }
-  @media (min-width:641px){
-    #weekGrid{ display:none; }
-    .weekgantt{
-      display:grid; grid-template-columns:minmax(150px,210px) repeat(5,minmax(0,1fr));
-      border:1px solid var(--border); border-radius:12px; overflow:auto; background:var(--surface);
-    }
-  }
-  .wg-corner{ border-bottom:1px solid var(--border); border-right:1px solid var(--border); background:var(--surface-alt); }
-  .wg-dayhead{
-    padding:10px 10px 8px; border-bottom:1px solid var(--border); border-right:1px solid var(--border);
-    background:var(--surface-alt); display:flex; align-items:baseline; gap:6px;
-  }
-  .wg-dayhead:last-child{ border-right:none; }
-  .wg-dayhead .dn{ font-weight:700; font-size:12.5px; }
-  .wg-dayhead .dd{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); }
-  .wg-dayhead .staff{ margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); font-family:"IBM Plex Mono",monospace; }
-  .wg-dayhead.today{ box-shadow:inset 0 3px 0 var(--accent); }
-  .wg-dayhead.today .dn, .wg-dayhead.today .dd{ color:var(--accent); }
-  .wg-taskname{
-    padding:8px 10px; border-bottom:1px solid var(--border); border-right:1px solid var(--border);
-    display:flex; flex-direction:column; gap:4px; cursor:pointer; font-size:12.5px;
-  }
-  .wg-taskname:hover{ background:var(--surface-alt); }
-  .wg-taskname .wg-tn-top{ display:flex; align-items:flex-start; gap:6px; flex-wrap:wrap; }
-  .wg-taskname .wkel-name{ font-weight:600; }
-  .wg-row.st-ferdig .wg-taskname .wkel-name{ text-decoration:line-through; opacity:.62; }
-  .wg-cell{ border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:6px 7px; min-height:48px; }
-  .wg-cell:last-child{ border-right:none; }
-  .wg-cell.inactive{ background:repeating-linear-gradient(135deg, var(--surface-alt) 0 8px, transparent 8px 16px); }
-  .wg-cell .ppl{ margin-top:0; }
-  .wg-empty{ grid-column:1 / -1; padding:16px; text-align:center; color:var(--muted); font-size:12.5px; }
-  .wg-presentrow .wg-taskname{ font-weight:700; color:var(--muted); font-size:11.5px; cursor:default; }
-  .wg-presentrow .wg-taskname:hover{ background:none; }
-  .wg-presentrow .wg-cell{ padding:7px; }
-  .wg-cell .present{ font-size:11px; color:var(--muted); }
-  .wg-cell .present .miss{ margin-top:5px; background:var(--warn-soft); border:1px solid var(--warn); color:var(--warn-ink); border-radius:8px; padding:5px 6px; }
-
   .goalgroup{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; padding:6px 0; border-bottom:1px solid var(--border); }
   .goalgroup:last-child{ border-bottom:none; }
   .goalgroup .gg-label{ font-weight:600; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; flex:none; min-width:90px; }
@@ -1038,7 +996,6 @@
       </div>
       <div class="unplanned-note" id="unplannedNote" hidden></div>
       <div class="wk" id="weekGrid"></div>
-      <div class="weekgantt" id="weekGanttTable"></div>
       <div class="cal-foot">
         <div class="legend">
           <span><i class="dot good"></i> Nok folk</span>
@@ -2518,80 +2475,7 @@
     grid.querySelectorAll(".wkday.past .wkday-head").forEach(function(h){
       h.addEventListener("click", function(){ h.closest(".wkday").classList.toggle("expanded"); });
     });
-    renderWeekGanttTable();
     if(view.sel) markDroppable(view.sel.iso, view.sel.from);
-  }
-  // PC-visningen av ukevisningen: samme data som buildDayCardHtml over, men lagt ut som én
-  // rad per oppgave på tvers av alle 5 dagene (i stedet for separate kort per dag-kolonne),
-  // slik at en flerdagers-oppgave står på linje og er lett å kjenne igjen som samme oppgave.
-  function renderWeekGanttTable(){
-    var box = byId("weekGanttTable");
-    if(!box) return;
-    var todayIso = toISODate(new Date());
-    var section = calSection();
-    var weekIsos = [];
-    for(var i=0;i<5;i++){
-      weekIsos.push(toISODate(new Date(view.weekStart.getFullYear(), view.weekStart.getMonth(), view.weekStart.getDate()+i)));
-    }
-    var perDay = weekIsos.map(function(iso){ return activeElementsOn(iso, section); });
-    var daySets = perDay.map(function(list){ return new Set(list.map(function(e){ return e.id; })); });
-    var byId_ = {};
-    perDay.forEach(function(list){ list.forEach(function(e){ byId_[e.id] = e; }); });
-    var rows = Object.keys(byId_).map(function(id){ return byId_[id]; }).sort(function(a,b){
-      if(a.start !== b.start) return a.start < b.start ? -1 : 1;
-      return a.name.localeCompare(b.name, "no");
-    });
-
-    var head = '<div class="wg-corner"></div>' + weekIsos.map(function(iso,i){
-      var d = fromISODate(iso);
-      var els = perDay[i];
-      var ppl = peopleAssignedOn(iso, els);
-      var status = dayStatus(els.length, ppl.size);
-      return '<div class="wg-dayhead'+(iso===todayIso?' today':'')+'"><span class="dn">'+weekdayName(d)+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-        (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
-        '</div>';
-    }).join("");
-
-    function chipHtml(pid, iso, fromId, conflicts){
-      var sel = view.sel && view.sel.pid===pid && view.sel.iso===iso && view.sel.from===fromId;
-      return '<span class="pchip'+(conflicts[pid]?' conf':'')+(sel?' sel':'')+'" data-drag-person="'+pid+'" data-iso="'+iso+'" data-from="'+fromId+'" title="'+(conflicts[pid]?'Satt opp flere steder denne dagen · ':'')+'Dra til en annen oppgave, eller ned i listen for å fjerne">'+escapeHtml(personName(pid))+'</span>';
-    }
-
-    var rowsHtml = rows.length === 0 ? '<div class="wg-empty">Ingenting planlagt denne uken.</div>' : rows.map(function(e){
-      var fagStripe = e.fag !== "tomrer" ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
-      var cells = weekIsos.map(function(iso, di){
-        if(!daySets[di].has(e.id)){
-          return '<div class="wg-cell inactive"></div>';
-        }
-        var conflicts = conflictsForDate(iso);
-        var ids = (e.assignments && e.assignments[iso]) || [];
-        return '<div class="wg-cell" data-drop-el="'+e.id+'" data-iso="'+iso+'">' +
-          '<div class="ppl">' + (ids.length ? ids.map(function(pid){ return chipHtml(pid, iso, e.id, conflicts); }).join("") : '<span class="nobody">Ingen satt opp</span>') + '</div>' +
-          '</div>';
-      }).join("");
-      return '<div class="wg-row st-'+e.status+'">' +
-        '<div class="wg-taskname" data-detail="'+e.id+'"'+fagStripe+' role="button" tabindex="0"><div class="wg-tn-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>'+fagBadgeHtml(e.fag)+'</div>'+statusPill(e)+'</div>' +
-        cells +
-        '</div>';
-    }).join("");
-
-    var presentCells = weekIsos.map(function(iso){
-      var present = presentOn(iso);
-      if(!present.size) return '<div class="wg-cell"></div>';
-      var missing = presentWithoutTask(iso);
-      return '<div class="wg-cell"><div class="present">'+present.size+' til stede' +
-        '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-          (missing.length ? '<b>Ledige ('+missing.length+')</b><span class="hint">Dra navnet opp</span>' +
-            missing.map(function(id){
-              var sel = view.sel && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
-              return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
-            }).join("")
-          : '<b>Alle har oppgave</b>') + '</div></div></div>';
-    }).join("");
-    var presentRow = '<div class="wg-row wg-presentrow"><div class="wg-taskname">Til stede</div>' + presentCells + '</div>';
-
-    box.innerHTML = head + rowsHtml + presentRow;
-    bindDetail(box);
   }
   // Hopper over helg: finner nærmeste ukedag (i dag selv hvis den allerede er man-fre).
   function nearestWeekday(iso){
@@ -2732,7 +2616,6 @@
   document.addEventListener("pointerup", function(ev){ endDrag(ev, false); });
   document.addEventListener("pointercancel", function(ev){ endDrag(ev, true); });
   bindWeekDragZone(byId("weekGrid"), "weekGrid");
-  bindWeekDragZone(byId("weekGanttTable"), "weekGrid");
   bindWeekDragZone(byId("dayGrid"), "weekGrid");
   bindWeekDragZone(byId("toFagStatusList"), "tomote");
 
