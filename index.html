@@ -4155,6 +4155,14 @@
     var hit = state.people.find(function(p){ return normText(p.name) === n; });
     return hit ? hit.id : null;
   }
+  function currentFagLabelForPerson(personId){
+    var pid = state.currentProjectId;
+    var fags = {};
+    state.attendance.forEach(function(a){
+      if(a.project_id === pid && a.person_id === personId) fags[a.fag] = true;
+    });
+    return Object.keys(fags).map(function(f){ return FAG_LABELS[f] || f; }).join(", ");
+  }
   function projectWorkdayIsoList(cur){
     if(!cur || !cur.start || !cur.end) return [];
     var range = behovProjectRange(cur);
@@ -4253,7 +4261,8 @@
       var lokal = lokalCol && cellMarked(row[lokalCol]);
       var status = deltok ? "Deltok" : (ja ? "Har svart ja" : (lokal ? "Lokal frivillig" : ""));
       var confirmed = impPeople.hasMarkerCols ? (deltok || ja || lokal) : true;
-      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: "", matchId: findExistingPersonByName(name) };
+      var matchId = findExistingPersonByName(name);
+      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: "", matchId: matchId, currentFagLabel: matchId ? currentFagLabelForPerson(matchId) : "" };
     });
     byId("impPeopleShowUnconfirmedWrap").style.display = impPeople.hasMarkerCols ? "flex" : "none";
     renderImpPeopleTable();
@@ -4298,7 +4307,7 @@
         '<td><input type="text" data-impfield="phone" value="'+escapeHtml(r.phone)+'" maxlength="40" /></td>' +
         '<td><input type="text" data-impfield="address" value="'+escapeHtml(r.address)+'" maxlength="160" /></td>' +
         '<td><input type="text" data-impfield="congregation" value="'+escapeHtml(r.congregation)+'" maxlength="120" /></td>' +
-        '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select></td>' +
+        '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select>'+(r.currentFagLabel ? '<div class="imp-status-chip">Nå: '+escapeHtml(r.currentFagLabel)+'</div>' : '')+'</td>' +
         '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
       '</tr>';
     });
