@@ -762,9 +762,12 @@
     .zone-head h2{ font-size:15px; margin:0; }
     .zone-head .zone-line{ flex:1; height:1px; background:var(--border); }
   }
-  .zone-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (min-width:1400px){ .zone-grid{ grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); } }
-  @media (max-width:720px){ .zone-grid{ grid-template-columns:1fr; } }
+  /* Masonry: hvert kort tar kun høyden innholdet trenger, i stedet for å strekkes til
+     høyden av det høyeste kortet i samme rad (som ga mye tomrom i små kort som Matterport/Koder). */
+  .zone-grid{ column-count:1; column-gap:14px; }
+  .zone-grid > .peoplecard{ break-inside:avoid; -webkit-column-break-inside:avoid; margin-bottom:14px; padding:14px; }
+  @media (min-width:721px){ .zone-grid{ column-count:2; } }
+  @media (min-width:1400px){ .zone-grid{ column-count:3; } }
 
   /* ---------- sammenleggbare fag-seksjoner (TO-møte "Status per fag") ---------- */
   .fagweek-toggle{ display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:2px 0; font:inherit; text-align:left; }
