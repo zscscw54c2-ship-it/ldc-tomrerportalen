@@ -17,6 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf-autotable.min.js"></script>
+<script src="vendor/xlsx.mini.min.js"></script>
 <style>
   :root{
     --bg:#f3f5f8;
@@ -528,6 +529,25 @@
   .drp-cal-day.range-start .num, .drp-cal-day.range-end .num{ color:#fff; font-weight:700; }
   .drp-cal-day.closeout::after{ content:""; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--bad); z-index:3; }
 
+  /* ---------- import fra fil (mannskapsliste / fremdriftsplan) ---------- */
+  dialog.imp-dialog{ width:min(900px, calc(100vw - 24px)); }
+  .imp-map-grid{ display:grid; gap:10px; margin-top:12px; }
+  .imp-map-grid .field label{ font-size:12px; font-weight:600; color:var(--muted); }
+  .imp-table-wrap{ max-height:52vh; overflow:auto; border:1px solid var(--border); border-radius:10px; margin-top:4px; }
+  .imp-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .imp-table th{ position:sticky; top:0; z-index:1; background:var(--surface-alt); text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); font-size:10px; color:var(--muted); text-transform:uppercase; white-space:nowrap; }
+  .imp-table td{ padding:4px 6px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .imp-table input[type=text], .imp-table input[type=date], .imp-table select{ width:100%; min-width:88px; border:1px solid var(--border); border-radius:6px; padding:4px 6px; font-size:12.5px; background:var(--surface); box-sizing:border-box; }
+  .imp-table tr.imp-new td:first-child{ box-shadow:inset 3px 0 0 var(--good); }
+  .imp-table tr.imp-match td:first-child{ box-shadow:inset 3px 0 0 var(--warn); }
+  .imp-badge{ display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; white-space:nowrap; }
+  .imp-badge.new{ background:var(--good-soft); color:var(--good-ink); }
+  .imp-badge.match{ background:var(--warn-soft); color:var(--warn-ink); }
+  .imp-rowremove{ background:none; border:none; color:var(--bad); cursor:pointer; font-size:17px; line-height:1; padding:2px 8px; }
+  .imp-rowremove:hover{ color:var(--bad-ink); }
+  .imp-dropzone{ border:1.5px dashed var(--border-strong); border-radius:10px; padding:18px 14px; text-align:center; color:var(--muted); font-size:13px; }
+  .imp-dropzone input[type=file]{ margin-top:8px; }
+
   /* oppmøte */
   .wk-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   .btn.vol{display:inline-flex; align-items:center; gap:6px;}
@@ -1002,6 +1022,9 @@
   </section>
 
   <section id="panel-elementer" class="panel">
+    <div style="margin-bottom:10px;">
+      <button type="button" class="btn small" id="importPlanBtn" hidden>Importer fremdriftsplan fra fil</button>
+    </div>
     <div class="filterbar" id="elFilterBar"></div>
     <div class="cols2" id="elSectionedCols">
       <div class="seccard">
@@ -1113,6 +1136,7 @@
           <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
           <button class="btn primary" type="submit">Legg til</button>
         </form>
+        <button type="button" class="btn small" id="importPeopleBtn" hidden style="margin-top:8px;">Importer mannskapsliste fra fil</button>
       </div>
       <div class="peoplecard">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
@@ -1776,6 +1800,66 @@
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="drpBigCancel">Avbryt</button>
       <button type="button" class="btn primary" id="drpBigUse">Bruk periode</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="impPeopleDialog" class="wide imp-dialog">
+  <div class="dlg-body">
+    <h3>Importer mannskapsliste</h3>
+    <div id="impPeopleStep1">
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Last opp en fil (Excel eller CSV) med navn og kontaktinfo. Filen trenger ikke å si noe om fag – det velger du selv for hver person i neste steg.</p>
+      <div class="imp-dropzone">
+        Velg fil
+        <div><input type="file" id="impPeopleFile" accept=".xlsx,.xls,.csv" /></div>
+      </div>
+      <p id="impPeopleParseError" class="sub" style="color:var(--bad); display:none; margin-top:8px;"></p>
+      <div class="imp-map-grid" id="impPeopleMapWrap" hidden>
+        <div class="field"><label>Hvilken kolonne er navn?</label><select id="impPeopleMapNavn"></select></div>
+        <div class="field"><label>Hvilken kolonne er telefon? (valgfritt)</label><select id="impPeopleMapTelefon"></select></div>
+        <div class="field"><label>Hvilken kolonne er adresse? (valgfritt)</label><select id="impPeopleMapAdresse"></select></div>
+      </div>
+    </div>
+    <div id="impPeopleStep2" hidden>
+      <p class="sub" id="impPeopleSummary" style="font-size:12.5px; color:var(--muted); margin-top:-6px;"></p>
+      <div class="imp-table-wrap"><table class="imp-table" id="impPeopleTable"></table></div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="impPeopleCancel">Avbryt</button>
+      <button type="button" class="btn ghost" id="impPeopleBack" hidden>‹ Tilbake</button>
+      <button type="button" class="btn primary" id="impPeopleNext" disabled>Fortsett til forhåndsvisning</button>
+      <button type="button" class="btn primary" id="impPeopleUpload" hidden>Last opp</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="impPlanDialog" class="wide imp-dialog">
+  <div class="dlg-body">
+    <h3>Importer fremdriftsplan</h3>
+    <div id="impPlanStep1">
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Last opp en grov fremdriftsplan (Excel eller CSV). Du går gjennom og retter opp fag, datoer og seksjon før noe legges inn.</p>
+      <div class="imp-dropzone">
+        Velg fil
+        <div><input type="file" id="impPlanFile" accept=".xlsx,.xls,.csv" /></div>
+      </div>
+      <p id="impPlanParseError" class="sub" style="color:var(--bad); display:none; margin-top:8px;"></p>
+      <div class="imp-map-grid" id="impPlanMapWrap" hidden>
+        <div class="field"><label>Hvilken kolonne er oppgave?</label><select id="impPlanMapOppgave"></select></div>
+        <div class="field"><label>Hvilken kolonne er fag? (valgfritt)</label><select id="impPlanMapFag"></select></div>
+        <div class="field"><label>Hvilken kolonne er startdato? (valgfritt)</label><select id="impPlanMapStart"></select></div>
+        <div class="field"><label>Hvilken kolonne er sluttdato? (valgfritt)</label><select id="impPlanMapSlutt"></select></div>
+        <div class="field"><label>Hvilken kolonne er notat? (valgfritt)</label><select id="impPlanMapNotat"></select></div>
+      </div>
+    </div>
+    <div id="impPlanStep2" hidden>
+      <p class="sub" id="impPlanSummary" style="font-size:12.5px; color:var(--muted); margin-top:-6px;"></p>
+      <div class="imp-table-wrap"><table class="imp-table" id="impPlanTable"></table></div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="impPlanCancel">Avbryt</button>
+      <button type="button" class="btn ghost" id="impPlanBack" hidden>‹ Tilbake</button>
+      <button type="button" class="btn primary" id="impPlanNext" disabled>Fortsett til forhåndsvisning</button>
+      <button type="button" class="btn primary" id="impPlanUpload" hidden>Last opp</button>
     </div>
   </div>
 </dialog>
@@ -3169,6 +3253,7 @@
       }).join("");
     }
 
+    byId("importPlanBtn").hidden = !isByggeleder();
     var sectionedView = activeFag() === "tomrer";
     byId("elSectionedCols").hidden = !sectionedView;
     byId("elGenericCard").hidden = sectionedView;
@@ -3405,6 +3490,7 @@
     }
 
     byId("addPersonForm").hidden = !isByggeleder();
+    byId("importPeopleBtn").hidden = !isByggeleder();
 
     if(state.people.length === 0){
       byId("peopleByFag").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
@@ -3956,6 +4042,438 @@
     }
     drpBigDialog.close();
   });
+
+  // ---------- import fra fil (mannskapsliste / fremdriftsplan) ----------
+  function chunkArray(arr, size){
+    var out = [];
+    for(var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+    return out;
+  }
+  function normText(s){ return String(s||"").toLowerCase().replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a").trim(); }
+  function cellToIso(v){
+    if(v instanceof Date) return toISODate(v);
+    var s = String(v==null?"":v).trim();
+    if(!s) return "";
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(m) return toISODate(new Date(+m[1], +m[2]-1, +m[3]));
+    m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})$/);
+    if(m){
+      var yy = +m[3]; if(yy < 100) yy += 2000;
+      return toISODate(new Date(yy, +m[2]-1, +m[1]));
+    }
+    return "";
+  }
+  function parseSpreadsheetFile(file){
+    var isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+    var readWorkbook = isCsv
+      ? file.text().then(function(text){ return XLSX.read(text, { type: "string", cellDates: true }); })
+      : file.arrayBuffer().then(function(buf){ return XLSX.read(buf, { type: "array", cellDates: true }); });
+    return readWorkbook.then(function(wb){
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      var aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: "" });
+      if(!aoa.length) return { headers: [], rows: [] };
+      var headerRow = aoa[0].map(function(h){ return String(h==null?"":h).trim(); });
+      var rows = aoa.slice(1).map(function(arr){
+        var o = {};
+        headerRow.forEach(function(h, i){
+          if(!h) return;
+          var v = arr[i];
+          o[h] = v==null ? "" : v;
+        });
+        return o;
+      }).filter(function(o){ return Object.keys(o).some(function(k){ return String(o[k]).trim(); }); });
+      return { headers: headerRow.filter(function(h){ return h; }), rows: rows };
+    });
+  }
+  function guessColumn(headers, aliases){
+    var low = headers.map(function(h){ return normText(h); });
+    for(var i=0;i<aliases.length;i++){
+      var idx = low.indexOf(normText(aliases[i]));
+      if(idx !== -1) return headers[idx];
+    }
+    for(var j=0;j<low.length;j++){
+      for(var k=0;k<aliases.length;k++){ if(low[j].indexOf(normText(aliases[k])) !== -1) return headers[j]; }
+    }
+    return "";
+  }
+  function colSelectHtml(headers, selected, allowBlank){
+    var out = allowBlank ? '<option value=""'+(selected?'':' selected')+'>– ikke i filen –</option>' : "";
+    headers.forEach(function(h){ out += '<option value="'+escapeHtml(h)+'"'+(selected===h?' selected':'')+'>'+escapeHtml(h)+'</option>'; });
+    return out;
+  }
+  var FAG_TEXT_ALIASES = {
+    tomrer: ["tomrer","snekker","carpenter"],
+    vvs: ["vvs","rorlegger","plumbing"],
+    elektriker: ["elektriker","elektro","electrician"],
+    maler: ["maler","painter","maling"],
+    landscape: ["landscape","utendors","grontanlegg","hage"],
+    murer: ["murer","mason","betong"],
+    ventilasjon: ["ventilasjon","vent","hvac"],
+    ovrig: ["ovrig","annet","diverse"]
+  };
+  function guessFagValue(text){
+    var t = normText(text);
+    if(!t) return "";
+    if(FAG_LIST.indexOf(t) !== -1) return t;
+    for(var key in FAG_TEXT_ALIASES){
+      var hit = FAG_TEXT_ALIASES[key].some(function(a){ return t.indexOf(a) !== -1; });
+      if(hit) return key;
+    }
+    return "";
+  }
+  function fagOptionsHtml(selected){
+    var out = '<option value=""'+(selected?'':' selected')+'>– velg fag –</option>';
+    FAG_LIST.forEach(function(f){ out += '<option value="'+f+'"'+(selected===f?' selected':'')+'>'+FAG_LABELS[f]+'</option>'; });
+    return out;
+  }
+  function findExistingPersonByName(name){
+    var n = normText(name);
+    if(!n) return null;
+    var hit = state.people.find(function(p){ return normText(p.name) === n; });
+    return hit ? hit.id : null;
+  }
+  function projectWorkdayIsoList(cur){
+    if(!cur || !cur.start || !cur.end) return [];
+    var range = behovProjectRange(cur);
+    var out = [];
+    for(var i=0;i<range.workdays;i++) out.push(toISODate(workdayDate(range, i)));
+    return out;
+  }
+
+  // ---- mannskapsliste-import ----
+  var impPeopleDialog = byId("impPeopleDialog");
+  var impPeople = { headers: [], fileRows: [], rows: [] };
+  function impPeopleResetToStep1(){
+    impPeople.headers = []; impPeople.fileRows = []; impPeople.rows = [];
+    byId("impPeopleFile").value = "";
+    byId("impPeopleMapWrap").hidden = true;
+    byId("impPeopleParseError").style.display = "none";
+    byId("impPeopleStep1").hidden = false;
+    byId("impPeopleStep2").hidden = true;
+    byId("impPeopleBack").hidden = true;
+    byId("impPeopleNext").hidden = false;
+    byId("impPeopleNext").disabled = true;
+    byId("impPeopleUpload").hidden = true;
+  }
+  byId("importPeopleBtn").addEventListener("click", function(){
+    impPeopleResetToStep1();
+    impPeopleDialog.showModal();
+  });
+  byId("impPeopleCancel").addEventListener("click", function(){ impPeopleDialog.close(); });
+  impPeopleDialog.addEventListener("click", function(ev){ if(ev.target === impPeopleDialog) impPeopleDialog.close(); });
+  byId("impPeopleFile").addEventListener("change", function(){
+    var file = this.files && this.files[0];
+    byId("impPeopleParseError").style.display = "none";
+    if(!file) return;
+    if(typeof XLSX === "undefined"){
+      byId("impPeopleParseError").textContent = "Kunne ikke laste filleseren. Sjekk nettforbindelsen og prøv igjen.";
+      byId("impPeopleParseError").style.display = "block";
+      return;
+    }
+    parseSpreadsheetFile(file).then(function(parsed){
+      if(!parsed.headers.length || !parsed.rows.length){
+        byId("impPeopleParseError").textContent = "Fant ingen rader i filen. Sjekk at første rad har kolonnenavn.";
+        byId("impPeopleParseError").style.display = "block";
+        return;
+      }
+      impPeople.headers = parsed.headers;
+      impPeople.fileRows = parsed.rows;
+      var navnCol = guessColumn(parsed.headers, ["navn","name","fullt navn"]);
+      var telCol = guessColumn(parsed.headers, ["telefon","tlf","mobil","phone"]);
+      var adrCol = guessColumn(parsed.headers, ["adresse","address","bosted"]);
+      byId("impPeopleMapNavn").innerHTML = colSelectHtml(parsed.headers, navnCol, false);
+      byId("impPeopleMapTelefon").innerHTML = colSelectHtml(parsed.headers, telCol, true);
+      byId("impPeopleMapAdresse").innerHTML = colSelectHtml(parsed.headers, adrCol, true);
+      byId("impPeopleMapWrap").hidden = false;
+      byId("impPeopleNext").disabled = false;
+    }).catch(function(err){
+      byId("impPeopleParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
+      byId("impPeopleParseError").style.display = "block";
+    });
+  });
+  byId("impPeopleNext").addEventListener("click", function(){
+    var navnCol = byId("impPeopleMapNavn").value;
+    if(!navnCol) return;
+    var telCol = byId("impPeopleMapTelefon").value;
+    var adrCol = byId("impPeopleMapAdresse").value;
+    impPeople.rows = impPeople.fileRows.map(function(row){
+      var name = String(row[navnCol]==null?"":row[navnCol]).trim();
+      var phone = telCol ? String(row[telCol]==null?"":row[telCol]).trim() : "";
+      var address = adrCol ? String(row[adrCol]==null?"":row[adrCol]).trim() : "";
+      return { name: name, phone: phone, address: address, fag: "", matchId: findExistingPersonByName(name), include: !!name };
+    });
+    renderImpPeopleTable();
+    byId("impPeopleStep1").hidden = true;
+    byId("impPeopleStep2").hidden = false;
+    byId("impPeopleBack").hidden = false;
+    byId("impPeopleNext").hidden = true;
+    byId("impPeopleUpload").hidden = false;
+  });
+  byId("impPeopleBack").addEventListener("click", function(){
+    byId("impPeopleStep1").hidden = false;
+    byId("impPeopleStep2").hidden = true;
+    byId("impPeopleBack").hidden = true;
+    byId("impPeopleNext").hidden = false;
+    byId("impPeopleUpload").hidden = true;
+  });
+  function renderImpPeopleTable(){
+    var rows = impPeople.rows;
+    var visible = rows.filter(function(r){ return r.include; });
+    var newCount = visible.filter(function(r){ return !r.matchId; }).length;
+    var matchCount = visible.length - newCount;
+    byId("impPeopleSummary").textContent = visible.length + " personer i filen – " + newCount + " nye, " + matchCount + " finnes fra før. Nye personer må ha fag valgt før du kan laste opp.";
+    var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Fag</th><th></th></tr></thead><tbody>";
+    rows.forEach(function(r, idx){
+      if(!r.include) return;
+      html += '<tr class="'+(r.matchId?'imp-match':'imp-new')+'" data-improw="'+idx+'">' +
+        '<td><span class="imp-badge '+(r.matchId?'match':'new')+'">'+(r.matchId?'Finnes':'Ny')+'</span></td>' +
+        '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="60" /></td>' +
+        '<td><input type="text" data-impfield="phone" value="'+escapeHtml(r.phone)+'" maxlength="40" /></td>' +
+        '<td><input type="text" data-impfield="address" value="'+escapeHtml(r.address)+'" maxlength="160" /></td>' +
+        '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select></td>' +
+        '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
+      '</tr>';
+    });
+    html += "</tbody>";
+    byId("impPeopleTable").innerHTML = html;
+    byId("impPeopleTable").querySelectorAll("[data-impfield]").forEach(function(el){
+      var evt = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(evt, function(){
+        var idx = +this.closest("[data-improw]").dataset.improw;
+        impPeople.rows[idx][this.dataset.impfield] = this.value;
+        updateImpPeopleUploadState();
+      });
+    });
+    byId("impPeopleTable").querySelectorAll("[data-improwremove]").forEach(function(b){
+      b.addEventListener("click", function(){
+        impPeople.rows[+this.dataset.improwremove].include = false;
+        renderImpPeopleTable();
+      });
+    });
+    updateImpPeopleUploadState();
+  }
+  function updateImpPeopleUploadState(){
+    var visible = impPeople.rows.filter(function(r){ return r.include; });
+    var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim() && (r.matchId || r.fag); });
+    byId("impPeopleUpload").disabled = !ready;
+  }
+  byId("impPeopleUpload").addEventListener("click", function(){
+    if(!sb) return;
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var visible = impPeople.rows.filter(function(r){ return r.include && r.name.trim(); });
+    if(!visible.length) return;
+    byId("impPeopleUpload").disabled = true;
+    var toInsert = visible.filter(function(r){ return !r.matchId; });
+    var toPatch = visible.filter(function(r){ return r.matchId; }).map(function(r){
+      var existing = state.people.find(function(p){ return p.id === r.matchId; });
+      var patch = {};
+      if(r.phone.trim() && r.phone.trim() !== (existing.phone||"")) patch.phone = r.phone.trim().slice(0,40);
+      if(r.address.trim() && r.address.trim() !== (existing.address||"")) patch.address = r.address.trim().slice(0,160);
+      return { id: r.matchId, patch: patch, fag: r.fag };
+    });
+    var workdays = projectWorkdayIsoList(cur);
+    var insertPromise = toInsert.length
+      ? sb.from("people").insert(toInsert.map(function(r){
+          return { name: r.name.trim().slice(0,60), phone: r.phone.trim().slice(0,40) || null, address: r.address.trim().slice(0,160) || null };
+        })).select()
+      : Promise.resolve({ data: [] });
+    insertPromise.then(function(res){
+      if(res.error) throw res.error;
+      var inserted = res.data || [];
+      var fagRows = [];
+      inserted.forEach(function(row, i){ if(toInsert[i] && toInsert[i].fag) fagRows.push({ personId: row.id, fag: toInsert[i].fag }); });
+      toPatch.forEach(function(r){ if(r.fag) fagRows.push({ personId: r.id, fag: r.fag }); });
+      var patchPromises = toPatch.filter(function(r){ return Object.keys(r.patch).length; })
+        .map(function(r){ return sb.from("people").update(r.patch).eq("id", r.id); });
+      var attendanceRows = [];
+      if(workdays.length){
+        fagRows.forEach(function(fr){
+          workdays.forEach(function(iso){
+            attendanceRows.push({ project_id: cur.id, person_id: fr.personId, day: iso, fag: fr.fag });
+          });
+        });
+      }
+      var attendanceChunks = chunkArray(attendanceRows, 500);
+      return Promise.all(patchPromises).then(function(){
+        return attendanceChunks.reduce(function(p, chunk){
+          return p.then(function(){ return sb.from("attendance").upsert(chunk, { onConflict: "project_id,person_id,day" }); });
+        }, Promise.resolve());
+      }).then(function(){
+        return { insertedCount: inserted.length, patchedCount: toPatch.length, fagCount: fagRows.length, skippedAttendance: !workdays.length && fagRows.length > 0 };
+      });
+    }).then(function(summary){
+      refetchPeople();
+      if(summary.fagCount) refetchAttendance();
+      impPeopleDialog.close();
+      var msg = summary.insertedCount + " nye personer lagt til, " + summary.patchedCount + " oppdatert.";
+      if(summary.skippedAttendance) msg += " Prosjektet mangler start-/sluttdato, så fag kunne ikke settes i kalenderen – sett det fra «Frivillige etter fag» etter at datoene er lagt inn.";
+      showInfo(msg);
+    }).catch(function(err){
+      showError("Import feilet: " + (err && err.message ? err.message : err));
+      byId("impPeopleUpload").disabled = false;
+    });
+  });
+
+  // ---- fremdriftsplan-import ----
+  var impPlanDialog = byId("impPlanDialog");
+  var impPlan = { headers: [], fileRows: [], rows: [] };
+  function impPlanResetToStep1(){
+    impPlan.headers = []; impPlan.fileRows = []; impPlan.rows = [];
+    byId("impPlanFile").value = "";
+    byId("impPlanMapWrap").hidden = true;
+    byId("impPlanParseError").style.display = "none";
+    byId("impPlanStep1").hidden = false;
+    byId("impPlanStep2").hidden = true;
+    byId("impPlanBack").hidden = true;
+    byId("impPlanNext").hidden = false;
+    byId("impPlanNext").disabled = true;
+    byId("impPlanUpload").hidden = true;
+  }
+  byId("importPlanBtn").addEventListener("click", function(){
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    impPlanResetToStep1();
+    impPlanDialog.showModal();
+  });
+  byId("impPlanCancel").addEventListener("click", function(){ impPlanDialog.close(); });
+  impPlanDialog.addEventListener("click", function(ev){ if(ev.target === impPlanDialog) impPlanDialog.close(); });
+  byId("impPlanFile").addEventListener("change", function(){
+    var file = this.files && this.files[0];
+    byId("impPlanParseError").style.display = "none";
+    if(!file) return;
+    if(typeof XLSX === "undefined"){
+      byId("impPlanParseError").textContent = "Kunne ikke laste filleseren. Sjekk nettforbindelsen og prøv igjen.";
+      byId("impPlanParseError").style.display = "block";
+      return;
+    }
+    parseSpreadsheetFile(file).then(function(parsed){
+      if(!parsed.headers.length || !parsed.rows.length){
+        byId("impPlanParseError").textContent = "Fant ingen rader i filen. Sjekk at første rad har kolonnenavn.";
+        byId("impPlanParseError").style.display = "block";
+        return;
+      }
+      impPlan.headers = parsed.headers;
+      impPlan.fileRows = parsed.rows;
+      var oppgaveCol = guessColumn(parsed.headers, ["oppgave","navn","task","aktivitet","tittel"]);
+      var fagCol = guessColumn(parsed.headers, ["fag","trade","gruppe"]);
+      var startCol = guessColumn(parsed.headers, ["start","fra","startdato"]);
+      var sluttCol = guessColumn(parsed.headers, ["slutt","til","sluttdato"]);
+      var notatCol = guessColumn(parsed.headers, ["notat","kommentar","merknad"]);
+      byId("impPlanMapOppgave").innerHTML = colSelectHtml(parsed.headers, oppgaveCol, false);
+      byId("impPlanMapFag").innerHTML = colSelectHtml(parsed.headers, fagCol, true);
+      byId("impPlanMapStart").innerHTML = colSelectHtml(parsed.headers, startCol, true);
+      byId("impPlanMapSlutt").innerHTML = colSelectHtml(parsed.headers, sluttCol, true);
+      byId("impPlanMapNotat").innerHTML = colSelectHtml(parsed.headers, notatCol, true);
+      byId("impPlanMapWrap").hidden = false;
+      byId("impPlanNext").disabled = false;
+    }).catch(function(err){
+      byId("impPlanParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
+      byId("impPlanParseError").style.display = "block";
+    });
+  });
+  byId("impPlanNext").addEventListener("click", function(){
+    var oppgaveCol = byId("impPlanMapOppgave").value;
+    if(!oppgaveCol) return;
+    var fagCol = byId("impPlanMapFag").value;
+    var startCol = byId("impPlanMapStart").value;
+    var sluttCol = byId("impPlanMapSlutt").value;
+    var notatCol = byId("impPlanMapNotat").value;
+    impPlan.rows = impPlan.fileRows.map(function(row){
+      var name = String(row[oppgaveCol]==null?"":row[oppgaveCol]).trim();
+      var fagGuess = fagCol ? guessFagValue(row[fagCol]) : "";
+      var start = startCol ? cellToIso(row[startCol]) : "";
+      var end = sluttCol ? cellToIso(row[sluttCol]) : "";
+      var notat = notatCol ? String(row[notatCol]==null?"":row[notatCol]).trim() : "";
+      if(start && end && end < start){ var t = start; start = end; end = t; }
+      return { name: name, fag: fagGuess, section: "innvendig", start: start, end: end || start, notat: notat, include: !!name };
+    });
+    renderImpPlanTable();
+    byId("impPlanStep1").hidden = true;
+    byId("impPlanStep2").hidden = false;
+    byId("impPlanBack").hidden = false;
+    byId("impPlanNext").hidden = true;
+    byId("impPlanUpload").hidden = false;
+  });
+  byId("impPlanBack").addEventListener("click", function(){
+    byId("impPlanStep1").hidden = false;
+    byId("impPlanStep2").hidden = true;
+    byId("impPlanBack").hidden = true;
+    byId("impPlanNext").hidden = false;
+    byId("impPlanUpload").hidden = true;
+  });
+  function renderImpPlanTable(){
+    var rows = impPlan.rows;
+    var visible = rows.filter(function(r){ return r.include; });
+    byId("impPlanSummary").textContent = visible.length + " oppgaver i filen. Velg fag for hver rad – rader uten dato legges inn som «ikke planlagt».";
+    var html = "<thead><tr><th>Oppgave</th><th>Fag</th><th>Seksjon</th><th>Start</th><th>Slutt</th><th>Notat</th><th></th></tr></thead><tbody>";
+    rows.forEach(function(r, idx){
+      if(!r.include) return;
+      html += '<tr data-improw="'+idx+'">' +
+        '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="80" /></td>' +
+        '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select></td>' +
+        '<td><select data-impfield="section"><option value="innvendig"'+(r.section==="innvendig"?' selected':'')+'>Innvendig</option><option value="utvendig"'+(r.section==="utvendig"?' selected':'')+'>Utvendig</option></select></td>' +
+        '<td><input type="date" data-impfield="start" value="'+escapeHtml(r.start)+'" /></td>' +
+        '<td><input type="date" data-impfield="end" value="'+escapeHtml(r.end)+'" /></td>' +
+        '<td><input type="text" data-impfield="notat" value="'+escapeHtml(r.notat)+'" maxlength="400" /></td>' +
+        '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
+      '</tr>';
+    });
+    html += "</tbody>";
+    byId("impPlanTable").innerHTML = html;
+    byId("impPlanTable").querySelectorAll("[data-impfield]").forEach(function(el){
+      var evt = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(evt, function(){
+        var idx = +this.closest("[data-improw]").dataset.improw;
+        impPlan.rows[idx][this.dataset.impfield] = this.value;
+        updateImpPlanUploadState();
+      });
+    });
+    byId("impPlanTable").querySelectorAll("[data-improwremove]").forEach(function(b){
+      b.addEventListener("click", function(){
+        impPlan.rows[+this.dataset.improwremove].include = false;
+        renderImpPlanTable();
+      });
+    });
+    updateImpPlanUploadState();
+  }
+  function updateImpPlanUploadState(){
+    var visible = impPlan.rows.filter(function(r){ return r.include; });
+    var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim() && r.fag; });
+    byId("impPlanUpload").disabled = !ready;
+  }
+  byId("impPlanUpload").addEventListener("click", function(){
+    if(!sb) return;
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    if(!cur){ showError("Opprett eller velg et prosjekt først."); return; }
+    var visible = impPlan.rows.filter(function(r){ return r.include && r.name.trim() && r.fag; });
+    if(!visible.length) return;
+    byId("impPlanUpload").disabled = true;
+    var payloadRows = visible.map(function(r){
+      var planned = !!(r.start && r.end);
+      return {
+        project_id: cur.id,
+        name: r.name.trim().slice(0,80),
+        fag: r.fag,
+        section: r.section === "utvendig" ? "utvendig" : "innvendig",
+        start: planned ? r.start : null,
+        end: planned ? r.end : null,
+        status: "mangler",
+        done: false,
+        assignments: {},
+        notes: r.notat.trim().slice(0,400)
+      };
+    });
+    chunkArray(payloadRows, 300).reduce(function(p, chunk){
+      return p.then(function(){ return sb.from("elements").insert(chunk).then(function(res){ if(res.error) throw res.error; }); });
+    }, Promise.resolve()).then(function(){
+      refetchElements();
+      impPlanDialog.close();
+      showInfo(payloadRows.length + " oppgaver lagt inn i fremdriftsplanen.");
+    }).catch(function(err){
+      showError("Import feilet: " + (err && err.message ? err.message : err));
+      byId("impPlanUpload").disabled = false;
+    });
+  });
+
   function fillElForm(e){
     byId("elName").value = e.name;
     byId("elSection").value = e.section;
@@ -4353,7 +4871,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", createdAt: row.created_at };
   }
   function rowToElement(row){
     return {
