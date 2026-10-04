@@ -3522,14 +3522,27 @@
       });
     });
     var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
+    var curFag = singleCurrentTradeFagForPerson(p.id);
+    var fagField = isByggeleder()
+      ? '<select data-rowfag="'+p.id+'" style="border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12px; background:var(--surface); max-width:130px;">'+fagOptionsHtml(curFag)+'</select>'
+      : (curFag ? '<span class="fag-badge" style="background:'+(FAG_COLORS[curFag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[curFag]||curFag)+'</span>' : '');
     return '<div class="personrow"><span class="pname"><span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>'+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+(p.congregation ? ' <span class="badge congregation">'+escapeHtml(p.congregation)+'</span>' : '')+'</span>' +
-      '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
+      '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' + fagField +
       (isByggeleder() ? '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
       '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button>' : '') + '</span></div>';
   }
   function wirePersonRowButtons(root){
     root.querySelectorAll("[data-logiopen]").forEach(function(el){
       el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
+    });
+    root.querySelectorAll("[data-rowfag]").forEach(function(sel){
+      sel.addEventListener("click", function(ev){ ev.stopPropagation(); });
+      sel.addEventListener("change", function(){
+        var personId = this.dataset.rowfag, newFag = this.value;
+        if(!newFag) return;
+        var oldFag = singleCurrentTradeFagForPerson(personId);
+        if(oldFag) movePersonToFagPosition(personId, oldFag, newFag, null);
+      });
     });
     root.querySelectorAll("[data-persondates]").forEach(function(b){
       b.addEventListener("click", function(ev){ ev.stopPropagation(); openPersonDates(this.dataset.persondates); });
