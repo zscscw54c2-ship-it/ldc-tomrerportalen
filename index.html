@@ -1578,7 +1578,7 @@
           </div>
         </div>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Ukentlig møte mellom byggeleder og fag-representantene.</p>
-        <div id="toMeetingEmpty" class="empty-note" hidden>Ingen møter registrert ennå. Trykk "+ Møte denne uken" for å opprette det første.</div>
+        <div id="toMeetingEmpty" class="empty-note" hidden>Prosjektet mangler start- og sluttdato, så ukene kan ikke listes opp ennå. Sett dette under Prosjektinnstillinger.</div>
         <div id="toMeetingBody" hidden>
           <div class="field" style="max-width:420px;">
             <label>Tid, sted</label>
@@ -2035,7 +2035,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectInvites: [], projectStartup: [], textOverrides: [], peopleFagOrder: [] };
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {} };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {} };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -2286,7 +2286,7 @@
         els.forEach(function(e){
           var ids = (e.assignments && e.assignments[iso]) || [];
           var fagStripe = (!fag && e.fag !== "tomrer") ? ' style="border-left:4px solid '+(FAG_COLORS[e.fag]||"var(--muted)")+';"' : '';
-          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-staffel="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0" title="Trykk for å se/legge til bemanning, eller dra en person hit">' +
+          html += '<div class="wkel sec-'+e.section+' st-'+e.status+'"'+fagStripe+' data-staffel="'+e.id+'" data-drop-el="'+e.id+'" data-iso="'+iso+'" role="button" tabindex="0" title="Trykk for å redigere oppgaven, eller dra en person hit for å sette bemanning">' +
             '<div class="wkel-top"><span class="wkel-name">'+escapeHtml(e.name)+'</span>' +
             (!fag ? '<span class="fag-badge" style="background:'+(FAG_COLORS[e.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[e.fag]||e.fag)+'</span>' : '') +
             statusPill(e)+'</div>' +
@@ -2631,6 +2631,14 @@
       el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openStaff(this.dataset.staffel); });
     });
   }
+  // I TO-møtet skal et klikk på oppgavekortet åpne rediger-oppgave-dialogen (ikke
+  // bemanningsdialogen) – bemanning settes uansett ved å dra et navn dit, se wkel-markup.
+  function bindTomoteElOpen(root){
+    root.querySelectorAll("[data-staffel]").forEach(function(el){
+      el.addEventListener("click", function(){ openElDialog(this.dataset.staffel); });
+      el.addEventListener("keydown", function(ev){ if(ev.key === "Enter") openElDialog(this.dataset.staffel); });
+    });
+  }
 
   // ---------- egen bekreftelsesdialog (i stedet for window.confirm, som er upålitelig i enkelte nettlesere/PWA) ----------
   var confirmDialog = byId("confirmDialog");
@@ -2752,8 +2760,8 @@
       var ai = workdayIndex(range, el.start), bi = workdayIndex(range, el.end);
       var fagStripe = (opts.showFag && el.fag !== "tomrer") ? ' border-left:4px solid '+(FAG_COLORS[el.fag]||"var(--muted)")+';' : '';
       var fagTitle = opts.showFag ? (FAG_LABELS[el.fag]||el.fag)+' · ' : '';
-      rows += '<div class="g-row"><div class="g-name" data-staffel="'+el.id+'" title="Trykk for å se/legge til bemanning – '+escapeHtml(el.name)+'"><span>'+escapeHtml(el.name)+'</span></div>' +
-        '<div class="g-track">'+bg+'<div class="g-bar s-'+el.status+(isLate(el)?' late':'')+'" data-staffel="'+el.id+'" style="left:'+(ai*dw+2)+'px; width:'+((bi-ai+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(el.name)+' · '+fmtRange(el.start,el.end)+' · '+STATUS_LABEL[el.status]+' · trykk for bemanning">'+escapeHtml(el.name)+'</div></div></div>';
+      rows += '<div class="g-row"><div class="g-name" data-staffel="'+el.id+'" title="Trykk for å redigere – '+escapeHtml(el.name)+'"><span>'+escapeHtml(el.name)+'</span></div>' +
+        '<div class="g-track">'+bg+'<div class="g-bar s-'+el.status+(isLate(el)?' late':'')+'" data-staffel="'+el.id+'" style="left:'+(ai*dw+2)+'px; width:'+((bi-ai+1)*dw-4)+'px;'+fagStripe+'" title="'+fagTitle+escapeHtml(el.name)+' · '+fmtRange(el.start,el.end)+' · '+STATUS_LABEL[el.status]+' · trykk for å redigere">'+escapeHtml(el.name)+'</div></div></div>';
     });
     return '<div class="gantt-wrap"><div class="gantt" style="--days:'+range.workdays+'">'+rows+'</div></div>';
   }
@@ -4324,6 +4332,22 @@
     for(var i=0;i<range.workdays;i++) out.push(toISODate(workdayDate(range, i)));
     return out;
   }
+  // Alle mandager (ukestart) innenfor prosjektets start- og sluttdato, brukt til å la TO-møte
+  // vise samtlige uker i prosjektet i en nedtrekksmeny, ikke bare de som allerede har et møte.
+  function projectWeekMondays(cur){
+    if(!cur || !cur.start || !cur.end) return [];
+    var start = mondayOf(fromISODate(cur.start));
+    var end = fromISODate(cur.end);
+    var out = [];
+    var d = start;
+    var guard = 0;
+    while(d.getTime() <= end.getTime() && guard < 400){
+      out.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+7);
+      guard++;
+    }
+    return out;
+  }
 
   // ---- mannskapsliste-import ----
   var impPeopleDialog = byId("impPeopleDialog");
@@ -5835,8 +5859,14 @@
     }
   });
 
-  byId("toMeetingSelect").addEventListener("change", function(){ view.toMeetingId = this.value; renderToMoteTab(); });
-  byId("toMeetingNewBtn").addEventListener("click", function(){ createToMeeting(toISODate(mondayOf(new Date()))); });
+  byId("toMeetingSelect").addEventListener("change", function(){
+    var iso = this.value;
+    var m = state.toMeetings.find(function(x){ return x.project_id === currentProjectId() && x.weekStart === iso; });
+    view.toMeetingId = m ? m.id : null;
+    view.toMeetingPendingWeek = m ? null : iso;
+    renderToMoteTab();
+  });
+  byId("toMeetingNewBtn").addEventListener("click", function(){ createToMeeting(view.toMeetingPendingWeek || toISODate(mondayOf(new Date()))); });
   byId("toMeetingDeleteBtn").addEventListener("click", function(){ if(view.toMeetingId) deleteToMeeting(view.toMeetingId); });
   byId("toMeetingConcludeBtn").addEventListener("click", function(){
     var m = state.toMeetings.find(function(x){ return x.id === view.toMeetingId; });
@@ -6516,32 +6546,46 @@
     if(isByggeleder()) renderTomoteEdit(); else renderTomoteRead();
   }
   function renderTomoteEdit(){
+    var project = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var meetings = toMeetingsForCurrentProject();
+    var weeks = projectWeekMondays(project);
     var sel = byId("toMeetingSelect");
     var todayMon = toISODate(mondayOf(new Date()));
 
-    if(!view.toMeetingId || !meetings.some(function(m){ return m.id === view.toMeetingId; })){
-      var thisWeek = meetings.find(function(m){ return m.weekStart === todayMon; });
-      view.toMeetingId = thisWeek ? thisWeek.id : (meetings[0] ? meetings[0].id : null);
-    }
+    // Hvilken uke er valgt: uken til møtet vi står på, uken brukeren nettopp valgte uten at
+    // møte finnes ennå, eller inneværende uke som forvalg.
+    var meetingForId = meetings.find(function(m){ return m.id === view.toMeetingId; });
+    var selectedWeek = meetingForId ? meetingForId.weekStart
+      : (view.toMeetingPendingWeek && weeks.some(function(w){ return toISODate(w) === view.toMeetingPendingWeek; })) ? view.toMeetingPendingWeek
+      : todayMon;
 
-    sel.hidden = !meetings.length;
-    sel.innerHTML = meetings.map(function(m){
-      var info = isoWeekInfo(fromISODate(m.weekStart));
-      var end = new Date(fromISODate(m.weekStart).getFullYear(), fromISODate(m.weekStart).getMonth(), fromISODate(m.weekStart).getDate()+4);
-      return '<option value="'+m.id+'"'+(m.id===view.toMeetingId?' selected':'')+'>'+(m.concluded?'✓ ':'')+'Uke '+info.week+' · '+fmtRange(m.weekStart, toISODate(end))+'</option>';
+    sel.hidden = !weeks.length;
+    sel.innerHTML = weeks.map(function(mon){
+      var iso = toISODate(mon);
+      var info = isoWeekInfo(mon);
+      var end = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate()+4);
+      var m = meetings.find(function(x){ return x.weekStart === iso; });
+      var mark = m ? (m.concluded ? '✓ ' : '• ') : '';
+      return '<option value="'+iso+'"'+(iso===selectedWeek?' selected':'')+'>'+mark+'Uke '+info.week+' · '+fmtRange(iso, toISODate(end))+(m?'':' (ingen møte ennå)')+'</option>';
     }).join("");
 
-    var hasThisWeek = meetings.some(function(m){ return m.weekStart === todayMon; });
-    var newBtn = byId("toMeetingNewBtn");
-    newBtn.textContent = hasThisWeek ? "Møte denne uken er opprettet" : "+ Møte denne uken";
-    newBtn.disabled = hasThisWeek;
+    var meeting = meetings.find(function(m){ return m.weekStart === selectedWeek; }) || null;
+    view.toMeetingId = meeting ? meeting.id : null;
+    view.toMeetingPendingWeek = meeting ? null : selectedWeek;
 
-    var meeting = currentToMeeting();
-    var refMonday = meeting ? fromISODate(meeting.weekStart) : mondayOf(new Date());
+    var newBtn = byId("toMeetingNewBtn");
+    if(meeting){
+      newBtn.hidden = true;
+    } else {
+      newBtn.hidden = false;
+      newBtn.disabled = !weeks.length;
+      newBtn.textContent = "+ Opprett møte for uke " + isoWeekInfo(fromISODate(selectedWeek)).week;
+    }
+
+    var refMonday = meeting ? fromISODate(meeting.weekStart) : fromISODate(selectedWeek);
     var prevMonday = new Date(refMonday.getFullYear(), refMonday.getMonth(), refMonday.getDate()-7);
     byId("tomotePrevGoals").innerHTML = goalsChipsHtml(prevMonday);
-    byId("toMeetingEmpty").hidden = !!meetings.length;
+    byId("toMeetingEmpty").hidden = !!weeks.length;
     byId("toMeetingBody").hidden = !meeting;
     byId("toMeetingSections").hidden = !meeting;
     byId("toMeetingDeleteBtn").hidden = !meeting;
@@ -6609,7 +6653,7 @@
         '<div style="font-size:12px; color:var(--muted); margin-bottom:6px;">Hele prosjektets tidslinje, alle fag – som i Oppgaver-fanens prosjektvisning.</div>' +
         buildGanttHtml(allPlanned, { showFag: true }) +
         '</div>';
-      bindStaffOpen(fagStatusBox);
+      bindTomoteElOpen(fagStatusBox);
     } else {
       fagStatusBox.innerHTML = sections.map(function(s){
         var note = toFagStatusFor(meeting.id, s.fag, s.section);
@@ -6637,7 +6681,7 @@
           renderToMoteTab();
         });
       });
-      bindStaffOpen(fagStatusBox);
+      bindTomoteElOpen(fagStatusBox);
     }
     if(!modeBtn.dataset.bound){
       modeBtn.dataset.bound = "1";
