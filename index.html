@@ -1084,10 +1084,14 @@
       <h2 style="font-size:16px; margin-bottom:4px;">Handleliste</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Ting som må handles inn til prosjektet.</p>
       <div id="shopList"></div>
-      <form class="inline-add" id="addShopForm">
+      <form class="inline-add" id="addShopForm" style="flex-wrap:wrap;">
         <input type="text" id="newShopName" placeholder="Vare" required maxlength="80" />
         <input type="text" id="newShopQty" placeholder="Antall (valgfritt)" maxlength="30" style="max-width:150px;" />
-        <input type="file" id="newShopImage" accept="image/*" style="max-width:200px;" />
+        <label class="btn small" id="newShopCameraTrigger" for="newShopCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>
+        <input type="file" id="newShopCameraInput" accept="image/*" capture="environment" style="display:none;" />
+        <label class="btn small ghost" id="newShopFileTrigger" for="newShopFileInput" style="margin:0; cursor:pointer;">Last opp bilde/fil</label>
+        <input type="file" id="newShopFileInput" accept="image/*,.pdf" style="display:none;" />
+        <span class="empty-note" id="newShopImageStatus"></span>
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
@@ -1096,10 +1100,10 @@
   <section id="panel-tegninger" class="panel">
     <div class="peoplecard">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
-        <h2 style="font-size:16px;">Tegninger</h2>
+        <h2 data-etkey="tegninger_title" style="font-size:16px;">Tegninger</h2>
         <button class="btn small" id="drawingsEditBtn">Rediger</button>
       </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Bilder og PDF-er knyttet til dette prosjektet.</p>
+      <p class="sub" data-etkey="tegninger_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Bilder og PDF-er knyttet til dette prosjektet.</p>
       <form class="inline-add" id="addDrawingForm">
         <input type="file" id="newDrawingFile" accept="image/*,application/pdf" multiple required style="flex:1; min-width:200px;" />
         <input type="text" id="newDrawingName" placeholder="Navn (valgfritt, kun ved én fil)" maxlength="80" style="max-width:220px;" />
@@ -1113,10 +1117,10 @@
   <section id="panel-dokumentasjon" class="panel">
     <div class="peoplecard">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
-        <h2 style="font-size:16px;">Dokumentasjon</h2>
+        <h2 data-etkey="doku_title" style="font-size:16px;">Dokumentasjon</h2>
         <button class="btn small" id="dokuEditBtn">Rediger</button>
       </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Ta bilde eller last opp dokumentasjonsbilder, og legg ved en tekst om hva bildet viser.</p>
+      <p class="sub" data-etkey="doku_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Ta bilde eller last opp dokumentasjonsbilder, og legg ved en tekst om hva bildet viser.</p>
       <form class="inline-add" id="addDokuForm">
         <input type="file" id="newDokuFile" accept="image/*" multiple required style="flex:1; min-width:200px;" />
         <input type="text" id="newDokuCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />
@@ -1150,8 +1154,8 @@
 
     <div id="personerFrivilligeBox">
       <div class="peoplecard" style="margin-bottom:14px;">
-        <h2 style="font-size:16px; margin-bottom:4px;">Søk i listen</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
+        <h2 data-etkey="personer_search_title" style="font-size:16px; margin-bottom:4px;">Søk i listen</h2>
+        <p class="sub" data-etkey="personer_search_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle som kan settes opp på kalenderdager.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <input type="search" id="peopleSearch" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); flex:1; min-width:180px;" />
           <button type="button" class="btn small" id="peopleShowAllBtn">Vis hele listen</button>
@@ -1166,20 +1170,20 @@
       </div>
       <div class="peoplecard">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-          <h2 style="font-size:16px;">Frivillige etter fag</h2>
+          <h2 data-etkey="personer_byfag_title" style="font-size:16px;">Frivillige etter fag</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn small" id="frivilligeFullViewBtn">Vis hele prosjektet</button>
             <button type="button" class="btn small" id="frivilligeEditModeBtn" hidden>Gjør endringer</button>
           </div>
         </div>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Tilgjengelighet per dag, gruppert etter fag. Viser som standard kun fra inneværende uke og fremover.</p>
+        <p class="sub" data-etkey="personer_byfag_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Tilgjengelighet per dag, gruppert etter fag. Viser som standard kun fra inneværende uke og fremover.</p>
         <div id="peopleByFag" class="gantt-wrap frivillige-grid"></div>
       </div>
     </div>
 
     <div id="personerBehovBox" hidden>
       <div class="peoplecard" style="margin-bottom:12px;">
-        <h2 style="font-size:14px; margin-bottom:8px;">Antall plasser per fag</h2>
+        <h2 data-etkey="personer_behovslots_title" style="font-size:14px; margin-bottom:8px;">Antall plasser per fag</h2>
         <div id="behovSlotConfig" class="behov-config"></div>
         <form class="inline-add" id="addExtraBehovForm" style="margin-top:10px;">
           <input type="text" id="newExtraDesc" placeholder="Nytt behov utenfor fagene, f.eks. Kjøre søppel" required maxlength="160" style="flex:1; min-width:220px;" />
@@ -1194,7 +1198,7 @@
             <span><i class="dot good"></i> Dekket</span>
           </div>
         </div>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0; padding:0 14px 10px;">Klikk på en markert dag for å endre. Menighetskontakten fyller inn navn på dagene som trengs.</p>
+        <p class="sub" data-etkey="personer_behov_sub" style="font-size:12.5px; color:var(--muted); margin:0; padding:0 14px 10px;">Klikk på en markert dag for å endre. Menighetskontakten fyller inn navn på dagene som trengs.</p>
         <div class="gantt-wrap behov-grid"><div class="gantt" id="behovGrid"></div></div>
       </div>
     </div>
@@ -1202,13 +1206,13 @@
     <div id="personerLogiBox" hidden>
       <div class="peoplecard">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-          <h2 style="font-size:16px;">Logi</h2>
+          <h2 data-etkey="personer_logi_title" style="font-size:16px;">Logi</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
             <button type="button" class="btn small" id="logiEditModeBtn" hidden>Gjør endringer</button>
           </div>
         </div>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover.</p>
         <div id="personerLogiList" class="gantt-wrap frivillige-grid"></div>
       </div>
     </div>
@@ -1226,7 +1230,7 @@
         </div>
         <button class="btn small" id="andeligEditBtn">Rediger</button>
       </div>
-      <h2 style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
+      <h2 data-etkey="andelig_scripture_title" style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
       <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:14px; color:var(--text); font-style:normal;"></div>
       <div id="weeklyScriptureEditWrap" data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
         <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
@@ -1238,30 +1242,30 @@
     <div class="mh-grid subhome-grid" id="teamHomeGrid"></div>
     <button type="button" class="subhome-back" id="teamHomeBack">← Tilbake</button>
 
-    <div class="zone-head" style="--zc:var(--accent);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M5 21V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg></span><h2>Ukas mål</h2><span class="zone-line"></span></div>
+    <div class="zone-head" style="--zc:var(--accent);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M5 21V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg></span><h2 data-etkey="andelig_zone_ukasmaal">Ukas mål</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="ukasmaal">
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
-        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
+        <h2 data-etkey="andelig_ukasmaal_title" style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
+        <p class="sub" data-etkey="andelig_ukasmaal_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
         <div id="weeklyGoalsList"></div>
       </div>
     </div>
 
-    <div class="zone-head" style="--zc:var(--warn);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span><h2>FLEX</h2><span class="zone-line"></span></div>
+    <div class="zone-head" style="--zc:var(--warn);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span><h2 data-etkey="andelig_zone_flex">FLEX</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="flex">
       <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
-        <h2 style="font-size:16px; margin-bottom:2px;">FLEX</h2>
-        <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
+        <h2 data-etkey="andelig_flex_title" style="font-size:16px; margin-bottom:2px;">FLEX</h2>
+        <p class="sub" data-etkey="andelig_flex_sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
         <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
       </div>
     </div>
 
-    <div class="zone-head" style="--zc:var(--utvendig);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg></span><h2>Byggeplass</h2><span class="zone-line"></span></div>
+    <div class="zone-head" style="--zc:var(--utvendig);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg></span><h2 data-etkey="andelig_zone_byggeplass">Byggeplass</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="byggeplass">
       <div class="zone-grid" style="margin-bottom:16px;">
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
+          <h2 data-etkey="andelig_teamet_title" style="font-size:16px; margin-bottom:2px;">Teamet</h2>
+          <p class="sub" data-etkey="andelig_teamet_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
           <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
           <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
             <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
@@ -1271,8 +1275,8 @@
           </form>
         </div>
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
+          <h2 data-etkey="andelig_siteinfo_title" style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
+          <p class="sub" data-etkey="andelig_siteinfo_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
           <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
           <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
             <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
@@ -1283,8 +1287,8 @@
         </div>
 
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:2px;">Matterport</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lenke til 3D-visningen av byggeplassen, og passordet for innlogging.</p>
+          <h2 data-etkey="andelig_matterport_title" style="font-size:16px; margin-bottom:2px;">Matterport</h2>
+          <p class="sub" data-etkey="andelig_matterport_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lenke til 3D-visningen av byggeplassen, og passordet for innlogging.</p>
           <div id="matterportView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
           <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
             <div class="field"><label>Lenke</label><input type="text" id="matterportUrlInput" placeholder="https://…" maxlength="300" /></div>
@@ -1294,8 +1298,8 @@
         </div>
 
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:2px;">Koder</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
+          <h2 data-etkey="andelig_koder_title" style="font-size:16px; margin-bottom:2px;">Koder</h2>
+          <p class="sub" data-etkey="andelig_koder_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
           <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
           <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
             <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
@@ -1304,8 +1308,8 @@
           </form>
         </div>
         <div class="peoplecard" data-acgoonly>
-          <h2 style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
+          <h2 data-etkey="andelig_openaccounts_title" style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
+          <p class="sub" data-etkey="andelig_openaccounts_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
           <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
           <form class="inline-add" id="addOpenAccountForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
             <input type="text" id="newOpenAccountLeverandor" placeholder="Leverandør" required maxlength="120" style="flex:1; min-width:160px;" />
@@ -1316,7 +1320,7 @@
         </div>
 
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
+          <h2 data-etkey="andelig_toagenda_title" style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
           <div id="toAgendaList"></div>
           <form class="inline-add" id="addToAgendaForm">
             <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
@@ -1324,7 +1328,7 @@
           </form>
         </div>
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
+          <h2 data-etkey="andelig_overviewmote_title" style="font-size:16px; margin-bottom:8px;">Møter</h2>
           <div id="overviewMoteList"></div>
           <form class="inline-add" id="addOverviewMoteForm" data-editonly>
             <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
@@ -1336,14 +1340,14 @@
 
         <div class="peoplecard">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <h2 style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
+            <h2 data-etkey="andelig_teammote_title" style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
             <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
           </div>
-          <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
+          <p class="sub" data-etkey="andelig_teammote_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
           <div id="teamMeetingView"></div>
         </div>
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:8px;">Info</h2>
+          <h2 data-etkey="andelig_info_title" style="font-size:16px; margin-bottom:8px;">Info</h2>
           <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
           <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
           <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
@@ -1353,7 +1357,7 @@
       </div>
 
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
+        <h2 data-etkey="andelig_program_title" style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
         <div id="overviewProgramList"></div>
         <form class="inline-add" id="addOverviewProgramForm" data-editonly>
           <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
@@ -1363,11 +1367,11 @@
       </div>
     </div>
 
-    <div class="zone-head" style="--zc:var(--good);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><h2>Privilege Week</h2><span class="zone-line"></span></div>
+    <div class="zone-head" style="--zc:var(--good);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><h2 data-etkey="andelig_zone_pw">Privilege Week</h2><span class="zone-line"></span></div>
     <div class="subhome-section" data-tiled data-sec="pw">
       <div class="cols2" style="margin-bottom:16px;">
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
+          <h2 data-etkey="andelig_pw_title" style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
           <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
           <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
           <form class="inline-add" id="addDutyForm" data-editonly style="margin-top:10px;">
@@ -1376,8 +1380,8 @@
           </form>
         </div>
         <div class="peoplecard">
-          <h2 style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
-          <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
+          <h2 data-etkey="andelig_mw_title" style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
+          <p class="sub" data-etkey="andelig_mw_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
             <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
             <button type="button" class="btn small" id="mwWeekEditBtn">Rediger uke</button>
@@ -2149,6 +2153,7 @@
     byId("panel-"+panelId).classList.add("active");
     document.body.classList.add("section-active");
     window.scrollTo(0,0);
+    try{ localStorage.setItem("ldc_tab", tab); }catch(e){}
   }
   document.querySelectorAll("nav.tabs button").forEach(function(btn){
     btn.addEventListener("click", function(){ switchTab(btn.dataset.tab); });
@@ -2161,6 +2166,7 @@
     }
     document.body.classList.remove("section-active");
     window.scrollTo(0,0);
+    try{ localStorage.removeItem("ldc_tab"); }catch(e){}
   }
   byId("mobileBackHome").addEventListener("click", function(ev){
     ev.preventDefault();
@@ -3413,21 +3419,32 @@
       b.addEventListener("click", function(){ deleteShopItem(this.dataset.delshop); });
     });
   }
+  byId("newShopCameraInput").addEventListener("change", function(){
+    if(this.files && this.files[0]){ byId("newShopFileInput").value = ""; byId("newShopImageStatus").textContent = "📷 " + this.files[0].name; }
+  });
+  byId("newShopFileInput").addEventListener("change", function(){
+    if(this.files && this.files[0]){ byId("newShopCameraInput").value = ""; byId("newShopImageStatus").textContent = this.files[0].name; }
+  });
   byId("addShopForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var nameInput = byId("newShopName");
     var qtyInput = byId("newShopQty");
-    var imageInput = byId("newShopImage");
+    var cameraInput = byId("newShopCameraInput");
+    var fileInput = byId("newShopFileInput");
     var name = nameInput.value.trim();
     if(!name) return;
-    addShopItem(name, qtyInput.value.trim(), imageInput.files && imageInput.files[0] ? imageInput.files[0] : null);
+    var chosenFile = (cameraInput.files && cameraInput.files[0]) || (fileInput.files && fileInput.files[0]) || null;
+    addShopItem(name, qtyInput.value.trim(), chosenFile);
     nameInput.value = "";
     qtyInput.value = "";
-    imageInput.value = "";
+    cameraInput.value = "";
+    fileInput.value = "";
+    byId("newShopImageStatus").textContent = "";
   });
 
   // ---------- tegninger tab ----------
   function renderDrawingsTab(){
+    renderEditableStatics("panel-tegninger", byId("panel-tegninger").classList.contains("editing"));
     var box = byId("drawGrid");
     var list = drawingsForCurrentProject();
     if(list.length === 0){
@@ -3458,6 +3475,7 @@
     var editing = byId("panel-tegninger").classList.toggle("editing");
     byId("drawingsEditBtn").textContent = editing ? "Ferdig" : "Rediger";
     byId("drawingsEditBtn").classList.toggle("primary", editing);
+    renderEditableStatics("panel-tegninger", editing);
   });
   byId("addDrawingForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -3472,6 +3490,7 @@
 
   // ---------- dokumentasjon tab ----------
   function renderDokumentasjonTab(){
+    renderEditableStatics("panel-dokumentasjon", byId("panel-dokumentasjon").classList.contains("editing"));
     var box = byId("dokuGrid");
     var list = dokuPhotosForCurrentProject();
     if(list.length === 0){
@@ -3504,6 +3523,7 @@
     var editing = byId("panel-dokumentasjon").classList.toggle("editing");
     byId("dokuEditBtn").textContent = editing ? "Ferdig" : "Rediger";
     byId("dokuEditBtn").classList.toggle("primary", editing);
+    renderEditableStatics("panel-dokumentasjon", editing);
   });
   byId("addDokuForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -3559,6 +3579,7 @@
     });
   }
   function renderPeopleTab(){
+    renderEditableStatics("panel-personer", view.frivilligeEditMode);
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
 
     var sectionToggle = byId("personerSectionToggle");
@@ -3723,6 +3744,7 @@
     }).join("") : '<p class="empty-note">Ingen oppgaver skulle avsluttes denne uken.</p>';
   }
   function renderSpiritualTab(){
+    renderEditableStatics("panel-andelig", view.andeligEdit);
     renderTeamHomeGrid();
     var teamWeekMonday = view.teamWeekMonday;
     var isLiveTeamWeek = toISODate(teamWeekMonday) === toISODate(mondayOf(new Date()));
@@ -3737,8 +3759,8 @@
     byId("weeklyScriptureView").classList.toggle("empty-note", !scripture);
     var scriptureInput = byId("weeklyScriptureInput");
     if(document.activeElement !== scriptureInput) scriptureInput.value = (scripture && scripture.text) || "";
-    byId("weeklyScriptureEditWrap").style.display = (view.andeligEdit && isLiveTeamWeek) ? "flex" : "none";
-    byId("scriptureEditNote").hidden = !(view.andeligEdit && !isLiveTeamWeek);
+    byId("weeklyScriptureEditWrap").style.display = view.andeligEdit ? "flex" : "none";
+    byId("scriptureEditNote").hidden = true;
 
     var teamMeeting = currentWeekTeamMeeting(teamWeekMonday);
     var sentMeeting = teamMeeting && teamMeeting.sent ? teamMeeting : null;
@@ -3914,6 +3936,7 @@
     byId("panel-andelig").classList.toggle("editing", view.andeligEdit);
     byId("andeligEditBtn").textContent = view.andeligEdit ? "Ferdig" : "Rediger";
     byId("andeligEditBtn").classList.toggle("primary", view.andeligEdit);
+    renderEditableStatics("panel-andelig", view.andeligEdit);
   });
   byId("addToAgendaForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -3933,7 +3956,7 @@
   byId("weeklyScriptureSave").addEventListener("click", function(){
     var text = byId("weeklyScriptureInput").value.trim();
     if(!text) return;
-    saveWeeklyScripture(text);
+    saveWeeklyScripture(text, toISODate(view.teamWeekMonday));
   });
   byId("addTeamPairForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -7245,6 +7268,29 @@
       el.addEventListener("change", function(){ setTextOverride(this.dataset.textoverride, this.value); });
     });
   }
+  // Gjør statiske overskrifter/introtekster (merket med data-etkey i HTML-malen) om til
+  // redigerbare felt når den aktuelle siden er i rediger-modus. Teksten som allerede står
+  // i malen brukes som fallback-verdi første gang, så vi slipper å duplisere den i JS.
+  function renderEditableStatics(panelId, active){
+    var scope = byId(panelId);
+    if(!scope) return;
+    scope.querySelectorAll("[data-etkey]").forEach(function(el){
+      var field = el.querySelector("[data-textoverride]");
+      if(field && document.activeElement === field) return;
+      if(el.dataset.etfallback === undefined) el.dataset.etfallback = el.textContent;
+      var key = el.dataset.etkey, fallback = el.dataset.etfallback;
+      var val = textOverride(key, fallback);
+      if(active){
+        var multiline = el.hasAttribute("data-etmultiline");
+        el.innerHTML = multiline
+          ? '<textarea data-textoverride="'+key+'" rows="2" style="width:100%; border:1px dashed var(--accent); border-radius:6px; padding:4px 6px; font:inherit; font-size:inherit; background:var(--surface); resize:vertical;">'+escapeHtml(val)+'</textarea>'
+          : '<input type="text" data-textoverride="'+key+'" value="'+escapeHtml(val)+'" style="border:1px dashed var(--accent); border-radius:6px; padding:2px 6px; font:inherit; font-size:inherit; width:100%; max-width:460px; background:var(--surface);" />';
+        el.querySelector("[data-textoverride]").addEventListener("change", function(){ setTextOverride(this.dataset.textoverride, this.value); });
+      } else {
+        el.textContent = val;
+      }
+    });
+  }
 
   // ---------- Teammøte-agenda mal (Agenda_32.pdf) ----------
   var AGENDA_TEMPLATE_KEYS = [
@@ -7658,11 +7704,11 @@
     if(!sb) return;
     sb.from("site_codes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchSiteCodes(); });
   }
-  function saveWeeklyScripture(text){
+  function saveWeeklyScripture(text, weekStart){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    var wk = toISODate(mondayOf(new Date()));
+    var wk = weekStart || toISODate(mondayOf(new Date()));
     sb.from("weekly_scriptures").upsert({ project_id: pid, week_start: wk, text: text.slice(0,300) }, { onConflict: "project_id,week_start" }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("weekly_scriptures") !== -1 ? "Databasen mangler tabellen for ukens skriftsted. Kjør sql/32-ukens-skriftsted-og-teammote.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       showInfo("Lagret ✓");
@@ -8535,9 +8581,15 @@
       document.body.classList.add("authed");
       document.body.classList.remove("invite-mode");
       document.body.classList.toggle("kontakt-mode", state.me.role === "kontakt");
-      if(!didAutoOpenDashboard && isByggeleder() && !window.matchMedia("(max-width:640px)").matches){
+      if(!didAutoOpenDashboard){
         didAutoOpenDashboard = true;
-        switchTab("dashbord");
+        var savedTab = null;
+        try{ savedTab = localStorage.getItem("ldc_tab"); }catch(e){}
+        if(savedTab && document.querySelector('nav.tabs button[data-tab="'+savedTab+'"]')){
+          switchTab(savedTab);
+        } else if(isByggeleder() && !window.matchMedia("(max-width:640px)").matches){
+          switchTab("dashbord");
+        }
       }
       renderAll();
       startDataLayer();
