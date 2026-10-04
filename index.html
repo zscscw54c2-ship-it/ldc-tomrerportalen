@@ -1952,6 +1952,13 @@
       <h3 id="logiDialogName" style="margin:0;"></h3>
       <span id="logiStatusBadge"></span>
     </div>
+    <div id="pdInfoGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; font-size:13px; margin:10px 0 16px; padding:10px 12px; background:var(--surface-alt); border-radius:8px;">
+      <div><span style="color:var(--muted); font-size:11px;">Menighet</span><br><span id="pdMenighet">–</span></div>
+      <div><span style="color:var(--muted); font-size:11px;">Telefon</span><br><span id="pdTelefon">–</span></div>
+      <div><span style="color:var(--muted); font-size:11px;">Fag</span><br><span id="pdFag">–</span></div>
+      <div><span style="color:var(--muted); font-size:11px;">Adresse</span><br><span id="pdAdresse">–</span></div>
+    </div>
+    <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Logi</h4>
     <div class="field" id="logiStatusField">
       <label for="logiStatusSelect">Status</label>
       <select id="logiStatusSelect">
@@ -2031,6 +2038,10 @@
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
 
   function currentProjectId(){ return state.currentProjectId; }
+  function peopleForCurrentProject(){
+    var pid = state.currentProjectId;
+    return state.people.filter(function(p){ return p.projectId === pid; });
+  }
   // Rader uten prosjekt (laget før prosjekter fantes) vises under det aktive prosjektet.
   function homeProjectId(){
     var active = state.projects.find(function(p){ return p.isActive; });
@@ -2856,12 +2867,15 @@
         var asg = on && assignedByDay[i].has(p.id);
         return '<td><button type="button" class="att-cell'+(on?' on':'')+(asg?' assigned':'')+'" data-att="'+p.id+'|'+iso+'" title="'+(on ? (asg?'Til stede, satt på oppgave':'Til stede, mangler oppgave') : 'Ikke med')+'">'+(on?'✓':'')+'</button></td>';
       }).join("");
-      return '<tr><td>'+escapeHtml(p.name)+(p.group?'<small>'+escapeHtml(p.group)+'</small>':'')+'</td>'+cells +
+      return '<tr><td><span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>'+(p.group?'<small>'+escapeHtml(p.group)+'</small>':'')+'</td>'+cells +
         '<td><button type="button" class="att-cell all" data-attall="'+p.id+'">'+(cnt===5?'Fjern':'Alle')+'</button></td></tr>';
     }).join("") : '<tr><td colspan="7" class="empty-note" style="text-align:left; font-weight:400">Ingen frivillige lagt inn for denne uka ennå. Velg en person under.</td></tr>';
     byId("wvTable").innerHTML = head + body;
-    byId("wvAddSel").innerHTML = '<option value="">Velg person …</option>' + state.people.filter(function(p){ return !ids.has(p.id); })
+    byId("wvAddSel").innerHTML = '<option value="">Velg person …</option>' + peopleForCurrentProject().filter(function(p){ return !ids.has(p.id); })
       .map(function(p){ return '<option value="'+p.id+'">'+escapeHtml(p.name)+(p.group?' ('+escapeHtml(p.group)+')':'')+'</option>'; }).join("");
+    byId("wvTable").querySelectorAll("[data-logiopen]").forEach(function(el){
+      el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
+    });
     byId("wvTable").querySelectorAll("[data-att]").forEach(function(b){
       b.addEventListener("click", function(){ var x = this.dataset.att.split("|"); setPresence(x[0], x[1], !isPresent(x[0], x[1])); });
     });
@@ -2982,11 +2996,11 @@
     byId("staffDays").innerHTML = days.map(function(d){
       var iso = toISODate(d), ids = (e.assignments && e.assignments[iso]) || [];
       var conflicts = conflictsForDate(iso);
-      var avail = state.people.filter(function(p){ return ids.indexOf(p.id) === -1; });
+      var avail = peopleForCurrentProject().filter(function(p){ return ids.indexOf(p.id) === -1; });
       var presNoTask = presentWithoutTask(iso).length;
       var row = '<div class="det-day staff-day">'+dayLabel(d)+'<div style="flex:1; min-width:0">' +
         '<div class="ppl">'+(ids.length ? ids.map(function(pid){
-          return '<span'+(conflicts[pid]?' class="conf" title="Satt opp på en annen oppgave samme dag"':'')+'>'+escapeHtml(personName(pid))+'<button type="button" data-unstaff="'+iso+'|'+pid+'" title="Fjern">×</button></span>';
+          return '<span'+(conflicts[pid]?' class="conf" title="Satt opp på en annen oppgave samme dag"':'')+'><span data-logiopen="'+pid+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(personName(pid))+'</span><button type="button" data-unstaff="'+iso+'|'+pid+'" title="Fjern">×</button></span>';
         }).join("") : '<span class="nobody">Ingen satt opp</span>')+'</div>' +
         '<div class="tools"><select data-staff="'+iso+'"><option value="">+ Legg til person</option>' +
         (function(){
@@ -3007,6 +3021,9 @@
     });
     box.querySelectorAll("[data-unstaff]").forEach(function(b){
       b.addEventListener("click", function(){ var p = this.dataset.unstaff.split("|"); unassignPerson(id, p[0], p[1]); });
+    });
+    box.querySelectorAll("[data-logiopen]").forEach(function(el){
+      el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
     });
     box.querySelectorAll("[data-copyday]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -3451,14 +3468,17 @@
       });
     });
     var att = attendanceForCurrentProject().filter(function(a){ return a.person_id === p.id; }).length;
-    return '<div class="personrow"><span class="pname">'+escapeHtml(p.name)+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+(p.congregation ? ' <span class="badge congregation">'+escapeHtml(p.congregation)+'</span>' : '')+'</span>' +
+    return '<div class="personrow"><span class="pname"><span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>'+(p.group ? ' <span class="badge group">'+escapeHtml(p.group)+'</span>' : '')+(p.congregation ? ' <span class="badge congregation">'+escapeHtml(p.congregation)+'</span>' : '')+'</span>' +
       '<span style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;"><span class="pmeta">'+att+' dag(er) med · '+days.size+' på oppgave</span>' +
       (isByggeleder() ? '<button class="btn small primary" data-persondates="'+p.id+'">Datoer</button>' +
       '<button class="btn small danger" data-delperson="'+p.id+'">Fjern</button>' : '') + '</span></div>';
   }
   function wirePersonRowButtons(root){
+    root.querySelectorAll("[data-logiopen]").forEach(function(el){
+      el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
+    });
     root.querySelectorAll("[data-persondates]").forEach(function(b){
-      b.addEventListener("click", function(){ openPersonDates(this.dataset.persondates); });
+      b.addEventListener("click", function(ev){ ev.stopPropagation(); openPersonDates(this.dataset.persondates); });
     });
     root.querySelectorAll("[data-delperson]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -3507,7 +3527,8 @@
     byId("addPersonForm").hidden = !isByggeleder();
     byId("importPeopleBtn").hidden = !isByggeleder();
 
-    if(state.people.length === 0){
+    var projectPeople = peopleForCurrentProject();
+    if(projectPeople.length === 0){
       byId("peopleByFag").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
     } else {
       byId("frivilligeEditModeBtn").hidden = !isByggeleder();
@@ -3522,7 +3543,7 @@
 
     var box = byId("peopleList");
     byId("peopleShowAllBtn").textContent = view.peopleShowAll ? "Skjul listen" : "Vis hele listen";
-    if(state.people.length === 0){
+    if(projectPeople.length === 0){
       box.innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
       return;
     }
@@ -3531,7 +3552,7 @@
       box.innerHTML = '<p class="empty-note">Søk etter et navn, eller trykk «Vis hele listen».</p>';
       return;
     }
-    var list = q ? state.people.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : state.people;
+    var list = q ? projectPeople.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; }) : projectPeople;
     if(list.length === 0){
       box.innerHTML = '<p class="empty-note">Ingen personer matcher søket.</p>';
       return;
@@ -3572,7 +3593,7 @@
         items.map(function(t){
           var personSelect = '<select data-roomtodoperson="'+t.id+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
             '<option value="">Ingen person</option>' +
-            state.people.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.assignedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+            peopleForCurrentProject().map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.assignedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
             '</select>';
           return '<div class="shoprow'+(t.done?' bought':'')+'" style="flex-wrap:wrap;"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="sname">'+escapeHtml(t.text)+'</span>'+personSelect+'<button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
         }).join("") +
@@ -4159,7 +4180,7 @@
   function findExistingPersonByName(name){
     var n = normText(name);
     if(!n) return null;
-    var hit = state.people.find(function(p){ return normText(p.name) === n; });
+    var hit = peopleForCurrentProject().find(function(p){ return normText(p.name) === n; });
     return hit ? hit.id : null;
   }
   function currentFagLabelForPerson(personId){
@@ -4433,7 +4454,8 @@
             name: r.name.trim().slice(0,60),
             phone: r.phone.trim().slice(0,40) || null,
             address: r.address.trim().slice(0,160) || null,
-            congregation: r.congregation.trim().slice(0,120) || null
+            congregation: r.congregation.trim().slice(0,120) || null,
+            project_id: cur.id
           };
         })).select()
       : Promise.resolve({ data: [] });
@@ -4815,9 +4837,9 @@
       if(isByggeleder()){
         var slotIds2 = behovSlotsForCurrentProject().map(function(s){ return s.id; });
         var openBehovTile = state.behovDays.filter(function(d){ return slotIds2.indexOf(d.slot_id) !== -1 && !d.personId; }).length;
-        return { badge: openBehovTile, text: openBehovTile > 0 ? openBehovTile+" ufylte behov-dager" : state.people.length+" frivillige" };
+        return { badge: openBehovTile, text: openBehovTile > 0 ? openBehovTile+" ufylte behov-dager" : peopleForCurrentProject().length+" frivillige" };
       }
-      return { badge: 0, text: state.people.length+" frivillige" };
+      return { badge: 0, text: peopleForCurrentProject().length+" frivillige" };
     }
     if(tab === "rom"){
       var todos = roomTodosForCurrentProject();
@@ -5041,7 +5063,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", projectId: row.project_id, createdAt: row.created_at };
   }
   function rowToElement(row){
     return {
@@ -5535,7 +5557,7 @@
 
     var pfList = projectFagsForCurrentProject();
     var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
-    var peopleSorted = state.people.slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+    var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
     byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
       var relevant = u.role === "byggeleder" || (pfList.some(function(x){ return x.fag === u.role && x.active; }));
       var isFagRole = u.role === "byggeleder" || FAG_LIST.indexOf(u.role) !== -1;
@@ -5880,7 +5902,9 @@
   }
   function addPersonAndFillBehovDay(dayRowId, name){
     if(!sb) return;
-    sb.from("people").insert({ name: name.slice(0,60) }).select().single().then(function(res){
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("people").insert({ name: name.slice(0,60), project_id: pid }).select().single().then(function(res){
       if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
       fillBehovDay(dayRowId, res.data.id);
       refetchPeople();
@@ -6247,12 +6271,11 @@
           var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
           cells += '<div class="'+cls+'"'+attr+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
-        var nameCell = escapeHtml(p.name);
+        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>';
         if(opts.logiMode){
           var linfo = logiInfoForPerson(p.id);
           var lstatus = linfo ? linfo.status : "ikke_vurdert";
-          nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for Logi-detaljer">'+escapeHtml(p.name)+'</span> ' +
-            '<span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
+          nameCell += ' <span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
         }
         var rowAttr = "";
         if(canDragRow){
@@ -6268,11 +6291,9 @@
   }
   function wireFrivilligeGridEvents(containerId, opts){
     opts = opts || {};
-    if(opts.logiMode){
-      byId(containerId).querySelectorAll("[data-logiopen]").forEach(function(el){
-        el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
-      });
-    }
+    byId(containerId).querySelectorAll("[data-logiopen]").forEach(function(el){
+      el.addEventListener("click", function(ev){ ev.stopPropagation(); openLogiDialog(this.dataset.logiopen); });
+    });
     if(opts.readOnly){
       byId(containerId).querySelectorAll("[data-requestavail]").forEach(function(el){
         el.addEventListener("click", function(){
@@ -6727,7 +6748,7 @@
     var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
     behovFillDialog.dataset.targetId = dayRowId;
     byId("behovFillMeta").textContent = (slot ? (slot.fag ? FAG_LABELS[slot.fag] : slot.label) : "") + " · " + fmtRange(d.day, d.day);
-    byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + state.people.map(function(p){
+    byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + peopleForCurrentProject().map(function(p){
       return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
     }).join("");
     byId("behovFillNewName").value = "";
@@ -6925,6 +6946,10 @@
     logiDialog.dataset.personId = personId;
     logiDialog.dataset.logiInfoId = info ? info.id : "";
     byId("logiDialogName").textContent = person.name;
+    byId("pdMenighet").textContent = person.congregation || "–";
+    byId("pdTelefon").textContent = person.phone || "–";
+    byId("pdFag").textContent = currentFagLabelForPerson(personId) || "–";
+    byId("pdAdresse").textContent = person.address || "–";
     byId("logiStatusBadge").innerHTML = '<span class="badge" style="background:'+(LOGI_STATUS_COLORS[status])+'22; color:'+(LOGI_STATUS_COLORS[status])+';">'+LOGI_STATUS_LABELS[status]+'</span>';
     byId("logiStatusField").hidden = !canEditFull;
     byId("logiStatusSelect").value = status;
@@ -7462,7 +7487,7 @@
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("people").insert({ name: name.slice(0,80) }).select().single().then(function(res){
+    sb.from("people").insert({ name: name.slice(0,80), project_id: pid }).select().single().then(function(res){
       if(res.error){ showError("Kunne ikke opprette personen: "+res.error.message); return; }
       var personId = res.data.id;
       refetchPeople();
@@ -7483,7 +7508,7 @@
     var t = state.teamPairs.find(function(x){ return x.id === teamPairId; });
     if(!t) return;
     if(t.personId){ openPersonDates(t.personId, "team"); return; }
-    sb.from("people").insert({ name: t.name.slice(0,80) }).select().single().then(function(res){
+    sb.from("people").insert({ name: t.name.slice(0,80), project_id: t.project_id }).select().single().then(function(res){
       if(res.error){ showError("Kunne ikke opprette personen: "+res.error.message); return; }
       var personId = res.data.id;
       refetchPeople();
@@ -8132,7 +8157,9 @@
 
   function addPerson(name, group){
     if(!sb) return;
-    sb.from("people").insert({ name: name.slice(0,60), group: group ? group.slice(0,30) : null })
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("people").insert({ name: name.slice(0,60), group: group ? group.slice(0,30) : null, project_id: pid })
       .then(function(res){ if(res.error){ showError("Kunne ikke lagre personen: "+res.error.message); return; } refetchPeople(); });
   }
   function deletePerson(id){
