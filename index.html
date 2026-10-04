@@ -533,6 +533,8 @@
   /* ---------- import fra fil (mannskapsliste / fremdriftsplan) ---------- */
   dialog.imp-dialog{ width:min(900px, calc(100vw - 24px)); }
   .imp-map-grid{ display:grid; gap:10px; margin-top:12px; }
+  .imp-navncol-row{ display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+  .imp-navncol-row select{ flex:1; }
   .imp-map-grid .field label{ font-size:12px; font-weight:600; color:var(--muted); }
   .imp-table-wrap{ max-height:52vh; overflow:auto; border:1px solid var(--border); border-radius:10px; margin-top:4px; }
   .imp-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
@@ -1818,7 +1820,12 @@
       </div>
       <p id="impPeopleParseError" class="sub" style="color:var(--bad); display:none; margin-top:8px;"></p>
       <div class="imp-map-grid" id="impPeopleMapWrap" hidden>
-        <div class="field"><label>Hvilken kolonne er navn?</label><select id="impPeopleMapNavn"></select></div>
+        <div class="field">
+          <label>Hvilke(n) kolonne(r) utgjør navnet?</label>
+          <p class="sub" style="font-size:11.5px; color:var(--muted); margin:-2px 0 6px;">Består navnet av flere kolonner (f.eks. fornavn og etternavn hver for seg), legg til flere – de settes sammen i valgt rekkefølge.</p>
+          <div id="impPeopleMapNavnCols"></div>
+          <button type="button" class="btn small" id="impPeopleAddNavnCol" style="margin-top:4px;">+ Legg til kolonne</button>
+        </div>
         <div class="field"><label>Hvilken kolonne er telefon? (valgfritt)</label><select id="impPeopleMapTelefon"></select></div>
         <div class="field"><label>Hvilken kolonne er adresse? (valgfritt)</label><select id="impPeopleMapAdresse"></select></div>
         <div class="field"><label>Hvilken kolonne er menighet? (valgfritt)</label><select id="impPeopleMapMenighet"></select></div>
@@ -4182,10 +4189,11 @@
 
   // ---- mannskapsliste-import ----
   var impPeopleDialog = byId("impPeopleDialog");
-  var impPeople = { headers: [], fileRows: [], rows: [] };
+  var impPeople = { headers: [], fileRows: [], rows: [], navnCols: [""] };
   function impPeopleResetToStep1(){
-    impPeople.headers = []; impPeople.fileRows = []; impPeople.rows = [];
+    impPeople.headers = []; impPeople.fileRows = []; impPeople.rows = []; impPeople.navnCols = [""];
     impPeople.deltokCol = ""; impPeople.jaCol = ""; impPeople.lokalCol = ""; impPeople.hasMarkerCols = false; impPeople.showUnconfirmed = false;
+    byId("impPeopleMapNavnCols").innerHTML = "";
     byId("impPeopleFile").value = "";
     byId("impPeopleMapWrap").hidden = true;
     byId("impPeopleMarkerNote").style.display = "none";
@@ -4222,15 +4230,16 @@
       }
       impPeople.headers = parsed.headers;
       impPeople.fileRows = parsed.rows;
-      var navnCol = guessColumn(parsed.headers, ["navn","name","fullt navn"]);
+      var navnCols = guessNameColumns(parsed.headers);
+      impPeople.navnCols = navnCols.length ? navnCols : [""];
       var telCol = guessColumn(parsed.headers, ["telefon","tlf","mobil","phone"]);
       var adrCol = guessColumn(parsed.headers, ["adresse","address","bosted"]);
-      var menCol = guessColumn(parsed.headers, ["menighet","congregation"]);
+      var menCol = guessColumn(parsed.headers, ["menighetens navn","congregation name","menighet","congregation"]);
       impPeople.deltokCol = guessColumn(parsed.headers, ["deltok"]);
       impPeople.jaCol = guessColumn(parsed.headers, ["har svart ja","svarte ja"]);
       impPeople.lokalCol = guessColumn(parsed.headers, ["lokal frivillig"]);
       impPeople.hasMarkerCols = !!(impPeople.deltokCol || impPeople.jaCol || impPeople.lokalCol);
-      byId("impPeopleMapNavn").innerHTML = colSelectHtml(parsed.headers, navnCol, false);
+      renderNavnColSelectors();
       byId("impPeopleMapTelefon").innerHTML = colSelectHtml(parsed.headers, telCol, true);
       byId("impPeopleMapAdresse").innerHTML = colSelectHtml(parsed.headers, adrCol, true);
       byId("impPeopleMapMenighet").innerHTML = colSelectHtml(parsed.headers, menCol, true);
@@ -4244,7 +4253,10 @@
         markerNote.style.display = "none";
       }
       byId("impPeopleNext").disabled = false;
-      if(isExactAliasMatch(navnCol, ["navn","name","fullt navn"])){
+      var autoConfident = navnCols.length === 1
+        ? isExactAliasMatch(navnCols[0], ["navn","name","fullt navn"])
+        : (navnCols.length >= 2 && isExactAliasMatch(navnCols[0], ["fornavn","first name","firstname"]) && isExactAliasMatch(navnCols[navnCols.length-1], ["etternavn","last name","lastname","surname"]));
+      if(autoConfident){
         impPeopleAdvanceToPreview();
       }
     }).catch(function(err){
@@ -4258,18 +4270,58 @@
     var n = normText(col);
     return aliases.some(function(a){ return normText(a) === n; });
   }
+  function guessNameColumns(headers){
+    var single = guessColumn(headers, ["navn","name","fullt navn"]);
+    if(isExactAliasMatch(single, ["navn","name","fullt navn"])) return [single];
+    var first = guessColumn(headers, ["fornavn","first name","firstname"]);
+    var last = guessColumn(headers, ["etternavn","last name","lastname","surname"]);
+    if(first && last){
+      var middle = guessColumn(headers, ["mellomnavn","middle name","middlename"]);
+      return middle ? [first, middle, last] : [first, last];
+    }
+    return single ? [single] : [""];
+  }
+  function composeName(row, cols){
+    return cols.map(function(c){ return c ? String(row[c]==null?"":row[c]).trim() : ""; }).filter(Boolean).join(" ");
+  }
+  function renderNavnColSelectors(){
+    var headers = impPeople.headers;
+    var cols = impPeople.navnCols;
+    var wrap = byId("impPeopleMapNavnCols");
+    wrap.innerHTML = cols.map(function(col, i){
+      return '<div class="imp-navncol-row">' +
+        '<select class="imp-navncol-select" data-navncolidx="'+i+'">'+colSelectHtml(headers, col, i>0)+'</select>' +
+        (cols.length>1 ? '<button type="button" class="imp-rowremove" data-navncolremove="'+i+'" title="Fjern kolonne">×</button>' : '') +
+      '</div>';
+    }).join("");
+    wrap.querySelectorAll("[data-navncolremove]").forEach(function(b){
+      b.addEventListener("click", function(){
+        impPeople.navnCols.splice(+this.dataset.navncolremove, 1);
+        renderNavnColSelectors();
+      });
+    });
+    wrap.querySelectorAll(".imp-navncol-select").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        impPeople.navnCols[+this.dataset.navncolidx] = this.value;
+      });
+    });
+  }
+  byId("impPeopleAddNavnCol").addEventListener("click", function(){
+    impPeople.navnCols.push("");
+    renderNavnColSelectors();
+  });
   function impPeopleAdvanceToPreview(){
-    var navnCol = byId("impPeopleMapNavn").value;
-    if(!navnCol) return;
+    var navnCols = impPeople.navnCols.filter(Boolean);
+    if(!navnCols.length) return;
     var telCol = byId("impPeopleMapTelefon").value;
     var adrCol = byId("impPeopleMapAdresse").value;
     var menCol = byId("impPeopleMapMenighet").value;
     var deltokCol = impPeople.deltokCol, jaCol = impPeople.jaCol, lokalCol = impPeople.lokalCol;
     impPeople.showUnconfirmed = false;
     impPeople.rows = impPeople.fileRows.filter(function(row){
-      return normalizePersonName(row[navnCol]);
+      return normalizePersonName(composeName(row, navnCols));
     }).map(function(row){
-      var name = normalizePersonName(row[navnCol]);
+      var name = normalizePersonName(composeName(row, navnCols));
       var phone = telCol ? String(row[telCol]==null?"":row[telCol]).trim() : "";
       var address = adrCol ? String(row[adrCol]==null?"":row[adrCol]).trim() : "";
       var congregation = menCol ? String(row[menCol]==null?"":row[menCol]).trim() : "";
