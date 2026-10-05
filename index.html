@@ -897,7 +897,8 @@
 
     <div id="kontaktLogiWrap" hidden>
       <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse, koder, kontaktinfo og allergier, og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her.</p>
-      <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+      <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+        <input type="search" id="kontaktLogiSearchInput" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--surface); min-width:160px;" />
         <button type="button" class="btn small" id="kontaktLogiFullViewBtn">Vis hele prosjektet</button>
       </div>
       <div id="kontaktLogiList" class="gantt-wrap frivillige-grid"></div>
@@ -1239,10 +1240,11 @@
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
           <h2 data-etkey="personer_logi_title" style="font-size:16px;">Logi</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="search" id="logiSearchInput" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--surface); min-width:160px;" />
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
           </div>
         </div>
-        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet (rødt = trenger logi, gult = fikser selv, grønt = klart). Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe, se «Logi-grupper» nedenfor.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige på prosjektet, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet (rødt = trenger logi, gult = fikser selv, grønt = klart). Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe, se «Logi-grupper» nedenfor.</p>
         <div id="logiGroupSelectionBar" hidden style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:12.5px;">
           <span id="logiGroupSelectionCount" style="flex:1;"></span>
           <button type="button" class="btn small primary" id="logiGroupSelectionMergeBtn">Slå sammen</button>
@@ -2111,7 +2113,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], teamPairs: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [] };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -3700,7 +3702,7 @@
       byId("logiFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
       // Fag-uavhengig og skrivebeskyttet tilgjengelighet (gruppert etter logi-gruppe, ikke fag) -
       // denne siden skal bare koordinere logi, ikke redigere hvem som er tilgjengelig når.
-      byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, allowGroupEdit: isByggeleder() });
+      byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, allowGroupEdit: isByggeleder(), searchQuery: view.logiSearch });
       wireFrivilligeGridEvents("personerLogiList", { readOnly: false, allowGroupEdit: isByggeleder() });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("personerLogiList", cur); else byId("personerLogiList").scrollLeft = 0;
       byId("logiGroupsBox").hidden = !isByggeleder();
@@ -3761,6 +3763,7 @@
   }
   byId("frivilligeFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
   byId("logiFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
+  byId("logiSearchInput").addEventListener("input", function(){ view.logiSearch = this.value; renderPeopleTab(); });
   byId("frivilligeEditModeBtn").addEventListener("click", toggleFrivilligeEditMode);
 
   // ---------- åndelig skjema ----------
@@ -6638,18 +6641,32 @@
     teamPairsForCurrentProject().forEach(function(t){ if(t.personId && t.isPair) pairWeightByPerson[t.personId] = 2; });
     function personWeight(personId){ return pairWeightByPerson[personId] || 1; }
 
-    var rosterPeople = state.people.filter(function(p){ return p.projectId === pid && presentDays[p.id]; });
+    // Hele prosjektet, ikke bare de med minst én oppmøtedag - logi må ofte ordnes før dag-for-dag
+    // planen er klar. De uten noen oppmøtedager vises i en egen "Ikke satt opp ennå"-bøtte lenger
+    // ned, slik at det er tydelig hvorfor radene deres er tomme. Totalt-raden (under) regner
+    // uendret kun faktisk tilstedeværelse, uansett hvem som vises i listen.
+    var rosterPeople = state.people.filter(function(p){ return p.projectId === pid; });
     if(opts.fromToday && startIdx > 0){
-      rosterPeople = rosterPeople.filter(function(p){ return hasFutureAvailability(p.id); });
+      rosterPeople = rosterPeople.filter(function(p){ return !presentDays[p.id] || hasFutureAvailability(p.id); });
     }
+    var searchQ = (opts.searchQuery || "").trim().toLowerCase();
     var groupedIds = {};
-    var groups = logiGroupsForCurrentProject().map(function(g){
+    var allGroups = logiGroupsForCurrentProject().map(function(g){
       var members = rosterPeople.filter(function(p){ return p.logiGroupId === g.id; });
       members.forEach(function(p){ groupedIds[p.id] = true; });
       return { group: g, members: members };
-    }).filter(function(g){ return g.members.length > 0; }).sort(function(a,b){ return (a.group.label||"").localeCompare(b.group.label||"","no"); });
-    var singles = rosterPeople.filter(function(p){ return !groupedIds[p.id]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-    var anyRows = groups.length > 0 || singles.length > 0;
+    }).filter(function(g){ return g.members.length > 0; });
+    // Søk treffer gruppens merkelapp eller et hvilket som helst medlems navn - matcher den,
+    // vises HELE gruppen (slik at man ser hvem personen deler logi med), ikke bare treffet selv.
+    var groups = (searchQ ? allGroups.filter(function(gr){
+      var label = (gr.group.label || "").toLowerCase();
+      return label.indexOf(searchQ) !== -1 || gr.members.some(function(p){ return p.name.toLowerCase().indexOf(searchQ) !== -1; });
+    }) : allGroups).sort(function(a,b){ return (a.group.label||"").localeCompare(b.group.label||"","no"); });
+    var ungrouped = rosterPeople.filter(function(p){ return !groupedIds[p.id]; });
+    if(searchQ) ungrouped = ungrouped.filter(function(p){ return p.name.toLowerCase().indexOf(searchQ) !== -1; });
+    var singles = ungrouped.filter(function(p){ return presentDays[p.id]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+    var notScheduled = ungrouped.filter(function(p){ return !presentDays[p.id]; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+    var anyRows = groups.length > 0 || singles.length > 0 || notScheduled.length > 0;
 
     if(anyRows){
       var totalCells = "";
@@ -6695,8 +6712,16 @@
       html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--muted); width:8px; height:8px; border-radius:3px;"></i> Enkeltpersoner</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
       singles.forEach(function(p){ html += personRowHtml(p); });
     }
+    if(notScheduled.length){
+      html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--muted); width:8px; height:8px; border-radius:3px; opacity:.5;"></i> Ikke satt opp ennå</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      notScheduled.forEach(function(p){ html += personRowHtml(p); });
+    }
     html += '</div>';
-    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp ennå.')+'</p>';
+    if(!anyRows){
+      var emptyMsg = searchQ ? "Ingen treffer på «"+escapeHtml(opts.searchQuery.trim())+"»."
+        : (opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er lagt til ennå.');
+      return html + '<p class="empty-note" style="margin-top:10px;">'+emptyMsg+'</p>';
+    }
     return html;
   }
   function wireFrivilligeGridEvents(containerId, opts){
@@ -7386,6 +7411,7 @@
     renderKontaktView();
   }
   byId("kontaktLogiFullViewBtn").addEventListener("click", kontaktToggleFullView);
+  byId("kontaktLogiSearchInput").addEventListener("input", function(){ view.logiSearch = this.value; renderKontaktView(); });
   function renderKontaktView(){
     if(myRole() !== "kontakt") return;
     var activeId = kontaktActiveProjectId();
@@ -7421,7 +7447,7 @@
       // Gruppert etter logi-gruppe (familie/ektepar/venner), ikke fag - menighetens
       // Logi-side bryr seg om hvem som bor sammen. Helt statisk rutenett (ingen
       // data-toggleavail/data-requestavail), kun navnene har data-logiopen.
-      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView });
+      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, searchQuery: view.logiSearch });
       wireFrivilligeGridEvents("kontaktLogiList", { readOnly: false });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("kontaktLogiList", cur); else byId("kontaktLogiList").scrollLeft = 0;
       return;
@@ -7597,7 +7623,9 @@
   // (legger til nye, fjerner de som ikke lenger skal være med). Tømmes gruppen helt, løses den opp.
   function updateLogiGroup(groupId, label, relation, memberIds){
     if(!sb || !isByggeleder()) return;
-    if(!memberIds.length){ deleteLogiGroup(groupId); return; }
+    // Under 2 medlemmer er ikke lenger en "gruppe" å dele logi med - løs den heller opp enn å la
+    // den bli stående med én person og et misvisende kategori-merke (f.eks. "Ektepar" på 1).
+    if(memberIds.length <= 1){ deleteLogiGroup(groupId); return; }
     sb.from("logi_groups").update({ label: label.slice(0,80) || null, relation: relation.slice(0,60) || null }).eq("id", groupId).then(function(res){
       if(res.error){ showError("Kunne ikke oppdatere gruppen: "+res.error.message); return; }
       var current = logiGroupMembers(groupId).map(function(p){ return p.id; });
@@ -7611,7 +7639,9 @@
   function removePersonFromLogiGroup(personId, groupId){
     if(!sb || !isByggeleder()) return;
     var remaining = logiGroupMembers(groupId).map(function(p){ return p.id; }).filter(function(id){ return id !== personId; });
-    if(!remaining.length){ deleteLogiGroup(groupId); return; }
+    // Løser opp gruppen helt når ≤1 blir igjen (ikke bare 0) - sletter du gruppen, nullstilles
+    // logi_group_id for alle resterende medlemmer automatisk via FK-en.
+    if(remaining.length <= 1){ deleteLogiGroup(groupId); return; }
     sb.from("people").update({ logi_group_id: null }).eq("id", personId).then(function(res){
       if(res.error){ showError("Kunne ikke fjerne personen fra gruppen: "+res.error.message); return; }
       refetchPeople();
