@@ -1495,10 +1495,17 @@
   </section>
 
   <section id="panel-cgo" class="panel">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-      <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0;"></p>
+    <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+      <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0; flex:1; min-width:180px;"></p>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button type="button" class="btn small ghost" id="cgoWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
+        <span id="cgoWeekLabel" class="mono" style="font-weight:700; font-size:13.5px; min-width:60px; text-align:center;"></span>
+        <button type="button" class="btn small ghost" id="cgoWeekNext" title="Neste uke" aria-label="Neste uke">›</button>
+        <button type="button" class="btn small" id="cgoWeekToday" hidden>Denne uken</button>
+      </div>
       <button type="button" class="btn small" id="cgoEditTextsBtn">Rediger tekster</button>
     </div>
+    <p class="sub" style="font-size:12px; color:var(--muted); margin:-6px 0 12px;">Samme uke som Team-siden viser – bla for å forberede Flex eller Teammøte-agenda for en annen uke.</p>
     <p class="empty-note" id="cgoEditTextsNote" hidden style="margin:-6px 0 12px;">Redigeringsmodus på – tekster merket med stiplet kant kan endres. Gjelder malen for alle prosjekter, ikke bare dette.</p>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
@@ -5385,17 +5392,29 @@
       });
     });
   }
-  byId("teamWeekPrev").addEventListener("click", function(){
-    view.teamWeekMonday = new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()-7);
+  // Team og CGO deler samme uke (view.teamWeekMonday) - se notat ved panel-cgo sin ukenavigasjon.
+  function goToTeamWeek(monday){
+    view.teamWeekMonday = monday;
     renderSpiritualTab();
+    renderCgoTab();
+  }
+  byId("teamWeekPrev").addEventListener("click", function(){
+    goToTeamWeek(new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()-7));
   });
   byId("teamWeekNext").addEventListener("click", function(){
-    view.teamWeekMonday = new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()+7);
-    renderSpiritualTab();
+    goToTeamWeek(new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()+7));
   });
   byId("teamWeekToday").addEventListener("click", function(){
-    view.teamWeekMonday = mondayOf(new Date());
-    renderSpiritualTab();
+    goToTeamWeek(mondayOf(new Date()));
+  });
+  byId("cgoWeekPrev").addEventListener("click", function(){
+    goToTeamWeek(new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()-7));
+  });
+  byId("cgoWeekNext").addEventListener("click", function(){
+    goToTeamWeek(new Date(view.teamWeekMonday.getFullYear(), view.teamWeekMonday.getMonth(), view.teamWeekMonday.getDate()+7));
+  });
+  byId("cgoWeekToday").addEventListener("click", function(){
+    goToTeamWeek(mondayOf(new Date()));
   });
   function openAccountsForCurrentProject(){
     var pid = currentProjectId();
@@ -5831,11 +5850,15 @@
     var cgoPerson = myLinkedPerson();
     byId("cgoIdentityLine").textContent = cgoPerson ? "Innlogget som "+byggeleiderIdentityLabel()+" – "+cgoPerson.name : "Innlogget som "+byggeleiderIdentityLabel();
 
+    var cgoWeekMonday = view.teamWeekMonday;
+    byId("cgoWeekLabel").textContent = "Uke "+isoWeekInfo(cgoWeekMonday).week;
+    byId("cgoWeekToday").hidden = toISODate(cgoWeekMonday) === toISODate(mondayOf(new Date()));
+
     var flexCgoGridEl = byId("flexCgoGrid");
-    flexCgoGridEl.innerHTML = flexWeekGridHtml(mondayOf(new Date()), { showPending: true, clickable: true });
+    flexCgoGridEl.innerHTML = flexWeekGridHtml(cgoWeekMonday, { showPending: true, clickable: true });
     bindFlexActionCells(flexCgoGridEl);
 
-    var m = currentWeekTeamMeeting();
+    var m = currentWeekTeamMeeting(cgoWeekMonday);
     var agendaFieldIds = { agBonn_tidspunkt:"tidspunkt", agBonn_ansvarlig:"bonnAnsvarlig", agBonn_bibelsk:"bibelskTankeAnsvarlig", agRosTakk:"rosTakk", agPraktisk:"praktiskInfo", agFremdrift:"fremdrift", agMalTillegg:"malTillegg", agFrukt:"ukensFrukt", agSporsmal:"sporsmal" };
     Object.keys(agendaFieldIds).forEach(function(id){
       var el = byId(id);
@@ -7770,8 +7793,8 @@
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    var wk = toISODate(mondayOf(new Date()));
-    var existing = currentWeekTeamMeeting();
+    var wk = toISODate(view.teamWeekMonday);
+    var existing = currentWeekTeamMeeting(view.teamWeekMonday);
     var body = {
       project_id: pid, week_start: wk, sent: existing ? existing.sent : false,
       agenda: teamMeetingAgendaText(fields).slice(0,4000),
@@ -7788,8 +7811,8 @@
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    var wk = toISODate(mondayOf(new Date()));
-    var existing = currentWeekTeamMeeting();
+    var wk = toISODate(view.teamWeekMonday);
+    var existing = currentWeekTeamMeeting(view.teamWeekMonday);
     sb.from("team_meetings").upsert({ project_id: pid, week_start: wk, agenda: existing ? existing.agenda : "", sent: sent, sent_at: sent ? new Date().toISOString() : null }, { onConflict: "project_id,week_start" }).then(function(res){
       if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
       showInfo(sent ? "Sendt til Team-siden ✓" : "Trukket tilbake");
