@@ -1264,6 +1264,7 @@
       <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
         <h2 data-etkey="andelig_flex_title" style="font-size:16px; margin-bottom:2px;">FLEX</h2>
         <p class="sub" data-etkey="andelig_flex_sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
+        <p class="empty-note" id="flexNotLinkedNote" hidden>Kontoen din er ikke koblet til et teammedlem ennå, så du kan ikke sende flex-forespørsler selv. Be byggeleder koble kontoen din til riktig person under Prosjektinnstillinger.</p>
         <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
       </div>
     </div>
@@ -1273,12 +1274,13 @@
       <div class="zone-grid" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 data-etkey="andelig_teamet_title" style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-          <p class="sub" data-etkey="andelig_teamet_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Tilgjengelighet settes under Frivillige, kategorien "Teamet".</p>
+          <p class="sub" data-etkey="andelig_teamet_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Parene som er med i teamet, med adresse. Fag er valgfritt. Settes automatisk tilgjengelig hele prosjektet, og par telles som 2 i Frivillige-oversikten. Tilgjengelighet justeres under Frivillige, kategorien "Teamet".</p>
           <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
           <form class="inline-add" id="addTeamPairForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
             <input type="text" id="newTeamPairName" placeholder="Navn (f.eks. Jonathan &amp; Kari Sakkestad)" required maxlength="80" style="flex:1; min-width:180px;" />
             <select id="newTeamPairFag" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"><option value="">Fag (valgfritt)</option></select>
             <input type="text" id="newTeamPairAddress" placeholder="Adresse" maxlength="160" style="flex:1; min-width:160px;" />
+            <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:5px;"><input type="checkbox" id="newTeamPairIsPair" checked /> Par (2 personer)</label>
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
@@ -2013,15 +2015,16 @@
     <div class="field" id="logiStatusField">
       <label for="logiStatusSelect">Status</label>
       <select id="logiStatusSelect">
-        <option value="ikke_vurdert">Ikke vurdert</option>
         <option value="trenger_logi">Trenger logi</option>
-        <option value="logi_klart">Logi klart</option>
-        <option value="ordner_selv">Ordner selv</option>
+        <option value="logi_klart">Logi klart og melding sendt</option>
+        <option value="ordner_selv">Fikser logi selv</option>
       </select>
     </div>
     <div class="field"><label for="logiAdresseInput">Adresse (hvor personen bor mens de hjelper)</label><input type="text" id="logiAdresseInput" maxlength="200" /></div>
     <div class="field"><label for="logiKoderInput">Koder / nøkkel</label><input type="text" id="logiKoderInput" maxlength="200" /></div>
     <div class="field"><label for="logiKontaktInput">Kontaktinfo (vertsfamilie)</label><input type="text" id="logiKontaktInput" maxlength="200" /></div>
+    <div class="field"><label for="logiTelefonInput">Telefon til logiet</label><input type="tel" id="logiTelefonInput" maxlength="40" /></div>
+    <div class="field"><label for="logiAllergierInput">Allergier</label><input type="text" id="logiAllergierInput" maxlength="300" /></div>
     <div class="field"><label for="logiMeldingInput">Melding</label><textarea id="logiMeldingInput" rows="3" maxlength="600"></textarea></div>
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
@@ -3814,10 +3817,11 @@
     var showLogiBtn = canSeeLogi();
     byId("teamPairList").innerHTML = pairs.length ? pairs.map(function(t){
       var nDays = t.personId ? state.attendance.filter(function(a){ return a.project_id === pid && a.person_id === t.personId && a.fag === "team"; }).length : 0;
-      var logiStatus = t.personId ? (logiInfoForPerson(t.personId) ? logiInfoForPerson(t.personId).status : "ikke_vurdert") : null;
+      var logiStatus = t.personId ? (logiInfoForPerson(t.personId) ? logiInfoForPerson(t.personId).status : "trenger_logi") : null;
       return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname">'+escapeHtml(t.name)+(t.fag?' <span class="badge group">'+escapeHtml(FAG_LABELS[t.fag]||t.fag)+'</span>':'')+'</span>' +
         '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+(t.personId?' · '+nDays+' dag(er) tilgjengelig':'')+'</span>' +
         (showLogiBtn && t.personId ? '<button type="button" class="btn small" data-logiopen="'+t.personId+'" style="background:'+(LOGI_STATUS_COLORS[logiStatus])+'22; border-color:'+(LOGI_STATUS_COLORS[logiStatus])+';">'+LOGI_STATUS_LABELS[logiStatus]+'</button>' : '') +
+        '<button type="button" class="btn small" data-editonly data-togglepair="'+t.id+'" title="Klikk for å endre">'+(t.isPair ? "Par (2)" : "1 person")+'</button>' +
         '<button type="button" class="btn small" data-setavail="'+t.id+'">Sett tilgjengelighet</button>' +
         '<button class="del" data-editonly data-delteampair="'+t.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen team-par lagt til ennå.</p>';
@@ -3826,6 +3830,9 @@
     });
     byId("teamPairList").querySelectorAll("[data-setavail]").forEach(function(b){
       b.addEventListener("click", function(){ openTeamPairAvailability(this.dataset.setavail); });
+    });
+    byId("teamPairList").querySelectorAll("[data-togglepair]").forEach(function(b){
+      b.addEventListener("click", function(){ toggleTeamPairIsPair(this.dataset.togglepair); });
     });
     byId("teamPairList").querySelectorAll("[data-logiopen]").forEach(function(b){
       b.addEventListener("click", function(){ openLogiDialog(this.dataset.logiopen); });
@@ -3989,11 +3996,11 @@
   });
   byId("addTeamPairForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var nameInput = byId("newTeamPairName"), addrInput = byId("newTeamPairAddress"), fagInput = byId("newTeamPairFag");
+    var nameInput = byId("newTeamPairName"), addrInput = byId("newTeamPairAddress"), fagInput = byId("newTeamPairFag"), isPairInput = byId("newTeamPairIsPair");
     var name = nameInput.value.trim();
     if(!name) return;
-    addTeamPair(name, fagInput.value, addrInput.value.trim());
-    nameInput.value = ""; addrInput.value = ""; fagInput.value = "";
+    addTeamPair(name, fagInput.value, addrInput.value.trim(), isPairInput.checked);
+    nameInput.value = ""; addrInput.value = ""; fagInput.value = ""; isPairInput.checked = true;
   });
   byId("addSiteCodeForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -5253,7 +5260,7 @@
     return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", matterportUrl: row.matterport_url || "", matterportPassword: row.matterport_password || "", createdAt: row.created_at };
   }
   function rowToTeamPair(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, fag: row.fag || "", address: row.address || "", personId: row.person_id || "", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, fag: row.fag || "", address: row.address || "", personId: row.person_id || "", isPair: !!row.is_pair, createdAt: row.created_at };
   }
   function teamPairsForCurrentProject(){
     var pid = currentProjectId();
@@ -5349,6 +5356,7 @@
   }
   function renderTeamFlexBox(){
     var flexPair = myTeamPair();
+    byId("flexNotLinkedNote").hidden = !!flexPair || isByggeleder();
     var flexMonday = view.teamWeekMonday;
     var flexWk = toISODate(flexMonday);
     var pid = currentProjectId();
@@ -6421,10 +6429,14 @@
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(OVERVIEW_FAG_LIST.filter(function(f){ return f !== "team"; }));
     var anyRows = false;
     var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamPairsForCurrentProject().filter(function(t){ return t.personId; }).map(function(t){ return t.personId; }) : [];
+    // Team-par markert som "par" representerer 2 personer, og telles som 2 i summene under.
+    var pairWeightByPerson = {};
+    teamPairsForCurrentProject().forEach(function(t){ if(t.personId && t.isPair) pairWeightByPerson[t.personId] = 2; });
+    function personWeight(personId){ return pairWeightByPerson[personId] || 1; }
     // Summerer antall frivillige per dag - både per fag og totalt for hele dagen (unike personer,
     // så noen som står i flere fag samme dag ikke telles dobbelt i totalen) - for rask oversikt.
-    var totalDaySets = [];
-    for(var tdi=startIdx; tdi<range.workdays; tdi++) totalDaySets.push(new Set());
+    var totalDayWeights = [];
+    for(var tdi=startIdx; tdi<range.workdays; tdi++) totalDayWeights.push({});
     fagsToList.forEach(function(fag){
       var people;
       if(fag === "team"){
@@ -6450,7 +6462,7 @@
           var d = workdayDate(range, i);
           var iso = toISODate(d);
           var present = isPresentForFag(p.id, iso, fag);
-          if(present){ fagDayCounts[i-startIdx]++; totalDaySets[i-startIdx].add(p.id); }
+          if(present){ fagDayCounts[i-startIdx] += personWeight(p.id); totalDayWeights[i-startIdx][p.id] = personWeight(p.id); }
           var pending = opts.readOnly && pendingSet[p.id+"|"+iso+"|"+fag];
           var canEdit = !opts.readOnly && opts.editMode;
           var cls = "behov-cell" + ((opts.readOnly || canEdit) ? " clickable-empty" : "") + (present ? " filled" : "") + (pending ? " pending" : "");
@@ -6461,9 +6473,12 @@
           cells += '<div class="'+cls+'"'+attr+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
         var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>';
+        if(pairWeightByPerson[p.id]){
+          nameCell += ' <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-size:9px; padding:1px 5px;" title="Telles som 2 personer i Antall-raden">Par</span>';
+        }
         if(opts.logiMode){
           var linfo = logiInfoForPerson(p.id);
-          var lstatus = linfo ? linfo.status : "ikke_vurdert";
+          var lstatus = linfo ? linfo.status : "trenger_logi";
           nameCell += ' <span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
         }
         var rowAttr = "";
@@ -6481,8 +6496,10 @@
     });
     if(anyRows){
       var totalCells = "";
-      for(var ti2=0; ti2<totalDaySets.length; ti2++){
-        totalCells += '<div class="behov-cell">'+(totalDaySets[ti2].size || "")+'</div>';
+      for(var ti2=0; ti2<totalDayWeights.length; ti2++){
+        var daySum = 0;
+        for(var wk in totalDayWeights[ti2]) daySum += totalDayWeights[ti2][wk];
+        totalCells += '<div class="behov-cell">'+(daySum || "")+'</div>';
       }
       html += '<div class="g-row g-grandtotal"><div class="g-name">Totalt</div><div class="behov-track">'+totalCells+'</div></div>';
     }
@@ -7072,10 +7089,10 @@
   }
 
   // ---------- Logi ----------
-  var LOGI_STATUS_LABELS = { ikke_vurdert:"Ikke vurdert", trenger_logi:"Trenger logi", logi_klart:"Logi klart", ordner_selv:"Ordner selv" };
-  var LOGI_STATUS_COLORS = { ikke_vurdert:"var(--muted)", trenger_logi:"var(--warn)", logi_klart:"var(--good)", ordner_selv:"var(--muted)" };
+  var LOGI_STATUS_LABELS = { trenger_logi:"Trenger logi", logi_klart:"Logi klart og melding sendt", ordner_selv:"Fikser logi selv" };
+  var LOGI_STATUS_COLORS = { trenger_logi:"var(--warn)", logi_klart:"var(--good)", ordner_selv:"var(--muted)" };
   function rowToLogiInfo(row){
-    return { id: row.id, project_id: row.project_id, personId: row.person_id, status: row.status, adresse: row.adresse||"", koder: row.koder||"", kontaktinfo: row.kontaktinfo||"", melding: row.melding||"", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, personId: row.person_id, status: row.status, adresse: row.adresse||"", koder: row.koder||"", kontaktinfo: row.kontaktinfo||"", telefon: row.telefon||"", allergier: row.allergier||"", melding: row.melding||"", createdAt: row.created_at };
   }
   function refetchLogiInfo(){
     sb.from("logi_info").select("*").then(function(res){
@@ -7097,9 +7114,15 @@
   }
   // Kun de menighetens logikoordinator faktisk skal gjøre noe med (internt bruker Logi-fanen
   // hele Frivillige-etter-fag-rutenettet i stedet, se buildFrivilligeGridHtml({logiMode:true})).
+  // "Trenger logi" er standard helt til noen aktivt endrer status, så personer uten egen
+  // logi_info-rad ennå regnes også med her (ikke bare de med en eksplisitt lagret status).
   function logiNeededRosterForCurrentProject(){
-    var ids = logiInfoForCurrentProject().filter(function(l){ return l.status === "trenger_logi" || l.status === "logi_klart"; }).map(function(l){ return l.personId; });
-    return state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+    var infoByPerson = {};
+    logiInfoForCurrentProject().forEach(function(l){ infoByPerson[l.personId] = l; });
+    return peopleForCurrentProject().filter(function(p){
+      var status = infoByPerson[p.id] ? infoByPerson[p.id].status : "trenger_logi";
+      return status === "trenger_logi" || status === "logi_klart";
+    }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
   }
   function upsertLogiInfo(personId, patch){
     if(!sb || !isByggeleder()) return;
@@ -7108,9 +7131,10 @@
     var existing = logiInfoForPerson(personId);
     var body = Object.assign({
       project_id: pid, person_id: personId,
-      status: existing ? existing.status : "ikke_vurdert",
+      status: existing ? existing.status : "trenger_logi",
       adresse: existing ? existing.adresse : "", koder: existing ? existing.koder : "",
-      kontaktinfo: existing ? existing.kontaktinfo : "", melding: existing ? existing.melding : ""
+      kontaktinfo: existing ? existing.kontaktinfo : "", telefon: existing ? existing.telefon : "",
+      allergier: existing ? existing.allergier : "", melding: existing ? existing.melding : ""
     }, patch);
     sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler Logi-tabellen. Kjør sql/42-logi-og-menighetsinvitasjon.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
@@ -7135,7 +7159,7 @@
     }
     box.innerHTML = roster.map(function(p){
       var info = logiInfoForPerson(p.id);
-      var status = info ? info.status : "ikke_vurdert";
+      var status = info ? info.status : "trenger_logi";
       var tp = teamPairsForCurrentProject().find(function(t){ return t.personId === p.id; });
       return '<div class="shoprow" data-logiperson="'+p.id+'" role="button" tabindex="0" style="cursor:pointer;">' +
         '<span class="sname">'+escapeHtml(p.name)+(tp && tp.fag ? fagBadgeHtml(tp.fag) : '')+'</span>' +
@@ -7152,7 +7176,7 @@
     var person = state.people.find(function(p){ return p.id === personId; });
     if(!person) return;
     var info = logiInfoForPerson(personId);
-    var status = info ? info.status : "ikke_vurdert";
+    var status = info ? info.status : "trenger_logi";
     var isKontakt = state.me && state.me.role === "kontakt";
     var canEditFull = isByggeleder();
     var canEditKontakt = isKontakt && !!info;
@@ -7171,8 +7195,10 @@
     byId("logiAdresseInput").value = info ? info.adresse : "";
     byId("logiKoderInput").value = info ? info.koder : "";
     byId("logiKontaktInput").value = info ? info.kontaktinfo : "";
+    byId("logiTelefonInput").value = info ? info.telefon : "";
+    byId("logiAllergierInput").value = info ? info.allergier : "";
     byId("logiMeldingInput").value = info ? info.melding : "";
-    [byId("logiAdresseInput"), byId("logiKoderInput"), byId("logiKontaktInput"), byId("logiMeldingInput")].forEach(function(el){ el.disabled = readOnly; });
+    [byId("logiAdresseInput"), byId("logiKoderInput"), byId("logiKontaktInput"), byId("logiTelefonInput"), byId("logiAllergierInput"), byId("logiMeldingInput")].forEach(function(el){ el.disabled = readOnly; });
     byId("logiReadOnlyNote").hidden = !readOnly;
     byId("logiSaveBtn").hidden = readOnly;
     byId("logiMarkReadyBtn").hidden = !(canEditKontakt && status === "trenger_logi");
@@ -7182,7 +7208,7 @@
   byId("logiSaveBtn").addEventListener("click", function(){
     var personId = logiDialog.dataset.personId;
     var logiInfoId = logiDialog.dataset.logiInfoId;
-    var fields = { adresse: byId("logiAdresseInput").value.trim(), koder: byId("logiKoderInput").value.trim(), kontaktinfo: byId("logiKontaktInput").value.trim(), melding: byId("logiMeldingInput").value.trim() };
+    var fields = { adresse: byId("logiAdresseInput").value.trim(), koder: byId("logiKoderInput").value.trim(), kontaktinfo: byId("logiKontaktInput").value.trim(), telefon: byId("logiTelefonInput").value.trim(), allergier: byId("logiAllergierInput").value.trim(), melding: byId("logiMeldingInput").value.trim() };
     if(isByggeleder()){
       fields.status = byId("logiStatusSelect").value;
       upsertLogiInfo(personId, fields);
@@ -7754,7 +7780,23 @@
       refetchProjects();
     });
   }
-  function addTeamPair(name, fag, address){
+  // Setter personen tilgjengelig (oppmøte) hele prosjektperioden, både for "team" og for
+  // fag'et hvis valgt, slik at et nytt team-medlem ikke må krysses av manuelt dag for dag.
+  function markAvailableWholeProject(personId, fag){
+    var pid = currentProjectId();
+    var cur = state.projects.find(function(p){ return p.id === pid; });
+    var workdays = projectWorkdayIsoList(cur);
+    if(!workdays.length) return;
+    var fags = fag ? ["team", fag] : ["team"];
+    var rows = [];
+    fags.forEach(function(f){
+      workdays.forEach(function(iso){ rows.push({ project_id: pid, person_id: personId, day: iso, fag: f }); });
+    });
+    chunkArray(rows, 1000).reduce(function(p, chunk){
+      return p.then(function(){ return sb.from("attendance").upsert(chunk, { onConflict: "project_id,person_id,day" }); });
+    }, Promise.resolve()).then(function(){ refetchAttendance(); });
+  }
+  function addTeamPair(name, fag, address, isPair){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
@@ -7762,8 +7804,9 @@
       if(res.error){ showError("Kunne ikke opprette personen: "+res.error.message); return; }
       var personId = res.data.id;
       refetchPeople();
-      sb.from("team_pairs").insert({ project_id: pid, name: name.slice(0,80), fag: fag || null, address: address.slice(0,160) || null, person_id: personId }).then(function(res2){
+      sb.from("team_pairs").insert({ project_id: pid, name: name.slice(0,80), fag: fag || null, address: address.slice(0,160) || null, person_id: personId, is_pair: !!isPair }).then(function(res2){
         if(res2.error){ showError(res2.error.message.indexOf("team_pairs") !== -1 ? "Databasen mangler kolonnen person_id for teamet. Kjør sql/31-team-koder-open-accounts.sql i Supabase." : "Kunne ikke legge til: "+res2.error.message); return; }
+        markAvailableWholeProject(personId, fag);
         refetchTeamPairs();
       });
     });
@@ -7771,6 +7814,15 @@
   function deleteTeamPair(id){
     if(!sb) return;
     sb.from("team_pairs").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchTeamPairs(); });
+  }
+  function toggleTeamPairIsPair(id){
+    if(!sb) return;
+    var t = state.teamPairs.find(function(x){ return x.id === id; });
+    if(!t) return;
+    sb.from("team_pairs").update({ is_pair: !t.isPair }).eq("id", id).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("is_pair") !== -1 ? "Databasen mangler kolonnen is_pair for teamet. Kjør sql/50-team-par-og-logi-utvidelser.sql i Supabase." : "Kunne ikke endre: "+res.error.message); return; }
+      refetchTeamPairs();
+    });
   }
   // Eldre team-par kan mangle en tilknyttet person (opprettet før den koblingen fantes).
   // Oppretter personen først i så fall, så "Sett tilgjengelighet" alltid fungerer.
