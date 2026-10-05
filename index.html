@@ -878,6 +878,7 @@
     <div id="kontaktSectionToggle" style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
       <button type="button" class="btn small" data-kontaktsection="behov">Behov for hjelp</button>
       <button type="button" class="btn small" data-kontaktsection="logi">Logi</button>
+      <button type="button" class="btn small" data-kontaktsection="mat">Mat</button>
     </div>
 
     <div id="kontaktBehovWrap">
@@ -895,8 +896,16 @@
     </div>
 
     <div id="kontaktLogiWrap" hidden>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Personer som trenger logi. Trykk for å fylle inn adresse, koder og kontaktinfo, og merk som klart når det er ordnet.</p>
-      <div class="peoplecard"><div id="kontaktLogiList" style="display:flex; flex-direction:column; gap:6px;"></div></div>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Oversikt over alle frivillige og tilgjengeligheten deres, med Logi-status. Trykk på et navn for å fylle inn adresse, koder, kontaktinfo og allergier, og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her.</p>
+      <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+        <button type="button" class="btn small" id="kontaktLogiFullViewBtn">Vis hele prosjektet</button>
+      </div>
+      <div id="kontaktLogiList" class="gantt-wrap frivillige-grid"></div>
+    </div>
+
+    <div id="kontaktMatWrap" hidden>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, dag for dag.</p>
+      <div id="kontaktMatList"></div>
     </div>
   </div>
 </div>
@@ -2036,7 +2045,7 @@
     <div class="field"><label for="logiKoderInput">Koder / nøkkel</label><input type="text" id="logiKoderInput" maxlength="200" /></div>
     <div class="field"><label for="logiKontaktInput">Kontaktinfo (vertsfamilie)</label><input type="text" id="logiKontaktInput" maxlength="200" /></div>
     <div class="field"><label for="logiTelefonInput">Telefon til logiet</label><input type="tel" id="logiTelefonInput" maxlength="40" /></div>
-    <div class="field"><label for="logiAllergierInput">Allergier</label><input type="text" id="logiAllergierInput" maxlength="300" /></div>
+    <div class="field"><label for="logiAllergierInput">Allergier / diett (f.eks. nøtter, vegetar, gluten)</label><input type="text" id="logiAllergierInput" maxlength="300" /></div>
     <div class="field"><label for="logiMeldingInput">Melding</label><textarea id="logiMeldingInput" rows="3" maxlength="600"></textarea></div>
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
@@ -7007,6 +7016,54 @@
     kontaktUnlockProject(byId("kontaktProjectSelect").value, byId("kontaktCodeInput").value.trim());
   });
   byId("kontaktSwitchProjectBtn").addEventListener("click", kontaktSwitchProject);
+  // Unike personer (vektet 2 for par) tilstede en gitt dag på tvers av alle fag, og hvilke
+  // av dem som har oppført allergier/diett - brukes av Mat-siden til menigheten.
+  function dayStaffingSummary(iso){
+    var pid = currentProjectId();
+    var weights = {};
+    teamPairsForCurrentProject().forEach(function(t){ if(t.personId && t.isPair) weights[t.personId] = 2; });
+    var presentIds = {};
+    state.attendance.forEach(function(a){ if(a.project_id === pid && a.day === iso) presentIds[a.person_id] = true; });
+    var total = 0, allergies = [];
+    Object.keys(presentIds).forEach(function(id){
+      total += weights[id] || 1;
+      var info = logiInfoForPerson(id);
+      if(info && info.allergier && info.allergier.trim()){
+        var p = state.people.find(function(x){ return x.id === id; });
+        allergies.push({ name: p ? p.name : "?", text: info.allergier.trim() });
+      }
+    });
+    allergies.sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+    return { total: total, allergies: allergies };
+  }
+  function renderKontaktMat(cur){
+    if(!cur){ byId("kontaktMatList").innerHTML = ""; return; }
+    var todayIso = toISODate(new Date());
+    var upcoming = projectWorkdayIsoList(cur).filter(function(d){ return d >= todayIso; }).slice(0, 10);
+    if(!upcoming.length){
+      byId("kontaktMatList").innerHTML = '<p class="empty-note">Ingen kommende dager i prosjektperioden.</p>';
+      return;
+    }
+    byId("kontaktMatList").innerHTML = upcoming.map(function(iso, i){
+      var sum = dayStaffingSummary(iso);
+      var d = fromISODate(iso);
+      var dayName = DAY_FULL[(d.getDay()+6)%7];
+      var label = (i === 0 ? "I dag · " : "") + dayName.charAt(0).toUpperCase() + dayName.slice(1) + " " + d.getDate() + ". " + NB_MONTHS[d.getMonth()];
+      var allergyHtml = sum.allergies.length
+        ? sum.allergies.map(function(a){ return '<div style="font-size:13px;"><strong>'+escapeHtml(a.name)+':</strong> '+escapeHtml(a.text)+'</div>'; }).join("")
+        : '<p class="empty-note" style="margin:4px 0 0;">Ingen oppførte allergier/diett denne dagen.</p>';
+      return '<div class="peoplecard" style="margin-bottom:10px;'+(i===0?' border:1px solid var(--accent);':'')+'">' +
+        '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px;"><h3 style="font-size:14.5px; margin:0;">'+label+'</h3>' +
+        '<span class="badge" style="background:var(--accent-soft); color:var(--accent); font-weight:700;">'+sum.total+' personer</span></div>' +
+        '<div style="margin-top:8px;">'+allergyHtml+'</div></div>';
+    }).join("");
+  }
+  function kontaktToggleFullView(){
+    view.frivilligeFullView = !view.frivilligeFullView;
+    byId("kontaktLogiList").dataset.scrolled = "";
+    renderKontaktView();
+  }
+  byId("kontaktLogiFullViewBtn").addEventListener("click", kontaktToggleFullView);
   function renderKontaktView(){
     if(myRole() !== "kontakt") return;
     var activeId = kontaktActiveProjectId();
@@ -7016,6 +7073,7 @@
       byId("kontaktSectionToggle").hidden = true;
       byId("kontaktBehovWrap").hidden = true;
       byId("kontaktLogiWrap").hidden = true;
+      byId("kontaktMatWrap").hidden = true;
       byId("kontaktProjectTag").textContent = "";
       renderKontaktPicker();
       return;
@@ -7028,11 +7086,22 @@
     document.querySelectorAll("#kontaktSectionToggle [data-kontaktsection]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.kontaktsection === view.kontaktSection);
     });
-    var showLogi = view.kontaktSection === "logi";
-    byId("kontaktBehovWrap").hidden = showLogi;
-    byId("kontaktLogiWrap").hidden = !showLogi;
-    if(showLogi){
-      renderLogiList("kontaktLogiList");
+    var section = view.kontaktSection === "logi" || view.kontaktSection === "mat" ? view.kontaktSection : "behov";
+    byId("kontaktBehovWrap").hidden = section !== "behov";
+    byId("kontaktLogiWrap").hidden = section !== "logi";
+    byId("kontaktMatWrap").hidden = section !== "mat";
+    if(section === "mat"){
+      renderKontaktMat(cur);
+      return;
+    }
+    if(section === "logi"){
+      byId("kontaktLogiFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
+      // readOnly:false + editMode:false (uten å sette allowFagDrag) gir et rent
+      // visningsrutenett - ingen av cellene får data-toggleavail/data-requestavail, kun
+      // navnene beholder data-logiopen (åpner Logi-dialogen for redigering av logi-info).
+      byId("kontaktLogiList").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: null, readOnly: false, logiMode: true, fromToday: !view.frivilligeFullView, editMode: false });
+      wireFrivilligeGridEvents("kontaktLogiList", { readOnly: false });
+      if(view.frivilligeFullView) scrollGridToCurrentWeek("kontaktLogiList", cur); else byId("kontaktLogiList").scrollLeft = 0;
       return;
     }
     byId("kontaktBehovLabel").textContent = cur ? cur.name : "";
@@ -7170,28 +7239,12 @@
       scheduleRender();
     });
   }
-  function logiInfoForCurrentProject(){
-    var pid = currentProjectId();
-    return state.logiInfo.filter(function(l){ return l.project_id === pid; });
-  }
   function logiInfoForPerson(personId){
     var pid = currentProjectId();
     return state.logiInfo.find(function(l){ return l.project_id === pid && l.personId === personId; }) || null;
   }
   function canSeeLogi(){
     return isByggeleder() || !!myTeamPair();
-  }
-  // Kun de menighetens logikoordinator faktisk skal gjøre noe med (internt bruker Logi-fanen
-  // hele Frivillige-etter-fag-rutenettet i stedet, se buildFrivilligeGridHtml({logiMode:true})).
-  // "Trenger logi" er standard helt til noen aktivt endrer status, så personer uten egen
-  // logi_info-rad ennå regnes også med her (ikke bare de med en eksplisitt lagret status).
-  function logiNeededRosterForCurrentProject(){
-    var infoByPerson = {};
-    logiInfoForCurrentProject().forEach(function(l){ infoByPerson[l.personId] = l; });
-    return peopleForCurrentProject().filter(function(p){
-      var status = infoByPerson[p.id] ? infoByPerson[p.id].status : "trenger_logi";
-      return status === "trenger_logi" || status === "logi_klart";
-    }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
   }
   function upsertLogiInfo(personId, patch){
     if(!sb || !isByggeleder()) return;
@@ -7217,26 +7270,25 @@
       refetchLogiInfo();
     });
   }
-
-  function renderLogiList(containerId){
-    var roster = logiNeededRosterForCurrentProject();
-    var box = byId(containerId);
-    if(!box) return;
-    if(!roster.length){
-      box.innerHTML = '<p class="empty-note">Ingen trenger logi akkurat nå.</p>';
-      return;
-    }
-    box.innerHTML = roster.map(function(p){
-      var info = logiInfoForPerson(p.id);
-      var status = info ? info.status : "trenger_logi";
-      var tp = teamPairsForCurrentProject().find(function(t){ return t.personId === p.id; });
-      return '<div class="shoprow" data-logiperson="'+p.id+'" role="button" tabindex="0" style="cursor:pointer;">' +
-        '<span class="sname">'+escapeHtml(p.name)+(tp && tp.fag ? fagBadgeHtml(tp.fag) : '')+'</span>' +
-        '<span class="badge" style="background:'+(LOGI_STATUS_COLORS[status])+'22; color:'+(LOGI_STATUS_COLORS[status])+';">'+LOGI_STATUS_LABELS[status]+'</span>' +
-        '</div>';
-    }).join("");
-    box.querySelectorAll("[data-logiperson]").forEach(function(row){
-      row.addEventListener("click", function(){ openLogiDialog(this.dataset.logiperson); });
+  // Samme idé som upsertLogiInfo, men for menighetens delte "kontakt"-innlogging: de kan
+  // fylle inn/oppdatere logi-info for en hvilken som helst frivillig, også de som ikke har
+  // noen logi_info-rad fra før (siden "Trenger logi" nå er standard for alle), men rører
+  // aldri status direkte - det går kun via "Merk logi som klart"-knappen.
+  function upsertLogiInfoAsKontakt(personId, patch){
+    if(!sb || !(state.me && state.me.role === "kontakt")) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Velg et prosjekt først."); return; }
+    var existing = logiInfoForPerson(personId);
+    var body = Object.assign({
+      project_id: pid, person_id: personId,
+      status: existing ? existing.status : "trenger_logi",
+      adresse: existing ? existing.adresse : "", koder: existing ? existing.koder : "",
+      kontaktinfo: existing ? existing.kontaktinfo : "", telefon: existing ? existing.telefon : "",
+      allergier: existing ? existing.allergier : "", melding: existing ? existing.melding : ""
+    }, patch);
+    sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler oppdatert tilgang for menigheten. Kjør sql/52-kontakt-kan-opprette-logi-info.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchLogiInfo();
     });
   }
 
@@ -7248,7 +7300,7 @@
     var status = info ? info.status : "trenger_logi";
     var isKontakt = state.me && state.me.role === "kontakt";
     var canEditFull = isByggeleder();
-    var canEditKontakt = isKontakt && !!info;
+    var canEditKontakt = isKontakt;
     var readOnly = !canEditFull && !canEditKontakt;
 
     logiDialog.dataset.personId = personId;
@@ -7276,20 +7328,18 @@
   byId("logiDialogClose").addEventListener("click", function(){ logiDialog.close(); });
   byId("logiSaveBtn").addEventListener("click", function(){
     var personId = logiDialog.dataset.personId;
-    var logiInfoId = logiDialog.dataset.logiInfoId;
     var fields = { adresse: byId("logiAdresseInput").value.trim(), koder: byId("logiKoderInput").value.trim(), kontaktinfo: byId("logiKontaktInput").value.trim(), telefon: byId("logiTelefonInput").value.trim(), allergier: byId("logiAllergierInput").value.trim(), melding: byId("logiMeldingInput").value.trim() };
     if(isByggeleder()){
       fields.status = byId("logiStatusSelect").value;
       upsertLogiInfo(personId, fields);
-    } else if(logiInfoId){
-      saveLogiDetails(logiInfoId, fields);
+    } else if(state.me && state.me.role === "kontakt"){
+      upsertLogiInfoAsKontakt(personId, fields);
     }
     logiDialog.close();
   });
   byId("logiMarkReadyBtn").addEventListener("click", function(){
-    var logiInfoId = logiDialog.dataset.logiInfoId;
-    if(!logiInfoId) return;
-    saveLogiDetails(logiInfoId, { status: "logi_klart" });
+    var personId = logiDialog.dataset.personId;
+    upsertLogiInfoAsKontakt(personId, { status: "logi_klart" });
     logiDialog.close();
   });
 
