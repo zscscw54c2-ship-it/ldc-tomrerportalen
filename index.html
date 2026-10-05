@@ -57,7 +57,7 @@
     --fag-audio-video:#d6568f;
     --fag-behov-menighet:#8a8f98;
     --fag-team:#2f9e6f;
-    --fag-ovrig:#9c8465;
+    --fag-ovrig:#4a3a2e;
     --shadow: 0 1px 2px rgba(27,36,48,0.05), 0 8px 20px -12px rgba(27,36,48,0.18);
     color-scheme: light;
   }
@@ -680,7 +680,7 @@
   body.kontakt-mode #kontaktView{ display:block; }
   body.kontakt-mode .wrap{ display:none; }
   .kontakt-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--border); background:var(--surface); }
-  .kontakt-wrap{ max-width:720px; margin:0 auto; padding:20px 16px 60px; }
+  .kontakt-wrap{ max-width:1600px; margin:0 auto; padding:20px 16px 60px; }
   /* ---------- behov-rutenett (gjenbruker .gantt/.g-row/.g-name fra Gantt-visningen) ---------- */
   /* .behov-grid skalerer opp de delte .g-*-klassene (større, tydeligere celler) uten å påvirke Oppgaver-tidslinjen */
   .behov-grid{ --nw:220px; }
@@ -856,7 +856,6 @@
     </div>
     <span style="display:flex; gap:8px;">
       <button class="btn small ghost" id="kontaktSwitchProjectBtn" hidden>Bytt prosjekt</button>
-      <button class="btn small ghost" id="kontaktFullscreenBtn" title="Fullskjerm" aria-label="Fullskjerm">⛶</button>
       <button class="btn small ghost" id="kontaktRefreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
       <button class="btn small ghost" id="kontaktLogoutBtn">Logg ut</button>
     </span>
@@ -1195,12 +1194,10 @@
           <button type="button" class="btn small" id="peopleShowAllBtn">Vis hele listen</button>
         </div>
         <div id="peopleList"></div>
-        <form class="inline-add" id="addPersonForm">
-          <input type="text" id="newPersonName" placeholder="Navn på ny person" required maxlength="60" />
-          <input type="text" id="newPersonGroup" placeholder="Gruppe (valgfritt, f.eks. Lokale)" maxlength="30" style="max-width:220px;" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-        <button type="button" class="btn small" id="importPeopleBtn" hidden style="margin-top:8px;">Importer mannskapsliste fra fil</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+          <button type="button" class="btn primary" id="addPersonOpenBtn" hidden>+ Legg til frivillig</button>
+          <button type="button" class="btn small" id="importPeopleBtn" hidden>Importer mannskapsliste fra fil</button>
+        </div>
       </div>
       <div class="peoplecard">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
@@ -1243,10 +1240,9 @@
           <h2 data-etkey="personer_logi_title" style="font-size:16px;">Logi</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
-            <button type="button" class="btn small" id="logiEditModeBtn" hidden>Gjør endringer</button>
           </div>
         </div>
-        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, med Logi-status. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige satt opp på byggeplassen, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet (rødt = trenger logi, gult = fikser selv, grønt = klart). Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Sett sammen par/familier under «Logi-grupper» nedenfor.</p>
         <div id="personerLogiList" class="gantt-wrap frivillige-grid"></div>
       </div>
       <div class="peoplecard" id="logiGroupsBox" hidden style="margin-top:14px;">
@@ -2012,6 +2008,18 @@
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="pwCancel">Avbryt</button>
       <button type="submit" class="btn primary">Lagre</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="addPersonDialog">
+  <form class="dlg-body" id="addPersonForm" method="dialog">
+    <h3>Legg til frivillig</h3>
+    <div class="field"><label for="newPersonName">Navn</label><input type="text" id="newPersonName" required maxlength="60" /></div>
+    <div class="field"><label for="newPersonGroup">Gruppe (valgfritt, f.eks. Lokale)</label><input type="text" id="newPersonGroup" maxlength="30" /></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="addPersonCancel">Avbryt</button>
+      <button type="submit" class="btn primary">Legg til</button>
     </div>
   </form>
 </dialog>
@@ -3674,19 +3682,18 @@
       return;
     }
     if(showLogi){
-      byId("logiEditModeBtn").hidden = !isByggeleder();
-      byId("logiEditModeBtn").textContent = view.frivilligeEditMode ? "Avslutt redigering" : "Gjør endringer";
-      byId("logiEditModeBtn").classList.toggle("primary", view.frivilligeEditMode);
       byId("logiFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
-      byId("personerLogiList").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: null, readOnly: !isByggeleder(), logiMode: true, fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode });
-      wireFrivilligeGridEvents("personerLogiList", { readOnly: !isByggeleder(), logiMode: true });
+      // Fag-uavhengig og skrivebeskyttet tilgjengelighet (gruppert etter logi-gruppe, ikke fag) -
+      // denne siden skal bare koordinere logi, ikke redigere hvem som er tilgjengelig når.
+      byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView });
+      wireFrivilligeGridEvents("personerLogiList", { readOnly: false });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("personerLogiList", cur); else byId("personerLogiList").scrollLeft = 0;
-      byId("logiGroupsBox").hidden = !(isByggeleder() && view.frivilligeEditMode);
-      if(isByggeleder() && view.frivilligeEditMode) renderLogiGroupsBox();
+      byId("logiGroupsBox").hidden = !isByggeleder();
+      if(isByggeleder()) renderLogiGroupsBox();
       return;
     }
 
-    byId("addPersonForm").hidden = !isByggeleder();
+    byId("addPersonOpenBtn").hidden = !isByggeleder();
     byId("importPeopleBtn").hidden = !isByggeleder();
 
     var projectPeople = peopleForCurrentProject();
@@ -3739,7 +3746,6 @@
   byId("frivilligeFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
   byId("logiFullViewBtn").addEventListener("click", toggleFrivilligeFullView);
   byId("frivilligeEditModeBtn").addEventListener("click", toggleFrivilligeEditMode);
-  byId("logiEditModeBtn").addEventListener("click", toggleFrivilligeEditMode);
 
   // ---------- åndelig skjema ----------
   function renderRoomTab(){
@@ -4139,6 +4145,14 @@
 
   byId("peopleSearch").addEventListener("input", function(){ view.peopleSearch = this.value; renderPeopleTab(); });
 
+  var addPersonDialog = byId("addPersonDialog");
+  byId("addPersonOpenBtn").addEventListener("click", function(){
+    byId("newPersonName").value = "";
+    byId("newPersonGroup").value = "";
+    addPersonDialog.showModal();
+    byId("newPersonName").focus();
+  });
+  byId("addPersonCancel").addEventListener("click", function(){ addPersonDialog.close(); });
   byId("addPersonForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var input = byId("newPersonName");
@@ -4146,8 +4160,7 @@
     var name = input.value.trim();
     if(!name) return;
     addPerson(name, groupInput.value.trim());
-    input.value = "";
-    groupInput.value = "";
+    addPersonDialog.close();
   });
 
   // ---------- element dialog ----------
@@ -6525,15 +6538,6 @@
         if(pairWeightByPerson[p.id]){
           nameCell += ' <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-size:9px; padding:1px 5px;" title="Telles som 2 personer i Antall-raden">Par</span>';
         }
-        if(opts.logiMode){
-          var linfo = logiInfoForPerson(p.id);
-          var lstatus = linfo ? linfo.status : "trenger_logi";
-          if(p.logiGroupId){
-            var lg = state.logiGroups.find(function(x){ return x.id === p.logiGroupId; });
-            nameCell += ' <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-size:9px; padding:1px 5px;" title="Deler logi med andre">'+escapeHtml((lg && lg.relation) || "Deler logi")+'</span>';
-          }
-          nameCell += ' <span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
-        }
         var rowAttr = "";
         if(canDragRow){
           nameCell = '<span class="frivillig-draghandle" data-frivillig-handle="'+p.id+'|'+fag+'" title="Dra for å endre rekkefølge eller fag">⋮⋮</span> ' + nameCell;
@@ -6653,9 +6657,9 @@
       }
       var linfo = logiInfoForPerson(p.id);
       var lstatus = linfo ? linfo.status : "trenger_logi";
-      var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>';
-      nameCell += ' <span class="badge" style="background:'+LOGI_STATUS_COLORS[lstatus]+'22; color:'+LOGI_STATUS_COLORS[lstatus]+'; font-size:9px; padding:1px 5px;">'+LOGI_STATUS_LABELS[lstatus]+'</span>';
-      return '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
+      var statusDot = '<i class="dot" style="background:'+LOGI_STATUS_COLORS[lstatus]+'; width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0;" title="'+escapeHtml(LOGI_STATUS_LABELS[lstatus])+'"></i>';
+      var nameCell = statusDot + '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo - '+escapeHtml(LOGI_STATUS_LABELS[lstatus])+'">'+escapeHtml(p.name)+'</span>';
+      return '<div class="g-row"><div class="g-name" style="padding-left:24px; font-size:12.5px; display:flex; align-items:center;">'+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
     }
     groups.forEach(function(gr){
       var label = gr.group.label || gr.members.map(function(m){ return m.name; }).join(" & ");
@@ -7337,16 +7341,6 @@
     sb.auth.signOut().then(function(){ window.location.reload(); });
   });
   byId("kontaktRefreshBtn").addEventListener("click", function(){ window.location.reload(); });
-  byId("kontaktFullscreenBtn").addEventListener("click", function(){
-    if(document.fullscreenElement){
-      document.exitFullscreen();
-    } else if(byId("kontaktView").requestFullscreen){
-      byId("kontaktView").requestFullscreen().catch(function(){ showError("Fikk ikke til å åpne fullskjerm på denne enheten."); });
-    }
-  });
-  document.addEventListener("fullscreenchange", function(){
-    byId("kontaktFullscreenBtn").classList.toggle("primary", !!document.fullscreenElement);
-  });
 
   function refetchOverview(){
     sb.from("spiritual_overview").select("*").order("sort_order").order("created_at").then(function(res){
@@ -7503,7 +7497,7 @@
     byId("logiGroupLabelInput").value = ""; byId("logiGroupRelationInput").value = "";
   });
   var LOGI_STATUS_LABELS = { trenger_logi:"Trenger logi", logi_klart:"Logi klart og melding sendt", ordner_selv:"Fikser logi selv" };
-  var LOGI_STATUS_COLORS = { trenger_logi:"var(--warn)", logi_klart:"var(--good)", ordner_selv:"var(--muted)" };
+  var LOGI_STATUS_COLORS = { trenger_logi:"var(--bad)", logi_klart:"var(--good)", ordner_selv:"var(--warn)" };
   function rowToLogiInfo(row){
     return { id: row.id, project_id: row.project_id, personId: row.person_id, status: row.status, adresse: row.adresse||"", koder: row.koder||"", kontaktinfo: row.kontaktinfo||"", telefon: row.telefon||"", allergier: row.allergier||"", melding: row.melding||"", createdAt: row.created_at, updatedAt: row.updated_at || row.created_at };
   }
