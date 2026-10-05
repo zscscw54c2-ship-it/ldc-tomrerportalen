@@ -473,6 +473,13 @@
   .g-weeks div{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); border-top:1px solid var(--border);}
   .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
+  /* Antall-rader under hvert fag og nederst - summerer frivillige per dag, se buildFrivilligeGridHtml. */
+  .g-fagtotal{background:var(--surface-alt);}
+  .g-fagtotal .g-name{background:var(--surface-alt); cursor:default; font-size:11px; font-weight:600; color:var(--muted);}
+  .g-fagtotal .behov-cell{cursor:default; font-weight:700; font-size:11.5px; color:var(--text);}
+  .g-grandtotal{background:var(--accent-soft); border-top:2px solid var(--accent); border-bottom:2px solid var(--accent);}
+  .g-grandtotal .g-name{background:var(--accent-soft); cursor:default; font-weight:800; color:var(--accent); font-size:12.5px;}
+  .g-grandtotal .behov-cell{cursor:default; font-weight:800; font-size:12.5px; color:var(--accent);}
   .g-weekband{position:absolute; top:0; bottom:0; background:rgba(104,117,136,.06);}
   .g-today{position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:2; opacity:.85;}
   .g-closeout{position:absolute; top:0; bottom:0; width:2px; background:var(--bad); z-index:2; opacity:.85; background-image:repeating-linear-gradient(180deg, var(--bad) 0 6px, transparent 6px 10px);}
@@ -6414,6 +6421,10 @@
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(OVERVIEW_FAG_LIST.filter(function(f){ return f !== "team"; }));
     var anyRows = false;
     var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamPairsForCurrentProject().filter(function(t){ return t.personId; }).map(function(t){ return t.personId; }) : [];
+    // Summerer antall frivillige per dag - både per fag og totalt for hele dagen (unike personer,
+    // så noen som står i flere fag samme dag ikke telles dobbelt i totalen) - for rask oversikt.
+    var totalDaySets = [];
+    for(var tdi=startIdx; tdi<range.workdays; tdi++) totalDaySets.push(new Set());
     fagsToList.forEach(function(fag){
       var people;
       if(fag === "team"){
@@ -6432,12 +6443,14 @@
       var canDragRow = opts.allowFagDrag && !opts.readOnly && opts.editMode && fag !== "team";
       var headerAttr = (opts.allowFagDrag && fag !== "team") ? ' data-frivillig-fagheader="'+fag+'"' : "";
       html += '<div class="g-row g-group"'+headerAttr+'><div class="g-name behov-fag-head"><span><i class="dot" style="background:'+(FAG_COLORS[fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px;"></i> '+FAG_LABELS[fag]+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      var fagDayCounts = new Array(range.workdays - startIdx).fill(0);
       people.forEach(function(p){
         var cells = "";
         for(var i=startIdx;i<range.workdays;i++){
           var d = workdayDate(range, i);
           var iso = toISODate(d);
           var present = isPresentForFag(p.id, iso, fag);
+          if(present){ fagDayCounts[i-startIdx]++; totalDaySets[i-startIdx].add(p.id); }
           var pending = opts.readOnly && pendingSet[p.id+"|"+iso+"|"+fag];
           var canEdit = !opts.readOnly && opts.editMode;
           var cls = "behov-cell" + ((opts.readOnly || canEdit) ? " clickable-empty" : "") + (present ? " filled" : "") + (pending ? " pending" : "");
@@ -6460,7 +6473,19 @@
         }
         html += '<div class="g-row"'+rowAttr+'><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
       });
+      var fagSumCells = "";
+      for(var si=0; si<fagDayCounts.length; si++){
+        fagSumCells += '<div class="behov-cell">'+(fagDayCounts[si] || "")+'</div>';
+      }
+      html += '<div class="g-row g-fagtotal"><div class="g-name" style="padding-left:24px;">Antall</div><div class="behov-track">'+fagSumCells+'</div></div>';
     });
+    if(anyRows){
+      var totalCells = "";
+      for(var ti2=0; ti2<totalDaySets.length; ti2++){
+        totalCells += '<div class="behov-cell">'+(totalDaySets[ti2].size || "")+'</div>';
+      }
+      html += '<div class="g-row g-grandtotal"><div class="g-name">Totalt</div><div class="behov-track">'+totalCells+'</div></div>';
+    }
     html += '</div>';
     if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp på noe fag ennå.')+'</p>';
     return html;
