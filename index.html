@@ -2067,6 +2067,7 @@
       <div><span style="color:var(--muted); font-size:11px;">Fag</span><br><span id="pdFag">–</span></div>
       <div><span style="color:var(--muted); font-size:11px;">Adresse</span><br><span id="pdAdresse">–</span></div>
     </div>
+    <div id="pdGroupMembers" hidden style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin:10px 0 16px; padding:10px 12px; background:var(--surface-alt); border-radius:8px;"></div>
     <p class="sub" id="logiGroupNote" hidden style="font-size:12.5px; margin:-8px 0 14px; padding:8px 12px; background:var(--accent-soft); color:var(--accent); border-radius:8px;"></p>
     <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Logi</h4>
     <div class="field" id="logiStatusField">
@@ -2081,7 +2082,7 @@
     <div class="field"><label for="logiKoderInput">Koder / nøkkel</label><input type="text" id="logiKoderInput" maxlength="200" /></div>
     <div class="field"><label for="logiKontaktInput">Kontaktinfo (vertsfamilie)</label><input type="text" id="logiKontaktInput" maxlength="200" /></div>
     <div class="field"><label for="logiTelefonInput">Telefon til logiet</label><input type="tel" id="logiTelefonInput" maxlength="40" /></div>
-    <div class="field"><label for="logiAllergierInput">Allergier / diett (f.eks. nøtter, vegetar, gluten)</label><input type="text" id="logiAllergierInput" maxlength="300" /></div>
+    <div class="field"><label id="logiAllergierLabel">Allergier / diett (f.eks. nøtter, vegetar, gluten)</label><div id="logiAllergierList" style="display:flex; flex-direction:column; gap:6px;"></div></div>
     <div class="field"><label for="logiMeldingInput">Melding</label><textarea id="logiMeldingInput" rows="3" maxlength="600"></textarea></div>
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
@@ -7724,8 +7725,11 @@
     return isByggeleder() || !!myTeamPair();
   }
   // Lagrer logi-info for personId, og speiler de delte feltene (alt utenom allergier, som
-  // er individuelt) til resten av logi-gruppen hvis personen deler logi med andre.
-  function upsertLogiInfo(personId, patch){
+  // er individuelt) til resten av logi-gruppen hvis personen deler logi med andre. allergierByMember
+  // (valgfritt, {personId: tekst}) setter allergier for ett eller flere gruppemedlemmer i SAMME
+  // upsert som de delte feltene, slik at det ikke blir to separate skriv mot samme rad som kan
+  // kappes (siste som svarer ville ellers overskrive den andres felt med utdaterte verdier).
+  function upsertLogiInfo(personId, patch, allergierByMember){
     if(!sb || !isByggeleder()) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
@@ -7741,9 +7745,11 @@
         kontaktinfo: existing ? existing.kontaktinfo : "", telefon: existing ? existing.telefon : "",
         allergier: existing ? existing.allergier : "", melding: existing ? existing.melding : ""
       }, ownPatch);
+      var allergyChanged = allergierByMember && Object.prototype.hasOwnProperty.call(allergierByMember, memberId);
+      if(allergyChanged) body.allergier = allergierByMember[memberId];
       // Mat-siden sammenligner mot dette for å varsle om NYE allergier - rør den bare når
-      // allergi-feltet faktisk er en del av denne lagringen (ikke ved f.eks. "Merk som klart").
-      if("allergier" in ownPatch) body.updated_at = new Date().toISOString();
+      // allergi-feltet faktisk er endret (ikke ved f.eks. "Merk som klart").
+      if(allergyChanged || "allergier" in ownPatch) body.updated_at = new Date().toISOString();
       sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
         if(res.error){ showError(res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler Logi-tabellen. Kjør sql/42-logi-og-menighetsinvitasjon.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
         refetchLogiInfo();
@@ -7754,7 +7760,7 @@
   // fylle inn/oppdatere logi-info for en hvilken som helst frivillig, også de som ikke har
   // noen logi_info-rad fra før (siden "Trenger logi" nå er standard for alle), men rører
   // aldri status direkte - det går kun via "Merk logi som klart"-knappen.
-  function upsertLogiInfoAsKontakt(personId, patch){
+  function upsertLogiInfoAsKontakt(personId, patch, allergierByMember){
     if(!sb || !(state.me && state.me.role === "kontakt")) return;
     var pid = currentProjectId();
     if(!pid){ showError("Velg et prosjekt først."); return; }
@@ -7770,7 +7776,9 @@
         kontaktinfo: existing ? existing.kontaktinfo : "", telefon: existing ? existing.telefon : "",
         allergier: existing ? existing.allergier : "", melding: existing ? existing.melding : ""
       }, ownPatch);
-      if("allergier" in ownPatch) body.updated_at = new Date().toISOString();
+      var allergyChanged = allergierByMember && Object.prototype.hasOwnProperty.call(allergierByMember, memberId);
+      if(allergyChanged) body.allergier = allergierByMember[memberId];
+      if(allergyChanged || "allergier" in ownPatch) body.updated_at = new Date().toISOString();
       sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
         if(res.error){ showError(res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler oppdatert tilgang for menigheten. Kjør sql/52-kontakt-kan-opprette-logi-info.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
         refetchLogiInfo();
@@ -7782,6 +7790,9 @@
   function openLogiDialog(personId){
     var person = state.people.find(function(p){ return p.id === personId; });
     if(!person) return;
+    var group = person.logiGroupId ? state.logiGroups.find(function(g){ return g.id === person.logiGroupId; }) : null;
+    var members = group ? logiGroupMembers(group.id) : [person];
+    var grouped = members.length > 1;
     var info = logiInfoForPerson(personId);
     var status = info ? info.status : "trenger_logi";
     var isKontakt = state.me && state.me.role === "kontakt";
@@ -7791,17 +7802,27 @@
 
     logiDialog.dataset.personId = personId;
     logiDialog.dataset.logiInfoId = info ? info.id : "";
-    byId("logiDialogName").textContent = person.name;
-    byId("pdMenighet").textContent = person.congregation || "–";
-    byId("pdTelefon").textContent = person.phone || "–";
-    byId("pdFag").textContent = currentFagLabelForPerson(personId) || "–";
-    byId("pdAdresse").textContent = person.address || "–";
+    byId("logiDialogName").textContent = grouped ? (group.label || members.map(function(m){ return m.name; }).join(" & ")) : person.name;
+    byId("pdInfoGrid").hidden = grouped;
+    byId("pdGroupMembers").hidden = !grouped;
+    if(grouped){
+      byId("pdGroupMembers").innerHTML = members.map(function(m){
+        var bits = [currentFagLabelForPerson(m.id) || "–"];
+        if(m.congregation) bits.push(m.congregation);
+        if(m.phone) bits.push(m.phone);
+        return '<div><strong>'+escapeHtml(m.name)+'</strong> · '+escapeHtml(bits.join(" · "))+'</div>';
+      }).join("");
+    } else {
+      byId("pdMenighet").textContent = person.congregation || "–";
+      byId("pdTelefon").textContent = person.phone || "–";
+      byId("pdFag").textContent = currentFagLabelForPerson(personId) || "–";
+      byId("pdAdresse").textContent = person.address || "–";
+    }
     var groupNote = byId("logiGroupNote");
-    if(person.logiGroupId){
-      var group = state.logiGroups.find(function(g){ return g.id === person.logiGroupId; });
-      var otherNames = logiGroupMembers(person.logiGroupId).filter(function(m){ return m.id !== personId; }).map(function(m){ return m.name; });
+    if(grouped){
+      var relLabel = group && group.relation ? (LOGI_RELATION_LABELS[group.relation] || group.relation) : "";
       groupNote.hidden = false;
-      groupNote.textContent = "Deler logi med " + (otherNames.join(", ") || "ingen andre") + (group && group.relation ? " (" + group.relation + ")" : "") + ". Lagring her oppdaterer logi-info for hele gruppen (unntatt allergier).";
+      groupNote.textContent = "Felles logi-kort" + (relLabel ? " (" + relLabel + ")" : "") + ". Status, adresse, koder, kontaktinfo, telefon og melding er delt for hele gruppen. Allergier/diett føres per person nedenfor.";
     } else {
       groupNote.hidden = true;
     }
@@ -7812,9 +7833,17 @@
     byId("logiKoderInput").value = info ? info.koder : "";
     byId("logiKontaktInput").value = info ? info.kontaktinfo : "";
     byId("logiTelefonInput").value = info ? info.telefon : "";
-    byId("logiAllergierInput").value = info ? info.allergier : "";
     byId("logiMeldingInput").value = info ? info.melding : "";
-    [byId("logiAdresseInput"), byId("logiKoderInput"), byId("logiKontaktInput"), byId("logiTelefonInput"), byId("logiAllergierInput"), byId("logiMeldingInput")].forEach(function(el){ el.disabled = readOnly; });
+    byId("logiAllergierLabel").textContent = grouped ? "Allergier / diett (individuelt per person)" : "Allergier / diett (f.eks. nøtter, vegetar, gluten)";
+    byId("logiAllergierList").innerHTML = members.map(function(m){
+      var mInfo = logiInfoForPerson(m.id);
+      return '<div style="display:flex; align-items:center; gap:8px;">' +
+        (grouped ? '<span style="min-width:110px; font-size:12.5px; color:var(--muted); flex-shrink:0;">'+escapeHtml(m.name)+'</span>' : '') +
+        '<input type="text" data-allergyfor="'+m.id+'" maxlength="300" placeholder="Ingen kjente" value="'+escapeHtml(mInfo ? (mInfo.allergier||"") : "")+'" style="flex:1;" />' +
+        '</div>';
+    }).join("");
+    [byId("logiAdresseInput"), byId("logiKoderInput"), byId("logiKontaktInput"), byId("logiTelefonInput"), byId("logiMeldingInput")].forEach(function(el){ el.disabled = readOnly; });
+    byId("logiAllergierList").querySelectorAll("[data-allergyfor]").forEach(function(el){ el.disabled = readOnly; });
     byId("logiReadOnlyNote").hidden = !readOnly;
     byId("logiSaveBtn").hidden = readOnly;
     byId("logiMarkReadyBtn").hidden = !(canEditKontakt && status === "trenger_logi");
@@ -7823,12 +7852,22 @@
   byId("logiDialogClose").addEventListener("click", function(){ logiDialog.close(); });
   byId("logiSaveBtn").addEventListener("click", function(){
     var personId = logiDialog.dataset.personId;
-    var fields = { adresse: byId("logiAdresseInput").value.trim(), koder: byId("logiKoderInput").value.trim(), kontaktinfo: byId("logiKontaktInput").value.trim(), telefon: byId("logiTelefonInput").value.trim(), allergier: byId("logiAllergierInput").value.trim(), melding: byId("logiMeldingInput").value.trim() };
+    var fields = { adresse: byId("logiAdresseInput").value.trim(), koder: byId("logiKoderInput").value.trim(), kontaktinfo: byId("logiKontaktInput").value.trim(), telefon: byId("logiTelefonInput").value.trim(), melding: byId("logiMeldingInput").value.trim() };
+    // Allergier er individuelt per gruppemedlem - sendes med i SAMME lagring som de delte feltene
+    // (se upsertLogiInfo/AsKontakt) heller enn som et eget skriv, så de to ikke kan kappe hverandre.
+    var allergierByMember = {};
+    byId("logiAllergierList").querySelectorAll("[data-allergyfor]").forEach(function(el){
+      var memberId = el.dataset.allergyfor;
+      var val = el.value.trim();
+      var existing = logiInfoForPerson(memberId);
+      var prev = existing ? (existing.allergier || "") : "";
+      if(val !== prev) allergierByMember[memberId] = val;
+    });
     if(isByggeleder()){
       fields.status = byId("logiStatusSelect").value;
-      upsertLogiInfo(personId, fields);
+      upsertLogiInfo(personId, fields, allergierByMember);
     } else if(state.me && state.me.role === "kontakt"){
-      upsertLogiInfoAsKontakt(personId, fields);
+      upsertLogiInfoAsKontakt(personId, fields, allergierByMember);
     }
     logiDialog.close();
   });
