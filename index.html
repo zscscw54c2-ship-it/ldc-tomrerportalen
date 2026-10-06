@@ -711,6 +711,14 @@
   .frivillige-grid{ --nw:200px; }
   .frivillige-grid .g-row{ height:30px; }
   .frivillige-grid .g-group{ height:32px; }
+  /* Navnespalten er smal på mobil - vis kun fornavn (+ evt. forbokstav i etternavnet ved like fornavn),
+     se buildShortNameMap(), i stedet for hele navnet, så mer av selve rutenettet får plass. */
+  .name-short{ display:none; }
+  @media (max-width:640px){
+    .frivillige-grid{ --nw:96px; }
+    .name-full{ display:none; }
+    .name-short{ display:inline; }
+  }
   .frivillige-grid .g-name{ font-size:12.5px; }
   .frivillige-grid .behov-cell{ height:30px; padding:0; }
   .frivillige-grid .behov-cell .who{ font-size:13px; }
@@ -2484,6 +2492,27 @@
   function personName(id){
     var p = state.people.find(function(p){ return p.id === id; });
     return p ? p.name : "(fjernet person)";
+  }
+  // Kortnavn for mobilvisning av frivillige-rutenettene - kun fornavn, og kun hvis to personer i
+  // SAMME liste deler fornavn får de forbokstaven i etternavnet lagt til (f.eks. "Jostein B"),
+  // slik at man fortsatt kan skille dem fra hverandre uten å bruke navnespalten til hele navnet.
+  function buildShortNameMap(people){
+    var byFirst = {};
+    people.forEach(function(p){
+      var first = (p.name || "").trim().split(/\s+/)[0] || p.name || "";
+      (byFirst[first] = byFirst[first] || []).push(p);
+    });
+    var map = {};
+    Object.keys(byFirst).forEach(function(first){
+      var group = byFirst[first];
+      group.forEach(function(p){
+        if(group.length === 1){ map[p.id] = first; return; }
+        var parts = (p.name || "").trim().split(/\s+/);
+        var lastInitial = parts.length > 1 ? parts[parts.length - 1].charAt(0).toUpperCase() : "";
+        map[p.id] = lastInitial ? (first + " " + lastInitial) : first;
+      });
+    });
+    return map;
   }
   function dayStatus(elCount, peopleCount){
     if(elCount === 0) return null;
@@ -6555,6 +6584,10 @@
       return { fag: fag, people: people };
     }).filter(function(g){ return g.people.length > 0; });
     var anyRows = fagGroups.length > 0;
+    var allListedPeople = [];
+    var seenPersonIds = {};
+    fagGroups.forEach(function(g){ g.people.forEach(function(p){ if(!seenPersonIds[p.id]){ seenPersonIds[p.id] = true; allListedPeople.push(p); } }); });
+    var shortNameMap = buildShortNameMap(allListedPeople);
     // Summerer antall frivillige per dag - både per fag og totalt for hele dagen (unike personer,
     // så noen som står i flere fag samme dag ikke telles dobbelt i totalen) - for rask oversikt.
     var totalDayWeights = [];
@@ -6598,10 +6631,7 @@
           var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
           cells += '<div class="'+cls+'"'+attr+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
-        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo">'+escapeHtml(p.name)+'</span>';
-        if(pairWeightByPerson[p.id]){
-          nameCell += ' <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-size:9px; padding:1px 5px;" title="Telles som 2 personer i Antall-raden">Par</span>';
-        }
+        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>';
         var rowAttr = "";
         if(canDragRow){
           nameCell = '<span class="frivillig-draghandle" data-frivillig-handle="'+p.id+'|'+fag+'" title="Dra for å endre rekkefølge eller fag">⋮⋮</span> ' + nameCell;
@@ -6694,6 +6724,7 @@
     if(opts.fromToday && startIdx > 0){
       rosterPeople = rosterPeople.filter(function(p){ return !presentDays[p.id] || hasFutureAvailability(p.id); });
     }
+    var shortNameMap = buildShortNameMap(rosterPeople);
     var searchQ = (opts.searchQuery || "").trim().toLowerCase();
     var groupedIds = {};
     var allGroups = logiGroupsForCurrentProject().map(function(g){
@@ -6736,7 +6767,7 @@
       var linfo = logiInfoForPerson(p.id);
       var lstatus = linfo ? linfo.status : "trenger_logi";
       var statusDot = '<i class="dot" style="background:'+LOGI_STATUS_COLORS[lstatus]+'; width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0;" title="'+escapeHtml(LOGI_STATUS_LABELS[lstatus])+'"></i>';
-      var nameCell = statusDot + '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo - '+escapeHtml(LOGI_STATUS_LABELS[lstatus])+'">'+escapeHtml(p.name)+'</span>';
+      var nameCell = statusDot + '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo - '+escapeHtml(LOGI_STATUS_LABELS[lstatus])+'"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>';
       var rowAttr = "", checkHtml = "", handleHtml = "";
       if(opts.allowGroupEdit){
         rowAttr = ' data-logigroup-row="'+p.id+'"';
