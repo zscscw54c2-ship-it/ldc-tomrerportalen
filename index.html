@@ -6920,7 +6920,9 @@
         checkHtml = '<input type="checkbox" class="logigroup-check" data-logigroupcheck="'+p.id+'" style="margin-right:6px; flex-shrink:0;"'+checked+' />';
         handleHtml = '<span class="frivillig-draghandle" data-logigroup-handle="'+p.id+'" title="Dra for å slå sammen med en annen person eller gruppe" style="cursor:grab; margin-right:4px; flex-shrink:0;">⋮⋮</span>';
       }
-      return '<div class="g-row"'+rowAttr+'><div class="g-name" style="padding-left:24px; font-size:12.5px; display:flex; align-items:center;">'+checkHtml+handleHtml+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
+      // Hele raden (ikke bare dagsfeltene) får en svak bakgrunnstone av status-fargen, så det er
+      // lett å se status for en person uten å måtte lete etter statuspunktet eller dagsfeltene.
+      return '<div class="g-row" style="background:'+statusColor+'14;"'+rowAttr+'><div class="g-name" style="padding-left:24px; font-size:12.5px; display:flex; align-items:center;">'+checkHtml+handleHtml+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
     }
     // Grupper etter kategori (Ektepar/Familie/osv.) først, i LOGI_RELATION_LIST sin rekkefølge,
     // med grupper uten (gyldig) kategori samlet i en egen bøtte til slutt. Innad i hver kategori
