@@ -102,8 +102,9 @@
   .project-bar{
     max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
-  .project-pill{ display:inline-flex; align-items:center; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:6px 10px; font:inherit; color:inherit; cursor:pointer; }
+  .project-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:6px 10px; font:inherit; color:var(--accent); cursor:pointer; }
   .project-pill:hover{ background:var(--surface); }
+  .project-pill::before{ content:"📍"; font-size:12px; }
   .icon-btn{
     display:inline-flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:50%; border:1px solid var(--border-strong);
@@ -722,6 +723,16 @@
   #mobileHome{ display:none; }
   #mobileBackHome{ display:none; align-items:center; gap:6px; width:100%; box-sizing:border-box; padding:11px 4px; margin-bottom:2px; font-size:15px; font-weight:700; color:var(--accent); border:none; background:none; text-decoration:none; }
   #mobileBackHome .arrow{ font-size:18px; line-height:1; }
+  .mh-project-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; box-sizing:border-box;
+    background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:12px 14px; margin-bottom:12px;
+    font-family:inherit; text-align:left; cursor:pointer;
+  }
+  .mh-project-banner .mh-project-text{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .mh-project-banner .mh-project-eyebrow{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); opacity:.8; }
+  .mh-project-banner .mh-project-name{ font-size:16px; font-weight:800; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mh-project-banner .mh-project-dates{ font-size:11.5px; color:var(--accent); opacity:.75; flex:none; }
+  .mh-project-banner .chevron{ color:var(--accent); flex:none; }
   .mh-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px; }
   .mh-tile{
     position:relative; background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
@@ -852,7 +863,7 @@
   <div class="kontakt-top">
     <div>
       <h1 style="font-size:19px;"><span class="ldc">LDC</span> CG1</h1>
-      <span class="tag" style="font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;" id="kontaktProjectTag"></span>
+      <span class="project-pill" style="margin-top:4px; cursor:default;"><span id="kontaktProjectTag"></span></span>
     </div>
     <span style="display:flex; gap:8px;">
       <button class="btn small ghost" id="kontaktSwitchProjectBtn" hidden>Bytt prosjekt</button>
@@ -955,6 +966,14 @@
   </header>
 
   <div id="mobileHome">
+    <button type="button" class="mh-project-banner" id="mobileHomeProjectBtn" title="Bytt prosjekt" aria-haspopup="listbox" aria-expanded="false">
+      <span class="mh-project-text">
+        <span class="mh-project-eyebrow">Prosjekt</span>
+        <span class="mh-project-name" id="mobileHomeProjectLabel"></span>
+      </span>
+      <span class="mh-project-dates" id="mobileHomeProjectDates"></span>
+      <span class="chevron">⌄</span>
+    </button>
     <div class="mh-grid" id="mhGrid"></div>
   </div>
 
@@ -3278,6 +3297,9 @@
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     byId("projectCurrentLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
     byId("projectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
+    byId("mobileHomeProjectLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
+    byId("mobileHomeProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
+    byId("mobileHomeProjectBtn").querySelector(".chevron").hidden = state.projects.length < 2;
 
     if(!isByggeleder()) return;
     byId("acgoProjectBtnLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
@@ -3302,6 +3324,14 @@
     openDropdownMenu(this, itemsHtml, function(value){ selectProject(value); });
   });
   byId("projectSwitchBtn").addEventListener("click", function(){
+    if(state.projects.length < 2) return;
+    var itemsHtml = state.projects.map(function(p){
+      return '<button type="button" class="dropmenu-item" role="option" data-value="'+p.id+'" aria-selected="'+(p.id===state.currentProjectId)+'">' +
+        '<span class="name">'+escapeHtml(p.name)+(p.isActive?' ★':'')+'</span><span class="check">✓</span></button>';
+    }).join("");
+    openDropdownMenu(this, itemsHtml, function(value){ selectProject(value); });
+  });
+  byId("mobileHomeProjectBtn").addEventListener("click", function(){
     if(state.projects.length < 2) return;
     var itemsHtml = state.projects.map(function(p){
       return '<button type="button" class="dropmenu-item" role="option" data-value="'+p.id+'" aria-selected="'+(p.id===state.currentProjectId)+'">' +
@@ -5620,7 +5650,7 @@
     return state.roomTodos.filter(function(t){ return t.project_id === pid; });
   }
   function rowToShopItem(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, fag: row.fag || "tomrer", imagePath: row.image_path || null, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, quantity: row.quantity || "", bought: !!row.bought, boughtAt: row.bought_at || null, fag: row.fag || "tomrer", imagePath: row.image_path || null, createdAt: row.created_at };
   }
 
   function pickCurrentProject(){
@@ -5653,6 +5683,21 @@
       if(res.error){ showError("Klarte ikke å hente handlelisten: "+res.error.message); return; }
       state.shopItems = res.data.map(rowToShopItem);
       scheduleRender();
+      sweepOldBoughtShopItems();
+    });
+  }
+  // Rydder stille bort varer som har stått som "kjøpt" i over 1 døgn, så handlelisten ikke
+  // fylles opp med gammelt. Kjøres etter hver henting av listen (innlasting, egne endringer,
+  // og andre sin oppdatering via Realtime) - selvbegrensende, siden en vellykket sletting
+  // trigger en ny henting der varen allerede er borte. RLS avgjør hvem som faktisk får slette
+  // en gitt vare (fag-begrenset, eller byggeleder) - mislykkede forsøk feiler stille i bakgrunnen.
+  function sweepOldBoughtShopItems(){
+    if(!sb) return;
+    var cutoff = Date.now() - 24*3600*1000;
+    state.shopItems.filter(function(s){ return s.bought && s.boughtAt && new Date(s.boughtAt).getTime() < cutoff; }).forEach(function(s){
+      sb.from("shopping_items").delete().eq("id", s.id).then(function(res){
+        if(!res.error){ if(s.imagePath) sb.storage.from("handleliste").remove([s.imagePath]); refetchShopItems(); }
+      });
     });
   }
   function refetchDuties(){
@@ -7490,7 +7535,10 @@
   behovFillDialog.addEventListener("click", function(ev){ if(ev.target === behovFillDialog) behovFillDialog.close(); });
   byId("kontaktLogoutBtn").addEventListener("click", function(){
     if(!sb) return;
-    sb.auth.signOut().then(function(){ window.location.reload(); });
+    // scope:"local" - logger KUN ut denne enheten. Uten den revokerer Supabase som standard
+    // sesjonen globalt, som logger ut alle andre innlogget med samme (her: delte menighets-)
+    // konto også - spesielt ille for en konto flere enheter deler samtidig.
+    sb.auth.signOut({ scope: "local" }).then(function(){ window.location.reload(); });
   });
   byId("kontaktRefreshBtn").addEventListener("click", function(){ window.location.reload(); });
 
@@ -8402,7 +8450,9 @@
   }
   function toggleBought(id, bought){
     if(!sb) return;
-    sb.from("shopping_items").update({ bought: bought }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere varen: "+res.error.message); return; } refetchShopItems(); });
+    // bought_at styrer når varen automatisk ryddes bort (se sweepOldBoughtShopItems) - nullstilles
+    // hvis man huker den av igjen, slik at "klokka" starter på nytt neste gang den merkes kjøpt.
+    sb.from("shopping_items").update({ bought: bought, bought_at: bought ? new Date().toISOString() : null }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere varen: "+res.error.message); return; } refetchShopItems(); });
   }
   function deleteShopItem(id){
     if(!sb) return;
@@ -9375,7 +9425,7 @@
           sb.rpc("claim_project_invite", { invite_token: pendingInviteToken }).then(function(claimRes){
             if(claimRes.error){
               byId("loginError").textContent = "Klarte ikke å bruke invitasjonslenken: "+claimRes.error.message;
-              sb.auth.signOut();
+              sb.auth.signOut({ scope: "local" });
               return;
             }
             try{ sessionStorage.removeItem(INVITE_TOKEN_KEY); }catch(e2){}
@@ -9385,7 +9435,7 @@
           return;
         }
         byId("loginError").textContent = "Denne kontoen mangler en rolle. Kontakt byggeleder.";
-        sb.auth.signOut();
+        sb.auth.signOut({ scope: "local" });
         return;
       }
       state.me = { id: session.user.id, email: session.user.email, role: res.data.role, personId: res.data.person_id || null, projectId: res.data.project_id || null };
@@ -9454,7 +9504,9 @@
   });
   byId("logoutBtn").addEventListener("click", function(){
     if(!sb) return;
-    sb.auth.signOut().then(function(){ window.location.reload(); });
+    // scope:"local" - se forklaring ved kontaktLogoutBtn over: uten den logger Supabase som
+    // standard ut kontoen globalt, altså fra alle enheter man er innlogget på, ikke bare denne.
+    sb.auth.signOut({ scope: "local" }).then(function(){ window.location.reload(); });
   });
   byId("refreshBtn").addEventListener("click", function(){ window.location.reload(); });
 
