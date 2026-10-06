@@ -474,6 +474,10 @@
   .g-weeks div{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); border-top:1px solid var(--border);}
   .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
+  /* Logi-rutenettet: kategori (Ektepar/Familie/osv.) er den øverste overskriften, med hver enkelt
+     logi-gruppe (f.eks. "Jieboldt") som en lysere, innrykket underoverskrift inni kategorien. */
+  .g-category .g-name{background:var(--accent-soft); color:var(--accent); font-weight:800;}
+  .g-subgroup .g-name{padding-left:22px; font-weight:600;}
   /* Antall-rader under hvert fag og nederst - summerer frivillige per dag, se buildFrivilligeGridHtml. */
   .g-fagtotal{background:var(--surface-alt);}
   .g-fagtotal .g-name{background:var(--surface-alt); cursor:default; font-size:11px; font-weight:600; color:var(--muted);}
@@ -6779,12 +6783,25 @@
       }
       return '<div class="g-row"'+rowAttr+'><div class="g-name" style="padding-left:24px; font-size:12.5px; display:flex; align-items:center;">'+checkHtml+handleHtml+nameCell+'</div><div class="behov-track">'+cells+'</div></div>';
     }
+    // Grupper etter kategori (Ektepar/Familie/osv.) først, i LOGI_RELATION_LIST sin rekkefølge,
+    // med grupper uten (gyldig) kategori samlet i en egen bøtte til slutt. Innad i hver kategori
+    // beholdes den alfabetiske sorteringen på merkelapp fra "groups" over.
+    var byCategory = {};
     groups.forEach(function(gr){
-      var label = gr.group.label || gr.members.map(function(m){ return m.name; }).join(" & ");
-      var relLabel = gr.group.relation ? (LOGI_RELATION_LABELS[gr.group.relation] || gr.group.relation) : "";
-      var headerAttr = opts.allowGroupEdit ? ' data-logigroup-header="'+gr.group.id+'"' : "";
-      html += '<div class="g-row g-group"'+headerAttr+'><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--accent); width:8px; height:8px; border-radius:3px;"></i> '+escapeHtml(label)+(relLabel?' <span class="badge group" style="margin-left:4px;">'+escapeHtml(relLabel)+'</span>':'')+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
-      gr.members.forEach(function(p){ html += personRowHtml(p); });
+      var key = gr.group.relation && LOGI_RELATION_LIST.indexOf(gr.group.relation) !== -1 ? gr.group.relation : "__uncategorized";
+      (byCategory[key] = byCategory[key] || []).push(gr);
+    });
+    var categoryKeys = LOGI_RELATION_LIST.filter(function(k){ return byCategory[k]; });
+    if(byCategory.__uncategorized) categoryKeys.push("__uncategorized");
+    categoryKeys.forEach(function(catKey){
+      var catLabel = catKey === "__uncategorized" ? "Uten kategori" : (LOGI_RELATION_LABELS[catKey] || catKey);
+      html += '<div class="g-row g-group g-category"><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--accent); width:8px; height:8px; border-radius:3px;"></i> '+escapeHtml(catLabel)+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      byCategory[catKey].forEach(function(gr){
+        var label = gr.group.label || gr.members.map(function(m){ return m.name; }).join(" & ");
+        var headerAttr = opts.allowGroupEdit ? ' data-logigroup-header="'+gr.group.id+'"' : "";
+        html += '<div class="g-row g-group g-subgroup"'+headerAttr+'><div class="g-name behov-fag-head"><span>'+escapeHtml(label)+'</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+        gr.members.forEach(function(p){ html += personRowHtml(p); });
+      });
     });
     if(singles.length){
       html += '<div class="g-row g-group"><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--muted); width:8px; height:8px; border-radius:3px;"></i> Enkeltpersoner</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
@@ -7738,17 +7755,29 @@
   }
   function renderLogiGroupsBox(){
     var groups = logiGroupsForCurrentProject();
-    byId("logiGroupsList").innerHTML = groups.length ? groups.map(function(g){
+    // Samme kategori-gruppering (Ektepar/Familie/osv.) som i selve rutenettet over, se
+    // buildLogiGroupGridHtml - kategorien vises som egen overskrift i stedet for et merke per rad.
+    var byCategory = {};
+    groups.forEach(function(g){
+      var key = g.relation && LOGI_RELATION_LIST.indexOf(g.relation) !== -1 ? g.relation : "__uncategorized";
+      (byCategory[key] = byCategory[key] || []).push(g);
+    });
+    var categoryKeys = LOGI_RELATION_LIST.filter(function(k){ return byCategory[k]; });
+    if(byCategory.__uncategorized) categoryKeys.push("__uncategorized");
+    function groupRowHtml(g){
       var members = logiGroupMembers(g.id);
       var label = g.label || members.map(function(m){ return m.name; }).join(" & ");
-      var relLabel = g.relation ? (LOGI_RELATION_LABELS[g.relation] || g.relation) : "";
       var memberChips = members.map(function(m){
         return '<span class="badge" style="margin-right:4px;">'+escapeHtml(m.name)+' <a href="#" data-rmlogigroupmember="'+m.id+'|'+g.id+'" title="Fjern fra gruppen" style="text-decoration:none;">×</a></span>';
       }).join("");
-      return '<div class="shoprow" style="flex-wrap:wrap; align-items:flex-start;"><span class="sname">'+escapeHtml(label)+(relLabel?' <span class="badge group">'+escapeHtml(relLabel)+'</span>':'')+'</span>' +
+      return '<div class="shoprow" style="flex-wrap:wrap; align-items:flex-start;"><span class="sname">'+escapeHtml(label)+'</span>' +
         '<span class="sqty" style="font-size:12px; flex-basis:100%;">'+memberChips+'</span>' +
         '<button type="button" class="btn small" data-editlogigroup="'+g.id+'">Rediger</button>' +
         '<button type="button" class="btn small danger" data-dellogigroup="'+g.id+'">Løs opp</button></div>';
+    }
+    byId("logiGroupsList").innerHTML = groups.length ? categoryKeys.map(function(catKey){
+      var catLabel = catKey === "__uncategorized" ? "Uten kategori" : (LOGI_RELATION_LABELS[catKey] || catKey);
+      return '<div style="font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--accent); margin:10px 0 2px;">'+escapeHtml(catLabel)+'</div>' + byCategory[catKey].map(groupRowHtml).join("");
     }).join("") : '<p class="empty-note">Ingen logi-grupper laget ennå. Dra en person oppå en annen i listen over, eller kryss av flere og trykk «Slå sammen».</p>';
     byId("logiGroupsList").querySelectorAll("[data-dellogigroup]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Løse opp denne logi-gruppen? Hver person får igjen sin egen logi.")) deleteLogiGroup(this.dataset.dellogigroup); });
