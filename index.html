@@ -6893,18 +6893,23 @@
     }
 
     function personRowHtml(p){
+      var linfo = logiInfoForPerson(p.id);
+      var lstatus = linfo ? linfo.status : "uavklart";
+      var statusColor = logiStatusColor(lstatus, linfo && linfo.meldingSendt);
       var cells = "";
       for(var i=startIdx;i<range.workdays;i++){
         var iso = toISODate(workdayDate(range, i));
         var present = isPresentAnyFag(p.id, iso);
         var cls = "behov-cell" + (present ? " filled" : "");
-        var content = present ? '<span class="who">✓</span>' : "";
-        cells += '<div class="'+cls+'" title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+'">'+content+'</div>';
+        // Avkrysningsfeltene for hvilke dager personen er med i prosjektet farges som logi-statusen
+        // (ikke den vanlige grønne "filled"-fargen) - kun her på Logi-siden/menighetens Logi-visning,
+        // slik at man ser status-fargen uten å måtte se på navn-kolonnen.
+        var cellStyle = present ? ' style="background:'+statusColor+'33;"' : '';
+        var content = present ? '<span class="who" style="color:'+statusColor+';">✓</span>' : "";
+        cells += '<div class="'+cls+'"'+cellStyle+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+'">'+content+'</div>';
       }
-      var linfo = logiInfoForPerson(p.id);
-      var lstatus = linfo ? linfo.status : "uavklart";
       var statusTitle = LOGI_STATUS_LABELS[lstatus] + (lstatus === "logi_klart" && linfo && linfo.meldingSendt ? " · melding sendt" : "");
-      var statusDot = '<i class="dot" style="background:'+logiStatusColor(lstatus, linfo && linfo.meldingSendt)+'; width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0;" title="'+escapeHtml(statusTitle)+'"></i>';
+      var statusDot = '<i class="dot" style="background:'+statusColor+'; width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0;" title="'+escapeHtml(statusTitle)+'"></i>';
       var allergyTag = (linfo && linfo.allergiLogiTekst) ? ' <span class="badge" style="background:var(--bad-soft); color:var(--bad-ink); font-size:9px; padding:1px 5px;" title="'+escapeHtml(linfo.allergiLogiTekst)+'">Allergi</span>' : "";
       var tagBadge = p.tag ? ' <span class="badge persontag">'+escapeHtml(p.tag)+'</span>' : "";
       var nameCell = statusDot + '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo - '+escapeHtml(statusTitle)+'"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>' + tagBadge + allergyTag;
