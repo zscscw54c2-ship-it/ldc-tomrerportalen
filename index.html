@@ -6902,9 +6902,10 @@
         var present = isPresentAnyFag(p.id, iso);
         var cls = "behov-cell" + (present ? " filled" : "");
         // Avkrysningsfeltene for hvilke dager personen er med i prosjektet farges som logi-statusen
-        // (ikke den vanlige grønne "filled"-fargen) - kun her på Logi-siden/menighetens Logi-visning,
-        // slik at man ser status-fargen uten å måtte se på navn-kolonnen.
-        var cellStyle = present ? ' style="background:'+statusColor+'33;"' : '';
+        // (ikke den vanlige grønne "filled"-fargen) - kun her på Logi-siden/menighetens Logi-visning.
+        // color-mix gir en heldekkende pastellfarge (som --good-soft osv.), ikke en halvgjennomsiktig
+        // farge oppå - slik at hele boksen fremstår fylt, akkurat som på den vanlige Frivillige-siden.
+        var cellStyle = present ? ' style="background:color-mix(in srgb, '+statusColor+' 16%, white);"' : '';
         var content = present ? '<span class="who" style="color:'+statusColor+';">✓</span>' : "";
         cells += '<div class="'+cls+'"'+cellStyle+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+'">'+content+'</div>';
       }
