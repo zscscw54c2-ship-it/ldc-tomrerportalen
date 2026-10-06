@@ -1123,8 +1123,9 @@
   </section>
 
   <section id="panel-elementer" class="panel">
-    <div style="margin-bottom:10px;">
+    <div style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
       <button type="button" class="btn small" id="importPlanBtn" hidden>Importer fremdriftsplan fra fil</button>
+      <button type="button" class="btn small" id="importTidsplanBtn" hidden>Importer tidsplan + leveranser (ukemal)</button>
     </div>
     <div class="filterbar" id="elFilterBar"></div>
     <div class="cols2" id="elSectionedCols">
@@ -1369,6 +1370,17 @@
             <button type="button" class="btn small ghost" id="teamPairSelectionCancelBtn">Avbryt</button>
           </div>
           <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+        <div class="peoplecard">
+          <h2 data-etkey="andelig_leveranser_title" style="font-size:16px; margin-bottom:2px;">Leveranser</h2>
+          <p class="sub" data-etkey="andelig_leveranser_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Bestilte varer/leverandører med forventet dato. Huk av når leveransen er mottatt.</p>
+          <div id="deliveriesList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+          <form class="inline-add" id="addDeliveryForm" data-editonly style="flex-wrap:wrap;">
+            <input type="text" id="newDeliveryName" placeholder="Navn (f.eks. Lindab)" required maxlength="120" style="flex:1; min-width:160px;" />
+            <input type="date" id="newDeliveryDate" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);" />
+            <label class="checkrow" style="font-size:12.5px; margin:0;"><input type="checkbox" id="newDeliveryUncertain" /> Usikker dato</label>
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
         </div>
         <div class="peoplecard">
           <h2 data-etkey="andelig_siteinfo_title" style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
@@ -2015,6 +2027,32 @@
   </div>
 </dialog>
 
+<dialog id="impTidsplanDialog" class="wide imp-dialog">
+  <div class="dlg-body">
+    <h3>Importer tidsplan + leveranser (ukemal)</h3>
+    <div id="impTidsplanStep1">
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">For tidsplaner bygget opp med ukeblokker (uke-overskrift, dager mandag–søndag, «Ant:»-rader) og en egen LEVERANSER-kolonne. Malen kjennes igjen automatisk - du trenger ikke velge kolonner selv.</p>
+      <div class="imp-dropzone">
+        Velg fil
+        <div><input type="file" id="impTidsplanFile" accept=".xlsx,.xlsm,.xls" /></div>
+      </div>
+      <p id="impTidsplanParseError" class="sub" style="color:var(--bad); display:none; margin-top:8px;"></p>
+    </div>
+    <div id="impTidsplanStep2" hidden>
+      <p class="sub" id="impTidsplanSummary" style="font-size:12.5px; color:var(--muted); margin-top:-6px;"></p>
+      <h4 style="margin:14px 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Oppgaver til fremdriftsplanen</h4>
+      <div class="imp-table-wrap"><table class="imp-table" id="impTidsplanTasksTable"></table></div>
+      <h4 style="margin:18px 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Leveranser</h4>
+      <div class="imp-table-wrap"><table class="imp-table" id="impTidsplanDeliveriesTable"></table></div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="impTidsplanCancel">Avbryt</button>
+      <button type="button" class="btn ghost" id="impTidsplanBack" hidden>‹ Tilbake</button>
+      <button type="button" class="btn primary" id="impTidsplanUpload" hidden>Last opp</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="pwDialog" class="wide">
   <form class="dlg-body" id="pwForm" method="dialog">
     <h3 id="pwDlgTitle">Ny privilege-uke</h3>
@@ -2191,7 +2229,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [] };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
@@ -3571,6 +3609,7 @@
     }
 
     byId("importPlanBtn").hidden = !isByggeleder();
+    byId("importTidsplanBtn").hidden = !isByggeleder();
     var sectionedView = activeFag() === "tomrer";
     byId("elSectionedCols").hidden = !sectionedView;
     byId("elGenericCard").hidden = sectionedView;
@@ -4090,6 +4129,26 @@
     });
     renderTeamPairSelectionBar();
 
+    var todayIsoD = toISODate(new Date());
+    var deliveries = deliveriesForCurrentProject();
+    byId("deliveriesList").innerHTML = deliveries.length ? deliveries.map(function(d){
+      var overdue = !d.received && d.expectedDate && d.expectedDate < todayIsoD;
+      var dateLabel = d.expectedDate ? fmtRange(d.expectedDate, d.expectedDate) : "Ingen dato";
+      var uncertainBadge = d.uncertain ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9px; padding:1px 5px;" title="Dato er ikke bekreftet">usikker</span>' : "";
+      var dateStyle = overdue ? "color:var(--bad); font-weight:700;" : "color:var(--muted);";
+      return '<div class="shoprow" style="flex-wrap:wrap;'+(d.received?' opacity:.55;':'')+'">' +
+        '<label class="checkrow" style="margin:0; flex:none;"><input type="checkbox" data-deliverycheck="'+d.id+'"'+(d.received?' checked':'')+' /></label>' +
+        '<span class="sname"'+(d.received?' style="text-decoration:line-through;"':'')+'>'+escapeHtml(d.name)+'</span>' +
+        '<span class="sqty" style="font-size:12px; '+dateStyle+'">'+dateLabel+(overdue?' · forsinket':'')+'</span>' + uncertainBadge +
+        '<button class="del" data-editonly data-deldelivery="'+d.id+'" title="Fjern">×</button></div>';
+    }).join("") : '<p class="empty-note">Ingen leveranser registrert ennå.</p>';
+    byId("deliveriesList").querySelectorAll("[data-deliverycheck]").forEach(function(cb){
+      cb.addEventListener("change", function(){ toggleDeliveryReceived(this.dataset.deliverycheck); });
+    });
+    byId("deliveriesList").querySelectorAll("[data-deldelivery]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne leveransen?")) deleteDelivery(this.dataset.deldelivery); });
+    });
+
     document.querySelectorAll("#panel-andelig [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
     var codes = siteCodesForCurrentProject();
     byId("siteCodesList").innerHTML = codes.length ? codes.map(function(c){
@@ -4253,6 +4312,14 @@
     if(!label || !value) return;
     addSiteCode(label, value);
     labelInput.value = ""; valueInput.value = "";
+  });
+  byId("addDeliveryForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var nameInput = byId("newDeliveryName"), dateInput = byId("newDeliveryDate"), uncertainInput = byId("newDeliveryUncertain");
+    var name = nameInput.value.trim();
+    if(!name) return;
+    addDelivery(name, dateInput.value, uncertainInput.checked);
+    nameInput.value = ""; dateInput.value = ""; uncertainInput.checked = false;
   });
   byId("addOpenAccountForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -4547,6 +4614,101 @@
         return o;
       }).filter(function(o){ return Object.keys(o).some(function(k){ return String(o[k]).trim(); }); });
       return { headers: headerRow.filter(function(h){ return h; }), rows: rows };
+    });
+  }
+  // ---- "Tidsplan"-ukeblokkmal: fil -> rå rutenett (AOA), finn ukeblokker og en egen
+  // LEVERANSER-kolonne ved å kjenne igjen MØNSTERET (ukeoverskrift "V. nn" + 7 datoceller,
+  // "Ant:"-rader for tilstedeværelse) i stedet for å anta faste rad/kolonnenumre - så malen
+  // tåler at ting flytter seg litt fra prosjekt til prosjekt. Finner den ikke mønsteret i det
+  // hele tatt, returneres tomme lister i stedet for å krasje (brukeren kan da heller bruke den
+  // vanlige "Importer fremdriftsplan"-importen).
+  var TIDSPLAN_FAG_HINTS = [
+    { re: /tomr/, fag: "tomrer" },
+    { re: /^el[^a-z]|^el$|elektr/, fag: "elektriker" },
+    { re: /maling|malning|^maler/, fag: "maler" },
+    { re: /rorlegg|\bvvs\b/, fag: "vvs" },
+    { re: /ventilasjon|\bhvac\b/, fag: "ventilasjon" },
+    { re: /murer|betong/, fag: "murer" },
+    { re: /landscape|hage|grontanlegg|utendors/, fag: "landscape" },
+    { re: /stillas/, fag: "stillas" }
+  ];
+  function guessTidsplanFag(name){
+    var t = normText(name);
+    for(var i=0;i<TIDSPLAN_FAG_HINTS.length;i++){
+      if(TIDSPLAN_FAG_HINTS[i].re.test(t)) return TIDSPLAN_FAG_HINTS[i].fag;
+    }
+    return "ovrig";
+  }
+  var TIDSPLAN_LEVERANSE_RE = /^(.*?)\s*[:;]?\s*(\d{1,2})\.(\d{1,2})\.(\d{2,4})\s*(\*|\?)?\s*$/;
+  function parseTidsplanWeekBlocksFile(file){
+    return file.arrayBuffer().then(function(buf){ return XLSX.read(buf, { type: "array", cellDates: true }); }).then(function(wb){
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      var aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: null });
+      var tasks = [], deliveries = [], unparsedDeliveries = [];
+      var weekHeaderRe = /^v\.?\s*\d+/i;
+      // 1) Finn ukeblokkene: rader med en celle som matcher "V. nn", og 7 datoceller i samme rad.
+      var weekRows = [];
+      for(var r=0;r<aoa.length;r++){
+        var row = aoa[r] || [];
+        var hasWeekLabel = row.some(function(c){ return typeof c === "string" && weekHeaderRe.test(c.trim()); });
+        if(!hasWeekLabel) continue;
+        var dateCols = [];
+        for(var c=0;c<row.length;c++){ if(row[c] instanceof Date) dateCols.push({ col: c, date: row[c] }); }
+        if(dateCols.length >= 2) weekRows.push({ row: r, dateCols: dateCols });
+      }
+      // 2) Innenfor hver ukeblokk: finn "Ant:"-rader, bruk raden over som oppgavenavn, og les
+      // av/på per dag-kolonne fra "Ant:"-raden for å regne ut start/slutt-dato for oppgaven.
+      for(var w=0; w<weekRows.length; w++){
+        var blockStart = weekRows[w].row + 1;
+        var blockEnd = (w+1 < weekRows.length) ? weekRows[w+1].row : aoa.length;
+        var dateCols2 = weekRows[w].dateCols;
+        for(var rr=blockStart; rr<blockEnd; rr++){
+          var antRow = aoa[rr] || [];
+          var isAntRow = antRow.some(function(c){ return typeof c === "string" && /^ant\b/i.test(c.trim()); });
+          if(!isAntRow) continue;
+          var nameRow = aoa[rr-1] || [];
+          // Oppgavenavnet kan stå hvor som helst fra starten av raden til og med siste dag-kolonne
+          // (ikke alltid rett FØR dag-kolonnene, slik denne malen faktisk er fylt ut).
+          var maxDateCol = Math.max.apply(null, dateCols2.map(function(d){ return d.col; }));
+          var name = "";
+          for(var nc=0; nc<=maxDateCol; nc++){
+            var v = nameRow[nc];
+            if(typeof v === "string" && v.trim()){ name = v.trim(); break; }
+          }
+          if(!name) continue;
+          var activeDates = dateCols2.filter(function(d){
+            var v = antRow[d.col];
+            return typeof v === "number" && v > 0;
+          }).map(function(d){ return d.date; });
+          var start = "", end = "";
+          if(activeDates.length){
+            activeDates.sort(function(a,b){ return a-b; });
+            start = toISODate(activeDates[0]);
+            end = toISODate(activeDates[activeDates.length-1]);
+          }
+          tasks.push({ name: name.replace(/[;:]\s*$/,"").trim(), fag: guessTidsplanFag(name), section: "innvendig", start: start, end: end || start, notat: "", include: true });
+        }
+      }
+      // 3) Finn LEVERANSER-kolonnen (cellen med akkurat den teksten), les resten av kolonnen
+      // nedover: tekst i formatet "<navn> dd.mm.åå" (evt. med * eller ? bak datoen = usikker).
+      var levCol = -1, levHeaderRow = -1;
+      for(var r2=0; r2<aoa.length && levCol===-1; r2++){
+        var row2 = aoa[r2] || [];
+        for(var c2=0;c2<row2.length;c2++){
+          if(typeof row2[c2] === "string" && row2[c2].trim().toUpperCase() === "LEVERANSER"){ levCol = c2; levHeaderRow = r2; break; }
+        }
+      }
+      if(levCol !== -1){
+        for(var r3=levHeaderRow+1; r3<aoa.length; r3++){
+          var cell = (aoa[r3] || [])[levCol];
+          if(typeof cell !== "string" || !cell.trim()) continue;
+          var m = TIDSPLAN_LEVERANSE_RE.exec(cell.trim());
+          if(!m){ unparsedDeliveries.push(cell.trim()); continue; }
+          var dd = +m[2], mm = +m[3], yy = +m[4]; if(yy < 100) yy += 2000;
+          deliveries.push({ name: m[1].trim(), expectedDate: toISODate(new Date(yy, mm-1, dd)), uncertain: !!m[5], notes: "", include: true });
+        }
+      }
+      return { tasks: tasks, deliveries: deliveries, unparsedDeliveries: unparsedDeliveries, weeksFound: weekRows.length, leveranserFound: levCol !== -1 };
     });
   }
   function guessColumn(headers, aliases){
@@ -5095,6 +5257,160 @@
     });
   });
 
+  // ---- tidsplan (ukemal) + leveranser-import ----
+  var impTidsplanDialog = byId("impTidsplanDialog");
+  var impTidsplan = { tasks: [], deliveries: [] };
+  function fagOptionsHtmlExt(selected){
+    var out = '<option value=""'+(selected?'':' selected')+'>– velg fag –</option>';
+    FAG_LIST.concat(["stillas"]).forEach(function(f){ out += '<option value="'+f+'"'+(selected===f?' selected':'')+'>'+FAG_LABELS[f]+'</option>'; });
+    return out;
+  }
+  function impTidsplanResetToStep1(){
+    impTidsplan.tasks = []; impTidsplan.deliveries = [];
+    byId("impTidsplanFile").value = "";
+    byId("impTidsplanParseError").style.display = "none";
+    byId("impTidsplanStep1").hidden = false;
+    byId("impTidsplanStep2").hidden = true;
+    byId("impTidsplanBack").hidden = true;
+    byId("impTidsplanUpload").hidden = true;
+  }
+  byId("importTidsplanBtn").addEventListener("click", function(){
+    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
+    impTidsplanResetToStep1();
+    impTidsplanDialog.showModal();
+  });
+  byId("impTidsplanCancel").addEventListener("click", function(){ impTidsplanDialog.close(); });
+  impTidsplanDialog.addEventListener("click", function(ev){ if(ev.target === impTidsplanDialog) impTidsplanDialog.close(); });
+  byId("impTidsplanFile").addEventListener("change", function(){
+    var file = this.files && this.files[0];
+    byId("impTidsplanParseError").style.display = "none";
+    if(!file) return;
+    if(typeof XLSX === "undefined"){
+      byId("impTidsplanParseError").textContent = "Kunne ikke laste filleseren. Sjekk nettforbindelsen og prøv igjen.";
+      byId("impTidsplanParseError").style.display = "block";
+      return;
+    }
+    parseTidsplanWeekBlocksFile(file).then(function(result){
+      if(!result.weeksFound && !result.leveranserFound){
+        byId("impTidsplanParseError").textContent = "Kjente ikke igjen ukeblokk-malen i denne filen (fant ingen \"V. nn\"-ukeoverskrifter eller LEVERANSER-kolonne). Prøv heller \"Importer fremdriftsplan fra fil\" hvis dette er en vanlig radbasert liste.";
+        byId("impTidsplanParseError").style.display = "block";
+        return;
+      }
+      impTidsplan.tasks = result.tasks;
+      impTidsplan.deliveries = result.deliveries;
+      var bits = [];
+      bits.push(result.tasks.length + " oppgaver funnet i " + result.weeksFound + " ukeblokker.");
+      bits.push(result.deliveries.length + " leveranser funnet.");
+      if(result.unparsedDeliveries.length) bits.push(result.unparsedDeliveries.length + " linjer i LEVERANSER-kolonnen kunne ikke tolkes og er hoppet over: " + result.unparsedDeliveries.slice(0,5).join(", ") + (result.unparsedDeliveries.length > 5 ? " ..." : ""));
+      byId("impTidsplanSummary").textContent = bits.join(" ");
+      renderImpTidsplanTasksTable();
+      renderImpTidsplanDeliveriesTable();
+      byId("impTidsplanStep1").hidden = true;
+      byId("impTidsplanStep2").hidden = false;
+      byId("impTidsplanBack").hidden = false;
+      byId("impTidsplanUpload").hidden = false;
+    }).catch(function(err){
+      byId("impTidsplanParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
+      byId("impTidsplanParseError").style.display = "block";
+    });
+  });
+  byId("impTidsplanBack").addEventListener("click", function(){
+    byId("impTidsplanStep1").hidden = false;
+    byId("impTidsplanStep2").hidden = true;
+    byId("impTidsplanBack").hidden = true;
+    byId("impTidsplanUpload").hidden = true;
+  });
+  function renderImpTidsplanTasksTable(){
+    var rows = impTidsplan.tasks;
+    var html = "<thead><tr><th>Oppgave</th><th>Fag</th><th>Seksjon</th><th>Start</th><th>Slutt</th><th></th></tr></thead><tbody>";
+    rows.forEach(function(r, idx){
+      if(!r.include) return;
+      html += '<tr data-improw="'+idx+'">' +
+        '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="80" /></td>' +
+        '<td><select data-impfield="fag">'+fagOptionsHtmlExt(r.fag)+'</select></td>' +
+        '<td><select data-impfield="section"><option value="innvendig"'+(r.section==="innvendig"?' selected':'')+'>Innvendig</option><option value="utvendig"'+(r.section==="utvendig"?' selected':'')+'>Utvendig</option></select></td>' +
+        '<td><input type="date" data-impfield="start" value="'+escapeHtml(r.start)+'" /></td>' +
+        '<td><input type="date" data-impfield="end" value="'+escapeHtml(r.end)+'" /></td>' +
+        '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
+      '</tr>';
+    });
+    html += "</tbody>";
+    byId("impTidsplanTasksTable").innerHTML = html;
+    byId("impTidsplanTasksTable").querySelectorAll("[data-impfield]").forEach(function(el){
+      var evt = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(evt, function(){
+        var idx = +this.closest("[data-improw]").dataset.improw;
+        impTidsplan.tasks[idx][this.dataset.impfield] = this.value;
+      });
+    });
+    byId("impTidsplanTasksTable").querySelectorAll("[data-improwremove]").forEach(function(b){
+      b.addEventListener("click", function(){ impTidsplan.tasks[+this.dataset.improwremove].include = false; renderImpTidsplanTasksTable(); });
+    });
+  }
+  function renderImpTidsplanDeliveriesTable(){
+    var rows = impTidsplan.deliveries;
+    var html = "<thead><tr><th>Navn</th><th>Forventet dato</th><th>Usikker</th><th></th></tr></thead><tbody>";
+    rows.forEach(function(r, idx){
+      if(!r.include) return;
+      html += '<tr data-improw="'+idx+'">' +
+        '<td><input type="text" data-impdfield="name" value="'+escapeHtml(r.name)+'" maxlength="120" /></td>' +
+        '<td><input type="date" data-impdfield="expectedDate" value="'+escapeHtml(r.expectedDate)+'" /></td>' +
+        '<td style="text-align:center;"><input type="checkbox" data-impdfield="uncertain"'+(r.uncertain?' checked':'')+' /></td>' +
+        '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
+      '</tr>';
+    });
+    html += "</tbody>";
+    byId("impTidsplanDeliveriesTable").innerHTML = html;
+    byId("impTidsplanDeliveriesTable").querySelectorAll("[data-impdfield]").forEach(function(el){
+      var evt = (el.type === "checkbox") ? "change" : "input";
+      el.addEventListener(evt, function(){
+        var idx = +this.closest("[data-improw]").dataset.improw;
+        var field = this.dataset.impdfield;
+        impTidsplan.deliveries[idx][field] = this.type === "checkbox" ? this.checked : this.value;
+      });
+    });
+    byId("impTidsplanDeliveriesTable").querySelectorAll("[data-improwremove]").forEach(function(b){
+      b.addEventListener("click", function(){ impTidsplan.deliveries[+this.dataset.improwremove].include = false; renderImpTidsplanDeliveriesTable(); });
+    });
+  }
+  byId("impTidsplanUpload").addEventListener("click", function(){
+    if(!sb) return;
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    if(!cur){ showError("Opprett eller velg et prosjekt først."); return; }
+    var visTasks = impTidsplan.tasks.filter(function(r){ return r.include && r.name.trim() && r.fag; });
+    var visDeliv = impTidsplan.deliveries.filter(function(r){ return r.include && r.name.trim(); });
+    if(!visTasks.length && !visDeliv.length) return;
+    byId("impTidsplanUpload").disabled = true;
+    var taskRows = visTasks.map(function(r){
+      var planned = !!(r.start && r.end);
+      return {
+        project_id: cur.id, name: r.name.trim().slice(0,80), fag: r.fag,
+        section: r.section === "utvendig" ? "utvendig" : "innvendig",
+        start: planned ? r.start : null, end: planned ? r.end : null,
+        status: "mangler", done: false, assignments: {}, notes: ""
+      };
+    });
+    var deliveryRows = visDeliv.map(function(r){
+      return { project_id: cur.id, name: r.name.trim().slice(0,120), expected_date: r.expectedDate || null, uncertain: !!r.uncertain };
+    });
+    Promise.all([
+      taskRows.length ? chunkArray(taskRows, 300).reduce(function(p, chunk){
+        return p.then(function(){ return sb.from("elements").insert(chunk).then(function(res){ if(res.error) throw res.error; }); });
+      }, Promise.resolve()) : Promise.resolve(),
+      deliveryRows.length ? chunkArray(deliveryRows, 300).reduce(function(p, chunk){
+        return p.then(function(){ return sb.from("deliveries").insert(chunk).then(function(res){ if(res.error) throw res.error; }); });
+      }, Promise.resolve()) : Promise.resolve()
+    ]).then(function(){
+      refetchElements();
+      refetchDeliveries();
+      impTidsplanDialog.close();
+      showInfo(taskRows.length + " oppgaver og " + deliveryRows.length + " leveranser lagt inn.");
+    }).catch(function(err){
+      showError("Import feilet: " + (err && err.message ? err.message : err));
+      byId("impTidsplanUpload").disabled = false;
+    });
+  });
+
   function fillElForm(e){
     byId("elName").value = e.name;
     byId("elSection").value = e.section;
@@ -5533,6 +5849,18 @@
   }
   function rowToSiteCode(row){
     return { id: row.id, project_id: row.project_id, label: row.label, value: row.value, createdAt: row.created_at };
+  }
+  function rowToDelivery(row){
+    return { id: row.id, project_id: row.project_id, name: row.name, expectedDate: row.expected_date || "", uncertain: !!row.uncertain, received: !!row.received, receivedDate: row.received_date || "", notes: row.notes || "", createdAt: row.created_at };
+  }
+  function deliveriesForCurrentProject(){
+    var pid = currentProjectId();
+    return state.deliveries.filter(function(d){ return d.project_id === pid; }).sort(function(a,b){
+      // Ikke mottatt først (sortert på forventet dato, de uten dato sist), så mottatt nederst.
+      if(a.received !== b.received) return a.received ? 1 : -1;
+      var ad = a.expectedDate || "9999-99-99", bd = b.expectedDate || "9999-99-99";
+      return ad < bd ? -1 : ad > bd ? 1 : 0;
+    });
   }
   function siteCodesForCurrentProject(){
     var pid = currentProjectId();
@@ -7795,6 +8123,13 @@
       scheduleRender();
     });
   }
+  function refetchDeliveries(){
+    sb.from("deliveries").select("*").order("expected_date").then(function(res){
+      if(res.error){ return; }
+      state.deliveries = res.data.map(rowToDelivery);
+      scheduleRender();
+    });
+  }
   function refetchWeeklyScriptures(){
     sb.from("weekly_scriptures").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
@@ -8800,6 +9135,29 @@
     if(!sb) return;
     sb.from("site_codes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchSiteCodes(); });
   }
+  function addDelivery(name, expectedDate, uncertain, notes){
+    if(!sb || !isByggeleder()) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    sb.from("deliveries").insert({ project_id: pid, name: name.slice(0,120), expected_date: expectedDate || null, uncertain: !!uncertain, notes: (notes||"").slice(0,300) || null }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("deliveries") !== -1 ? "Databasen mangler tabellen for leveranser. Kjør sql/60-leveranser.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      refetchDeliveries();
+    });
+  }
+  function toggleDeliveryReceived(id){
+    if(!sb || !isByggeleder()) return;
+    var d = state.deliveries.find(function(x){ return x.id === id; });
+    if(!d) return;
+    var nowReceived = !d.received;
+    sb.from("deliveries").update({ received: nowReceived, received_date: nowReceived ? toISODate(new Date()) : null }).eq("id", id).then(function(res){
+      if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; }
+      refetchDeliveries();
+    });
+  }
+  function deleteDelivery(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("deliveries").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchDeliveries(); });
+  }
   function saveWeeklyScripture(text, weekStart){
     if(!sb) return;
     var pid = currentProjectId();
@@ -9574,6 +9932,7 @@
     refetchFagRequests();
     refetchOpenAccounts();
     refetchSiteCodes();
+    refetchDeliveries();
     refetchWeeklyScriptures();
     refetchTeamMeetings();
     refetchFlexRequests();
@@ -9619,6 +9978,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_requests" }, refetchFagRequests)
       .on("postgres_changes", { event: "*", schema: "public", table: "open_accounts" }, refetchOpenAccounts)
       .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, refetchDeliveries)
       .on("postgres_changes", { event: "*", schema: "public", table: "weekly_scriptures" }, refetchWeeklyScriptures)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
       .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
