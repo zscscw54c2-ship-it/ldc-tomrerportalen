@@ -8116,14 +8116,32 @@
     byId("logiAllergierLabel").textContent = grouped ? "Allergier / diett (individuelt per person)" : "Allergier / diett";
     byId("logiAllergierList").innerHTML = members.map(function(m){
       var mInfo = logiInfoForPerson(m.id);
+      var matVal = mInfo ? (mInfo.allergiMatTekst||"") : "";
+      var logiVal = mInfo ? (mInfo.allergiLogiTekst||"") : "";
       return '<div style="display:flex; flex-direction:column; gap:5px; padding-bottom:8px; border-bottom:1px solid var(--border);">' +
         (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:600;">'+escapeHtml(m.name)+'</span>' : '') +
-        '<div><label style="font-size:11px; color:var(--muted); display:block; margin-bottom:2px;">Matallergi / diett (f.eks. nøtter, vegetar, gluten)</label>' +
-        '<input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Ingen kjente" value="'+escapeHtml(mInfo ? (mInfo.allergiMatTekst||"") : "")+'" style="width:100%; box-sizing:border-box;" /></div>' +
-        '<div><label style="font-size:11px; color:var(--muted); display:block; margin-bottom:2px;">Logiallergi (f.eks. kjæledyr, røyk)</label>' +
-        '<input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Ingen kjente" value="'+escapeHtml(mInfo ? (mInfo.allergiLogiTekst||"") : "")+'" style="width:100%; box-sizing:border-box;" /></div>' +
+        '<label style="display:flex; align-items:center; gap:6px; font-size:12.5px; margin:0;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matVal?" checked":"")+' /> Allergi - mat</label>' +
+        '<div data-allergymatwrap="'+m.id+'"'+(matVal?"":' hidden')+'><input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Beskriv matallergien/dietten, f.eks. nøtter, vegetar, gluten" value="'+escapeHtml(matVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
+        '<label style="display:flex; align-items:center; gap:6px; font-size:12.5px; margin:0;"><input type="checkbox" data-allergilogicheck="'+m.id+'"'+(logiVal?" checked":"")+' /> Allergi - logi</label>' +
+        '<div data-allergilogiwrap="'+m.id+'"'+(logiVal?"":' hidden')+'><input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Beskriv logiallergien, f.eks. kjæledyr, røyk" value="'+escapeHtml(logiVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
         '</div>';
     }).join("");
+    byId("logiAllergierList").querySelectorAll("[data-allergymatcheck]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var wrap = byId("logiAllergierList").querySelector('[data-allergymatwrap="'+this.dataset.allergymatcheck+'"]');
+        wrap.hidden = !cb.checked;
+        if(!cb.checked) wrap.querySelector("input").value = "";
+        else wrap.querySelector("input").focus();
+      });
+    });
+    byId("logiAllergierList").querySelectorAll("[data-allergilogicheck]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var wrap = byId("logiAllergierList").querySelector('[data-allergilogiwrap="'+this.dataset.allergilogicheck+'"]');
+        wrap.hidden = !cb.checked;
+        if(!cb.checked) wrap.querySelector("input").value = "";
+        else wrap.querySelector("input").focus();
+      });
+    });
     [byId("logiAdresseInput"), byId("logiKontaktInput"), byId("logiTelefonInput"), byId("logiMeldingInput"), byId("logiMeldingSendtInput")].forEach(function(el){ el.disabled = readOnly; });
     byId("logiAllergierList").querySelectorAll("input").forEach(function(el){ el.disabled = readOnly; });
     byId("logiReadOnlyNote").hidden = !readOnly;
