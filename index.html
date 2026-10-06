@@ -54,6 +54,7 @@
     --fag-landscape:#5fa84a;
     --fag-murer:#8a6d4f;
     --fag-ventilasjon:#6f8fd1;
+    --fag-blikkenslager:#c1793f;
     --fag-stillas:#9b6bd6;
     --fag-audio-video:#d6568f;
     --fag-behov-menighet:#8a8f98;
@@ -2232,11 +2233,11 @@
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [] };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
-  var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","ovrig"];
+  var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
-  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO", ovrig:"Øvrig" };
-  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)", ovrig:"var(--fag-ovrig)" };
+  var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", blikkenslager:"Blikkenslager", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO", ovrig:"Øvrig" };
+  var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", blikkenslager:"var(--fag-blikkenslager)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)", ovrig:"var(--fag-ovrig)" };
   var LOGI_RELATION_LIST = ["ektepar","familie","sosken","singel_bror","singel_soster","venner","annet"];
   var LOGI_RELATION_LABELS = { ektepar:"Ektepar", familie:"Familie", sosken:"Søsken", singel_bror:"Singel bror", singel_soster:"Singel søster", venner:"Venner", annet:"Annet" };
   var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
@@ -4630,6 +4631,7 @@
     { re: /ventilasjon|\bhvac\b/, fag: "ventilasjon" },
     { re: /murer|betong/, fag: "murer" },
     { re: /landscape|hage|grontanlegg|utendors/, fag: "landscape" },
+    { re: /blikkenslag|\bplat\b|taktekk/, fag: "blikkenslager" },
     { re: /stillas/, fag: "stillas" }
   ];
   function guessTidsplanFag(name){
@@ -4735,6 +4737,7 @@
     landscape: ["landscape","utendors","grontanlegg","hage"],
     murer: ["murer","mason","betong"],
     ventilasjon: ["ventilasjon","vent","hvac"],
+    blikkenslager: ["blikkenslager","blikk","plat","taktekker","tinsmith","sheet metal"],
     ovrig: ["ovrig","annet","diverse"]
   };
   function guessFagValue(text){
