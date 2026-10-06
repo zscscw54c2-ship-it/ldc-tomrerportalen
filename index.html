@@ -708,14 +708,16 @@
   .behov-config .chip .rm{ border:none; background:none; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:0 2px; }
   .behov-config .chip .rm:hover{ color:var(--bad-ink); }
   /* .frivillige-grid: samme rutenett som behov, men mer komprimert (smalere rader) og med tydeligere ukeskiller */
-  .frivillige-grid{ --nw:200px; }
+  /* --nw må settes på selve .gantt-elementet (ikke bare .frivillige-grid-wrapperen rundt), siden
+     .gantt sin egen --nw:190px (over) ellers vinner over en arvet verdi fra wrapperen. */
+  .frivillige-grid .gantt{ --nw:340px; }
   .frivillige-grid .g-row{ height:30px; }
   .frivillige-grid .g-group{ height:32px; }
   /* Navnespalten er smal på mobil - vis kun fornavn (+ evt. forbokstav i etternavnet ved like fornavn),
      se buildShortNameMap(), i stedet for hele navnet, så mer av selve rutenettet får plass. */
   .name-short{ display:none; }
   @media (max-width:640px){
-    .frivillige-grid{ --nw:96px; }
+    .frivillige-grid .gantt{ --nw:96px; }
     .name-full{ display:none; }
     .name-short{ display:inline; }
   }
