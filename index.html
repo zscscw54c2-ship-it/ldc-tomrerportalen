@@ -2067,7 +2067,11 @@
   <form class="dlg-body" id="addPersonForm" method="dialog">
     <h3>Legg til frivillig</h3>
     <div class="field"><label for="newPersonName">Navn</label><input type="text" id="newPersonName" required maxlength="60" /></div>
+    <div class="field"><label for="newPersonMenighet">Menighet</label><input type="text" id="newPersonMenighet" maxlength="120" /></div>
+    <div class="field"><label for="newPersonTelefon">Telefon</label><input type="text" id="newPersonTelefon" maxlength="40" /></div>
+    <div class="field"><label for="newPersonAdresse">Adresse</label><input type="text" id="newPersonAdresse" maxlength="200" /></div>
     <div class="field"><label for="newPersonGroup">Gruppe (valgfritt, f.eks. Lokale)</label><input type="text" id="newPersonGroup" maxlength="30" /></div>
+    <div class="field"><label for="newPersonTag">Tag (f.eks. Lokal eller Under 18)</label><input type="text" id="newPersonTag" maxlength="30" placeholder="Valgfritt" /></div>
     <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:6px; margin-top:4px;"><input type="checkbox" id="newPersonOnTeam" /> Med i teamet</label>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="addPersonCancel">Avbryt</button>
@@ -4343,7 +4347,11 @@
   var addPersonDialog = byId("addPersonDialog");
   byId("addPersonOpenBtn").addEventListener("click", function(){
     byId("newPersonName").value = "";
+    byId("newPersonMenighet").value = "";
+    byId("newPersonTelefon").value = "";
+    byId("newPersonAdresse").value = "";
     byId("newPersonGroup").value = "";
+    byId("newPersonTag").value = "";
     byId("newPersonOnTeam").checked = false;
     addPersonDialog.showModal();
     byId("newPersonName").focus();
@@ -4355,7 +4363,12 @@
     var groupInput = byId("newPersonGroup");
     var name = input.value.trim();
     if(!name) return;
-    addPerson(name, groupInput.value.trim(), byId("newPersonOnTeam").checked);
+    addPerson(name, groupInput.value.trim(), byId("newPersonOnTeam").checked, {
+      congregation: byId("newPersonMenighet").value.trim().slice(0,120) || null,
+      phone: byId("newPersonTelefon").value.trim().slice(0,40) || null,
+      address: byId("newPersonAdresse").value.trim().slice(0,200) || null,
+      tag: byId("newPersonTag").value.trim().slice(0,30) || null
+    });
     addPersonDialog.close();
   });
 
@@ -9410,11 +9423,12 @@
     });
   }
 
-  function addPerson(name, group, onTeam){
+  function addPerson(name, group, onTeam, extraFields){
     if(!sb) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("people").insert({ name: name.slice(0,60), group: group ? group.slice(0,30) : null, project_id: pid, on_team: !!onTeam }).select().single()
+    var body = Object.assign({ name: name.slice(0,60), group: group ? group.slice(0,30) : null, project_id: pid, on_team: !!onTeam }, extraFields || {});
+    sb.from("people").insert(body).select().single()
       .then(function(res){
         if(res.error){ showError("Kunne ikke lagre personen: "+res.error.message); return; }
         refetchPeople();
