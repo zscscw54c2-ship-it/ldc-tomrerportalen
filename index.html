@@ -2135,14 +2135,15 @@
         <option value="ordner_selv">Fikser logi selv</option>
       </select>
     </div>
-    <div class="field" id="logiMeldingSendtField" style="display:flex; align-items:center; gap:8px;">
-      <input type="checkbox" id="logiMeldingSendtInput" style="width:17px; height:17px; flex:none;" />
-      <label for="logiMeldingSendtInput" style="margin:0;">Melding er sendt til frivillig</label>
-    </div>
-    <div class="field"><label for="logiAdresseInput">Adresse vertsfamilie</label><input type="text" id="logiAdresseInput" maxlength="200" /></div>
-    <div class="field"><label for="logiKontaktInput">Navn på vertsfamilie</label><input type="text" id="logiKontaktInput" maxlength="200" /></div>
-    <div class="field"><label for="logiTelefonInput">Telefon vertsfamilie</label><input type="tel" id="logiTelefonInput" maxlength="40" /></div>
-    <div class="field"><label id="logiAllergierLabel">Allergier / diett</label><div id="logiAllergierList" style="display:flex; flex-direction:column; gap:10px;"></div></div>
+    <label class="checkrow" id="logiMeldingSendtField" style="margin:0 0 16px;">
+      <input type="checkbox" id="logiMeldingSendtInput" /> Melding er sendt til frivillig
+    </label>
+    <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Vertsfamilie</h4>
+    <div class="field"><label for="logiAdresseInput">Adresse</label><input type="text" id="logiAdresseInput" maxlength="200" /></div>
+    <div class="field"><label for="logiKontaktInput">Navn</label><input type="text" id="logiKontaktInput" maxlength="200" /></div>
+    <div class="field"><label for="logiTelefonInput">Telefon</label><input type="tel" id="logiTelefonInput" maxlength="40" /></div>
+    <h4 id="logiAllergierLabel" style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Allergier / diett</h4>
+    <div id="logiAllergierList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;"></div>
     <div class="field"><label for="logiMeldingInput">Kommentar</label><textarea id="logiMeldingInput" rows="3" maxlength="600"></textarea></div>
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
@@ -8118,12 +8119,12 @@
       var mInfo = logiInfoForPerson(m.id);
       var matVal = mInfo ? (mInfo.allergiMatTekst||"") : "";
       var logiVal = mInfo ? (mInfo.allergiLogiTekst||"") : "";
-      return '<div style="display:flex; flex-direction:column; gap:5px; padding-bottom:8px; border-bottom:1px solid var(--border);">' +
-        (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:600;">'+escapeHtml(m.name)+'</span>' : '') +
-        '<label style="display:flex; align-items:center; gap:6px; font-size:12.5px; margin:0;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matVal?" checked":"")+' /> Allergi - mat</label>' +
-        '<div data-allergymatwrap="'+m.id+'"'+(matVal?"":' hidden')+'><input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Beskriv matallergien/dietten, f.eks. nøtter, vegetar, gluten" value="'+escapeHtml(matVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
-        '<label style="display:flex; align-items:center; gap:6px; font-size:12.5px; margin:0;"><input type="checkbox" data-allergilogicheck="'+m.id+'"'+(logiVal?" checked":"")+' /> Allergi - logi</label>' +
-        '<div data-allergilogiwrap="'+m.id+'"'+(logiVal?"":' hidden')+'><input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Beskriv logiallergien, f.eks. kjæledyr, røyk" value="'+escapeHtml(logiVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
+      return '<div style="background:var(--surface-alt); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">' +
+        (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:700;">'+escapeHtml(m.name)+'</span>' : '') +
+        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matVal?" checked":"")+' /> Allergi – mat</label>' +
+        '<div data-allergymatwrap="'+m.id+'" style="padding-left:25px;"'+(matVal?"":' hidden')+'><input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Beskriv matallergien/dietten, f.eks. nøtter, vegetar, gluten" value="'+escapeHtml(matVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
+        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergilogicheck="'+m.id+'"'+(logiVal?" checked":"")+' /> Allergi – logi</label>' +
+        '<div data-allergilogiwrap="'+m.id+'" style="padding-left:25px;"'+(logiVal?"":' hidden')+'><input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Beskriv logiallergien, f.eks. kjæledyr, røyk" value="'+escapeHtml(logiVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
         '</div>';
     }).join("");
     byId("logiAllergierList").querySelectorAll("[data-allergymatcheck]").forEach(function(cb){
