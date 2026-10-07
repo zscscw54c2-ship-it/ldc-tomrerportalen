@@ -1125,7 +1125,6 @@
 
   <section id="panel-elementer" class="panel">
     <div style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
-      <button type="button" class="btn small" id="importPlanBtn" hidden>Importer fremdriftsplan fra fil</button>
       <button type="button" class="btn small" id="importTidsplanBtn" hidden>Importer tidsplan + leveranser (ukemal)</button>
     </div>
     <div class="filterbar" id="elFilterBar"></div>
@@ -1993,37 +1992,6 @@
       <button type="button" class="btn ghost" id="impPeopleBack" hidden>‹ Tilbake</button>
       <button type="button" class="btn primary" id="impPeopleNext" disabled>Fortsett til forhåndsvisning</button>
       <button type="button" class="btn primary" id="impPeopleUpload" hidden>Last opp</button>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="impPlanDialog" class="wide imp-dialog">
-  <div class="dlg-body">
-    <h3>Importer fremdriftsplan</h3>
-    <div id="impPlanStep1">
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-top:-6px;">Last opp en grov fremdriftsplan (Excel eller CSV). Du går gjennom og retter opp fag, datoer og seksjon før noe legges inn.</p>
-      <div class="imp-dropzone">
-        Velg fil
-        <div><input type="file" id="impPlanFile" accept=".xlsx,.xls,.csv" /></div>
-      </div>
-      <p id="impPlanParseError" class="sub" style="color:var(--bad); display:none; margin-top:8px;"></p>
-      <div class="imp-map-grid" id="impPlanMapWrap" hidden>
-        <div class="field"><label>Hvilken kolonne er oppgave?</label><select id="impPlanMapOppgave"></select></div>
-        <div class="field"><label>Hvilken kolonne er fag? (valgfritt)</label><select id="impPlanMapFag"></select></div>
-        <div class="field"><label>Hvilken kolonne er startdato? (valgfritt)</label><select id="impPlanMapStart"></select></div>
-        <div class="field"><label>Hvilken kolonne er sluttdato? (valgfritt)</label><select id="impPlanMapSlutt"></select></div>
-        <div class="field"><label>Hvilken kolonne er notat? (valgfritt)</label><select id="impPlanMapNotat"></select></div>
-      </div>
-    </div>
-    <div id="impPlanStep2" hidden>
-      <p class="sub" id="impPlanSummary" style="font-size:12.5px; color:var(--muted); margin-top:-6px;"></p>
-      <div class="imp-table-wrap"><table class="imp-table" id="impPlanTable"></table></div>
-    </div>
-    <div class="dlg-actions">
-      <button type="button" class="btn ghost" id="impPlanCancel">Avbryt</button>
-      <button type="button" class="btn ghost" id="impPlanBack" hidden>‹ Tilbake</button>
-      <button type="button" class="btn primary" id="impPlanNext" disabled>Fortsett til forhåndsvisning</button>
-      <button type="button" class="btn primary" id="impPlanUpload" hidden>Last opp</button>
     </div>
   </div>
 </dialog>
@@ -3609,7 +3577,6 @@
       }).join("");
     }
 
-    byId("importPlanBtn").hidden = !isByggeleder();
     byId("importTidsplanBtn").hidden = !isByggeleder();
     var sectionedView = activeFag() === "tomrer";
     byId("elSectionedCols").hidden = !sectionedView;
@@ -4285,6 +4252,11 @@
     byId("andeligEditBtn").textContent = view.andeligEdit ? "Ferdig" : "Rediger";
     byId("andeligEditBtn").classList.toggle("primary", view.andeligEdit);
     renderEditableStatics("panel-andelig", view.andeligEdit);
+    byId("weeklyScriptureEditWrap").style.display = view.andeligEdit ? "flex" : "none";
+    if(view.andeligEdit){
+      var scripture = currentWeekScripture(view.teamWeekMonday);
+      byId("weeklyScriptureInput").value = (scripture && scripture.text) || "";
+    }
   });
   byId("addToAgendaForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -4582,19 +4554,6 @@
     }
     return s.replace(/\s+/g, " ").trim();
   }
-  function cellToIso(v){
-    if(v instanceof Date) return toISODate(v);
-    var s = String(v==null?"":v).trim();
-    if(!s) return "";
-    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if(m) return toISODate(new Date(+m[1], +m[2]-1, +m[3]));
-    m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})$/);
-    if(m){
-      var yy = +m[3]; if(yy < 100) yy += 2000;
-      return toISODate(new Date(yy, +m[2]-1, +m[1]));
-    }
-    return "";
-  }
   function parseSpreadsheetFile(file){
     var isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
     var readWorkbook = isCsv
@@ -4728,27 +4687,6 @@
     var out = allowBlank ? '<option value=""'+(selected?'':' selected')+'>– ikke i filen –</option>' : "";
     headers.forEach(function(h){ out += '<option value="'+escapeHtml(h)+'"'+(selected===h?' selected':'')+'>'+escapeHtml(h)+'</option>'; });
     return out;
-  }
-  var FAG_TEXT_ALIASES = {
-    tomrer: ["tomrer","snekker","carpenter"],
-    vvs: ["vvs","rorlegger","plumbing"],
-    elektriker: ["elektriker","elektro","electrician"],
-    maler: ["maler","painter","maling"],
-    landscape: ["landscape","utendors","grontanlegg","hage"],
-    murer: ["murer","mason","betong"],
-    ventilasjon: ["ventilasjon","vent","hvac"],
-    blikkenslager: ["blikkenslager","blikk","plat","taktekker","tinsmith","sheet metal"],
-    ovrig: ["ovrig","annet","diverse"]
-  };
-  function guessFagValue(text){
-    var t = normText(text);
-    if(!t) return "";
-    if(FAG_LIST.indexOf(t) !== -1) return t;
-    for(var key in FAG_TEXT_ALIASES){
-      var hit = FAG_TEXT_ALIASES[key].some(function(a){ return t.indexOf(a) !== -1; });
-      if(hit) return key;
-    }
-    return "";
   }
   function fagOptionsHtml(selected){
     var out = '<option value=""'+(selected?'':' selected')+'>– velg fag –</option>';
@@ -5100,166 +5038,6 @@
     });
   });
 
-  // ---- fremdriftsplan-import ----
-  var impPlanDialog = byId("impPlanDialog");
-  var impPlan = { headers: [], fileRows: [], rows: [] };
-  function impPlanResetToStep1(){
-    impPlan.headers = []; impPlan.fileRows = []; impPlan.rows = [];
-    byId("impPlanFile").value = "";
-    byId("impPlanMapWrap").hidden = true;
-    byId("impPlanParseError").style.display = "none";
-    byId("impPlanStep1").hidden = false;
-    byId("impPlanStep2").hidden = true;
-    byId("impPlanBack").hidden = true;
-    byId("impPlanNext").hidden = false;
-    byId("impPlanNext").disabled = true;
-    byId("impPlanUpload").hidden = true;
-  }
-  byId("importPlanBtn").addEventListener("click", function(){
-    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    impPlanResetToStep1();
-    impPlanDialog.showModal();
-  });
-  byId("impPlanCancel").addEventListener("click", function(){ impPlanDialog.close(); });
-  impPlanDialog.addEventListener("click", function(ev){ if(ev.target === impPlanDialog) impPlanDialog.close(); });
-  byId("impPlanFile").addEventListener("change", function(){
-    var file = this.files && this.files[0];
-    byId("impPlanParseError").style.display = "none";
-    if(!file) return;
-    if(typeof XLSX === "undefined"){
-      byId("impPlanParseError").textContent = "Kunne ikke laste filleseren. Sjekk nettforbindelsen og prøv igjen.";
-      byId("impPlanParseError").style.display = "block";
-      return;
-    }
-    parseSpreadsheetFile(file).then(function(parsed){
-      if(!parsed.headers.length || !parsed.rows.length){
-        byId("impPlanParseError").textContent = "Fant ingen rader i filen. Sjekk at første rad har kolonnenavn.";
-        byId("impPlanParseError").style.display = "block";
-        return;
-      }
-      impPlan.headers = parsed.headers;
-      impPlan.fileRows = parsed.rows;
-      var oppgaveCol = guessColumn(parsed.headers, ["oppgave","navn","task","aktivitet","tittel"]);
-      var fagCol = guessColumn(parsed.headers, ["fag","trade","gruppe"]);
-      var startCol = guessColumn(parsed.headers, ["start","fra","startdato"]);
-      var sluttCol = guessColumn(parsed.headers, ["slutt","til","sluttdato"]);
-      var notatCol = guessColumn(parsed.headers, ["notat","kommentar","merknad"]);
-      byId("impPlanMapOppgave").innerHTML = colSelectHtml(parsed.headers, oppgaveCol, false);
-      byId("impPlanMapFag").innerHTML = colSelectHtml(parsed.headers, fagCol, true);
-      byId("impPlanMapStart").innerHTML = colSelectHtml(parsed.headers, startCol, true);
-      byId("impPlanMapSlutt").innerHTML = colSelectHtml(parsed.headers, sluttCol, true);
-      byId("impPlanMapNotat").innerHTML = colSelectHtml(parsed.headers, notatCol, true);
-      byId("impPlanMapWrap").hidden = false;
-      byId("impPlanNext").disabled = false;
-    }).catch(function(err){
-      byId("impPlanParseError").textContent = "Klarte ikke å lese filen: " + (err && err.message ? err.message : err);
-      byId("impPlanParseError").style.display = "block";
-    });
-  });
-  byId("impPlanNext").addEventListener("click", function(){
-    var oppgaveCol = byId("impPlanMapOppgave").value;
-    if(!oppgaveCol) return;
-    var fagCol = byId("impPlanMapFag").value;
-    var startCol = byId("impPlanMapStart").value;
-    var sluttCol = byId("impPlanMapSlutt").value;
-    var notatCol = byId("impPlanMapNotat").value;
-    impPlan.rows = impPlan.fileRows.map(function(row){
-      var name = String(row[oppgaveCol]==null?"":row[oppgaveCol]).trim();
-      var fagGuess = fagCol ? guessFagValue(row[fagCol]) : "";
-      var start = startCol ? cellToIso(row[startCol]) : "";
-      var end = sluttCol ? cellToIso(row[sluttCol]) : "";
-      var notat = notatCol ? String(row[notatCol]==null?"":row[notatCol]).trim() : "";
-      if(start && end && end < start){ var t = start; start = end; end = t; }
-      return { name: name, fag: fagGuess, section: "innvendig", start: start, end: end || start, notat: notat, include: !!name };
-    });
-    renderImpPlanTable();
-    byId("impPlanStep1").hidden = true;
-    byId("impPlanStep2").hidden = false;
-    byId("impPlanBack").hidden = false;
-    byId("impPlanNext").hidden = true;
-    byId("impPlanUpload").hidden = false;
-  });
-  byId("impPlanBack").addEventListener("click", function(){
-    byId("impPlanStep1").hidden = false;
-    byId("impPlanStep2").hidden = true;
-    byId("impPlanBack").hidden = true;
-    byId("impPlanNext").hidden = false;
-    byId("impPlanUpload").hidden = true;
-  });
-  function renderImpPlanTable(){
-    var rows = impPlan.rows;
-    var visible = rows.filter(function(r){ return r.include; });
-    byId("impPlanSummary").textContent = visible.length + " oppgaver i filen. Velg fag for hver rad – rader uten dato legges inn som «ikke planlagt».";
-    var html = "<thead><tr><th>Oppgave</th><th>Fag</th><th>Seksjon</th><th>Start</th><th>Slutt</th><th>Notat</th><th></th></tr></thead><tbody>";
-    rows.forEach(function(r, idx){
-      if(!r.include) return;
-      html += '<tr data-improw="'+idx+'">' +
-        '<td><input type="text" data-impfield="name" value="'+escapeHtml(r.name)+'" maxlength="80" /></td>' +
-        '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select></td>' +
-        '<td><select data-impfield="section"><option value="innvendig"'+(r.section==="innvendig"?' selected':'')+'>Innvendig</option><option value="utvendig"'+(r.section==="utvendig"?' selected':'')+'>Utvendig</option></select></td>' +
-        '<td><input type="date" data-impfield="start" value="'+escapeHtml(r.start)+'" /></td>' +
-        '<td><input type="date" data-impfield="end" value="'+escapeHtml(r.end)+'" /></td>' +
-        '<td><input type="text" data-impfield="notat" value="'+escapeHtml(r.notat)+'" maxlength="400" /></td>' +
-        '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
-      '</tr>';
-    });
-    html += "</tbody>";
-    byId("impPlanTable").innerHTML = html;
-    byId("impPlanTable").querySelectorAll("[data-impfield]").forEach(function(el){
-      var evt = el.tagName === "SELECT" ? "change" : "input";
-      el.addEventListener(evt, function(){
-        var idx = +this.closest("[data-improw]").dataset.improw;
-        impPlan.rows[idx][this.dataset.impfield] = this.value;
-        updateImpPlanUploadState();
-      });
-    });
-    byId("impPlanTable").querySelectorAll("[data-improwremove]").forEach(function(b){
-      b.addEventListener("click", function(){
-        impPlan.rows[+this.dataset.improwremove].include = false;
-        renderImpPlanTable();
-      });
-    });
-    updateImpPlanUploadState();
-  }
-  function updateImpPlanUploadState(){
-    var visible = impPlan.rows.filter(function(r){ return r.include; });
-    var ready = visible.length > 0 && visible.every(function(r){ return r.name.trim() && r.fag; });
-    byId("impPlanUpload").disabled = !ready;
-  }
-  byId("impPlanUpload").addEventListener("click", function(){
-    if(!sb) return;
-    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    if(!cur){ showError("Opprett eller velg et prosjekt først."); return; }
-    var visible = impPlan.rows.filter(function(r){ return r.include && r.name.trim() && r.fag; });
-    if(!visible.length) return;
-    byId("impPlanUpload").disabled = true;
-    var payloadRows = visible.map(function(r){
-      var planned = !!(r.start && r.end);
-      return {
-        project_id: cur.id,
-        name: r.name.trim().slice(0,80),
-        fag: r.fag,
-        section: r.section === "utvendig" ? "utvendig" : "innvendig",
-        start: planned ? r.start : null,
-        end: planned ? r.end : null,
-        status: "mangler",
-        done: false,
-        assignments: {},
-        notes: r.notat.trim().slice(0,400)
-      };
-    });
-    chunkArray(payloadRows, 300).reduce(function(p, chunk){
-      return p.then(function(){ return sb.from("elements").insert(chunk).then(function(res){ if(res.error) throw res.error; }); });
-    }, Promise.resolve()).then(function(){
-      refetchElements();
-      impPlanDialog.close();
-      showInfo(payloadRows.length + " oppgaver lagt inn i fremdriftsplanen.");
-    }).catch(function(err){
-      showError("Import feilet: " + (err && err.message ? err.message : err));
-      byId("impPlanUpload").disabled = false;
-    });
-  });
-
   // ---- tidsplan (ukemal) + leveranser-import ----
   var impTidsplanDialog = byId("impTidsplanDialog");
   var impTidsplan = { tasks: [], deliveries: [] };
@@ -5295,7 +5073,7 @@
     }
     parseTidsplanWeekBlocksFile(file).then(function(result){
       if(!result.weeksFound && !result.leveranserFound){
-        byId("impTidsplanParseError").textContent = "Kjente ikke igjen ukeblokk-malen i denne filen (fant ingen \"V. nn\"-ukeoverskrifter eller LEVERANSER-kolonne). Prøv heller \"Importer fremdriftsplan fra fil\" hvis dette er en vanlig radbasert liste.";
+        byId("impTidsplanParseError").textContent = "Kjente ikke igjen ukeblokk-malen i denne filen (fant ingen \"V. nn\"-ukeoverskrifter eller LEVERANSER-kolonne).";
         byId("impTidsplanParseError").style.display = "block";
         return;
       }
