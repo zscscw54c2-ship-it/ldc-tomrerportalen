@@ -965,8 +965,7 @@
         <button role="tab" data-tab="personer" aria-selected="false">Frivillige</button>
         <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
         <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
-        <button role="tab" data-tab="acgo" aria-selected="false" hidden>ACGO</button>
-        <button role="tab" data-tab="cgo" aria-selected="false" hidden>CGO</button>
+        <button role="tab" data-tab="cg1" aria-selected="false" hidden>CG1</button>
         <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
         <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Prosjektinnstillinger</button>
         <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
@@ -1512,7 +1511,12 @@
     </div>
   </section>
 
+  <section id="panel-cg1" class="panel">
+    <div class="mh-grid" id="cg1HomeGrid"></div>
+  </section>
+
   <section id="panel-acgo" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <p id="acgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div>
@@ -1603,6 +1607,7 @@
   </section>
 
   <section id="panel-cgo" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0; flex:1; min-width:180px;"></p>
       <div style="display:flex; align-items:center; gap:6px;">
@@ -1677,6 +1682,30 @@
       <h2 style="font-size:16px; margin-bottom:8px;">E-postmaler</h2>
       <div id="cgoStartupEmails"></div>
     </div>
+  </section>
+
+  <section id="panel-kontor1" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+      <h2 style="font-size:18px;">Kontor 1</h2>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn small" data-addbox="kontor1" data-boxkind="checklist">+ Sjekkliste-boks</button>
+        <button type="button" class="btn small ghost" data-addbox="kontor1" data-boxkind="info">+ Infoboks</button>
+      </div>
+    </div>
+    <div id="officeBoxes-kontor1" style="display:flex; flex-direction:column; gap:14px;"></div>
+  </section>
+
+  <section id="panel-kontor2" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+      <h2 style="font-size:18px;">Kontor 2</h2>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn small" data-addbox="kontor2" data-boxkind="checklist">+ Sjekkliste-boks</button>
+        <button type="button" class="btn small ghost" data-addbox="kontor2" data-boxkind="info">+ Infoboks</button>
+      </div>
+    </div>
+    <div id="officeBoxes-kontor2" style="display:flex; flex-direction:column; gap:14px;"></div>
   </section>
 
   <section id="panel-tomote" class="panel">
@@ -2227,7 +2256,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [] };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -5495,10 +5524,8 @@
       icon:'<svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-7h6v7"/></svg>' },
     { tab:"andelig", name:"Team", color:"var(--warn)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5c-3-1-6-.5-8 1Z"/><line x1="12" y1="6" x2="12" y2="19"/></svg>' },
-    { tab:"acgo", name:"ACGO", color:"var(--bad)",
+    { tab:"cg1", name:"CG1", color:"var(--bad)",
       icon:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5v-5Z"/><path d="M9 12l2 2 4-4"/></svg>' },
-    { tab:"cgo", name:"CGO", color:"var(--good)",
-      icon:'<svg viewBox="0 0 24 24"><path d="M4 9h16l-1.5 10a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>' },
     { tab:"tomote", name:"TO-møte", color:"var(--cyan)",
       icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 10h8M8 14h5"/></svg>' },
     { tab:"referat", name:"Referat", color:"var(--cyan)",
@@ -5550,8 +5577,8 @@
       var duties = dutiesForCurrentProject();
       return { badge: 0, text: duties.length+" ansvarspunkter" };
     }
-    if(tab === "acgo"){
-      return { badge: 0, text: state.userAccounts.length+" kontoer" };
+    if(tab === "cg1"){
+      return { badge: 0, text: "CGO, ACGO, Kontor 1 og 2" };
     }
     if(tab === "tomote"){
       var openF = toFollowupsForCurrentProject().filter(function(f){ return !f.done; }).length;
@@ -5581,8 +5608,7 @@
     var grid = byId("mhGrid");
     grid.innerHTML = HOME_TILES.filter(function(t){
       if(t.tab === "andelig") return andeligVisibleForMe();
-      if(t.tab === "acgo") return isByggeleder();
-      if(t.tab === "cgo") return isByggeleder();
+      if(t.tab === "cg1") return isByggeleder();
       if(t.tab === "tomote") return false;
       if(t.tab === "referat") return !isByggeleder();
       return true;
@@ -5682,6 +5708,116 @@
   function renderAcgoHomeGrid(){
     renderSubHomeGrid(byId("panel-acgo"), "acgoHomeGrid", "acgoHomeBack", ACGO_HOME_TILES);
   }
+  // CG1 er en hub-side: hvert "fliskort" tar deg til en egen, allerede eksisterende topp-panel
+  // (samme switchTab() som resten av appen bruker), ikke en nestet subhome-seksjon - CGO/ACGO
+  // beholder dermed all sin egen interne navigasjon (f.eks. ACGOs egne referat/forespørsler-
+  // fliser) helt uendret, bare nådd via denne hub-siden i stedet for egne faner i hovedmenyen.
+  var CG1_HOME_TILES = [
+    { key:"cgo", name:"CGO", color:"var(--accent)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      status:function(){ return { badge:0, text:"Åndelig oversikt og oppstart" }; } },
+    { key:"acgo", name:"ACGO", color:"var(--cyan)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      status:function(){ return { badge:0, text:"Prosjekt, TO-møte og referat" }; } },
+    { key:"kontor1", name:"Kontor 1", color:"var(--good)",
+      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
+      status:function(){ return { badge:0, text: officeBoxesFor("kontor1").length+" boks(er)" }; } },
+    { key:"kontor2", name:"Kontor 2", color:"var(--warn)",
+      icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
+      status:function(){ return { badge:0, text: officeBoxesFor("kontor2").length+" boks(er)" }; } }
+  ];
+  function renderCg1HomeGrid(){
+    var grid = byId("cg1HomeGrid");
+    grid.innerHTML = CG1_HOME_TILES.map(function(t){
+      var st = t.status();
+      var badge = st.badge > 0 ? '<span class="mh-badge">'+st.badge+'</span>' : "";
+      return '<button type="button" class="mh-tile" data-cg1tile="'+t.key+'">' + badge +
+        '<span class="mh-icon" style="background:'+t.color+'">'+t.icon+'</span>' +
+        '<div class="mh-name">'+escapeHtml(t.name)+'</div><div class="mh-status">'+escapeHtml(st.text)+'</div>' +
+        '</button>';
+    }).join("");
+    grid.querySelectorAll("[data-cg1tile]").forEach(function(b){
+      b.addEventListener("click", function(){ switchTab(this.dataset.cg1tile); });
+    });
+  }
+  document.querySelectorAll("[data-backtocg1]").forEach(function(b){
+    b.addEventListener("click", function(){ switchTab("cg1"); });
+  });
+  function renderOfficeBoxes(office){
+    var box = byId("officeBoxes-"+office);
+    var boxes = officeBoxesFor(office);
+    if(!boxes.length){
+      box.innerHTML = '<p class="empty-note">Ingen bokser lagt til ennå - bruk knappene over for å lage en sjekkliste eller infoboks.</p>';
+      return;
+    }
+    box.innerHTML = boxes.map(function(b){
+      var header = '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">' +
+        '<h3 style="font-size:15px;">'+escapeHtml(b.title)+'</h3>' +
+        '<div style="display:flex; gap:6px;">' +
+        '<button type="button" class="btn small" data-renamebox="'+b.id+'">Rediger navn</button>' +
+        '<button type="button" class="btn small danger" data-delbox="'+b.id+'">Fjern boks</button>' +
+        '</div></div>';
+      var body;
+      if(b.kind === "checklist"){
+        var items = officeBoxItemsFor(b.id);
+        body = '<div data-boxitems="'+b.id+'" style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">' +
+          (items.length ? items.map(function(it){
+            return '<label class="checkrow"><input type="checkbox" data-toggleboxitem="'+it.id+'"'+(it.done?' checked':'')+' /><span'+(it.done?' style="text-decoration:line-through; color:var(--muted);"':'')+'>'+escapeHtml(it.text)+'</span><button type="button" class="del" data-delboxitem="'+it.id+'" title="Fjern" style="margin-left:auto;">×</button></label>';
+          }).join("") : '<p class="empty-note">Ingen punkter lagt til ennå.</p>') +
+          '</div>' +
+          '<form class="inline-add" data-additemform="'+b.id+'"><input type="text" placeholder="Nytt punkt" maxlength="200" required style="flex:1; min-width:140px;" /><button class="btn small primary" type="submit">Legg til</button></form>';
+      } else {
+        body = '<textarea data-boxbody="'+b.id+'" rows="4" placeholder="Fri tekst …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;">'+escapeHtml(b.body)+'</textarea>' +
+          '<div style="margin-top:6px; display:flex; justify-content:flex-end;"><button type="button" class="btn small primary" data-saveboxbody="'+b.id+'">Lagre</button></div>';
+      }
+      return '<div class="peoplecard">' + header + body + '</div>';
+    }).join("");
+    box.querySelectorAll("[data-renamebox]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var boxId = this.dataset.renamebox;
+        var cur = officeBoxesFor(office).find(function(x){ return x.id === boxId; });
+        var name = prompt("Nytt navn på boksen:", cur ? cur.title : "");
+        if(name && name.trim()) renameOfficeBox(boxId, name.trim());
+      });
+    });
+    box.querySelectorAll("[data-delbox]").forEach(function(b){
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne boksen? Alle punkter i den forsvinner også.")) deleteOfficeBox(this.dataset.delbox); });
+    });
+    box.querySelectorAll("[data-toggleboxitem]").forEach(function(cb){
+      cb.addEventListener("change", function(){ toggleOfficeBoxItem(this.dataset.toggleboxitem, this.checked); });
+    });
+    box.querySelectorAll("[data-delboxitem]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteOfficeBoxItem(this.dataset.delboxitem); });
+    });
+    box.querySelectorAll("[data-additemform]").forEach(function(f){
+      f.addEventListener("submit", function(ev){
+        ev.preventDefault();
+        var input = f.querySelector("input");
+        var text = input.value.trim();
+        if(!text) return;
+        addOfficeBoxItem(f.dataset.additemform, text);
+        input.value = "";
+      });
+    });
+    box.querySelectorAll("[data-saveboxbody]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var ta = box.querySelector('[data-boxbody="'+this.dataset.saveboxbody+'"]');
+        saveOfficeBoxBody(this.dataset.saveboxbody, ta.value);
+      });
+    });
+  }
+  function renderKontorTabs(){
+    renderOfficeBoxes("kontor1");
+    renderOfficeBoxes("kontor2");
+  }
+  document.querySelectorAll("[data-addbox]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var office = this.dataset.addbox, kind = this.dataset.boxkind;
+      var defaultTitle = kind === "checklist" ? "Ny sjekkliste" : "Ny infoboks";
+      var title = prompt("Navn på boksen:", defaultTitle);
+      if(title && title.trim()) addOfficeBox(office, kind, title.trim());
+    });
+  });
 
   // Flere refetch-kall som blir ferdige tett i tid (f.eks. ved oppstart eller det periodiske
   // 2-minutters-oppfrisk) skal bare gi ÉN omtegning av siden, ikke én per tabell.
@@ -5704,8 +5840,7 @@
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAndeligTabVisibility();
-    updateAcgoTabVisibility();
-    updateCgoTabVisibility();
+    updateCg1TabVisibility();
     updateTomoteTabVisibility();
     updateDashboardTabVisibility();
     renderProjectBar();
@@ -5720,9 +5855,11 @@
     renderPeopleTab();
     renderRoomTab();
     renderSpiritualTab();
+    renderCg1HomeGrid();
     renderAcgoTab();
     renderProsjektTab();
     renderCgoTab();
+    renderKontorTabs();
     renderToMoteTab();
     renderDashboardTab();
     renderKontaktView();
@@ -5735,15 +5872,12 @@
     if(btn) btn.hidden = !visible;
     if(!visible && view.tab === "andelig") switchTab("kalender");
   }
-  function updateAcgoTabVisibility(){
-    var btn = document.querySelector('nav.tabs button[data-tab="acgo"]');
+  // Samlet synlighet for CG1-hub-siden og alle fire underfanene (CGO/ACGO/Kontor 1/Kontor 2) -
+  // samme tilgang som før (byggeleder), bare samlet under ett knappenavn i stedet for to.
+  function updateCg1TabVisibility(){
+    var btn = document.querySelector('nav.tabs button[data-tab="cg1"]');
     if(btn) btn.hidden = !isByggeleder();
-    if(!isByggeleder() && view.tab === "acgo") switchTab("kalender");
-  }
-  function updateCgoTabVisibility(){
-    var btn = document.querySelector('nav.tabs button[data-tab="cgo"]');
-    if(btn) btn.hidden = !isByggeleder();
-    if(!isByggeleder() && view.tab === "cgo") switchTab("kalender");
+    if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2"].indexOf(view.tab) !== -1) switchTab("kalender");
   }
   function updateTomoteTabVisibility(){
     var tomoteBtn = document.querySelector('nav.tabs button[data-tab="tomote"]');
@@ -5819,6 +5953,22 @@
   function siteCodesForCurrentProject(){
     var pid = currentProjectId();
     return state.siteCodes.filter(function(c){ return c.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? -1 : 1; });
+  }
+  function rowToOfficeBox(row){
+    return { id: row.id, project_id: row.project_id, office: row.office, kind: row.kind, title: row.title, body: row.body || "", sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  function rowToOfficeBoxItem(row){
+    return { id: row.id, boxId: row.box_id, text: row.text, done: !!row.done, sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  // Kontor 1/2s egne bokser (sjekkliste eller fri infotekst) - per prosjekt og kontor.
+  function officeBoxesFor(office){
+    var pid = currentProjectId();
+    return state.officeBoxes.filter(function(b){ return b.project_id === pid && b.office === office; })
+      .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
+  }
+  function officeBoxItemsFor(boxId){
+    return state.officeBoxItems.filter(function(i){ return i.boxId === boxId; })
+      .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
   }
   function rowToOpenAccount(row){
     return { id: row.id, project_id: row.project_id, leverandor: row.leverandor, kundenr: row.kundenr || "", merking: row.merking || "", createdAt: row.created_at };
@@ -8149,6 +8299,20 @@
       scheduleRender();
     });
   }
+  function refetchOfficeBoxes(){
+    sb.from("office_boxes").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.officeBoxes = res.data.map(rowToOfficeBox);
+      scheduleRender();
+    });
+  }
+  function refetchOfficeBoxItems(){
+    sb.from("office_box_items").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.officeBoxItems = res.data.map(rowToOfficeBoxItem);
+      scheduleRender();
+    });
+  }
   function refetchWeeklyScriptures(){
     sb.from("weekly_scriptures").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
@@ -9184,6 +9348,44 @@
     if(!sb || !isByggeleder()) return;
     sb.from("deliveries").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchDeliveries(); });
   }
+  function addOfficeBox(office, kind, title){
+    if(!sb || !isByggeleder()) return;
+    var pid = currentProjectId();
+    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
+    var sortOrder = officeBoxesFor(office).length;
+    sb.from("office_boxes").insert({ project_id: pid, office: office, kind: kind, title: title.slice(0,80), sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      refetchOfficeBoxes();
+    });
+  }
+  function renameOfficeBox(id, title){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").update({ title: title.slice(0,80) }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function saveOfficeBoxBody(id, body){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").update({ body: body.slice(0,4000) || null }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function deleteOfficeBox(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function addOfficeBoxItem(boxId, text){
+    if(!sb || !isByggeleder()) return;
+    var sortOrder = officeBoxItemsFor(boxId).length;
+    sb.from("office_box_items").insert({ box_id: boxId, text: text.slice(0,200), sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError("Kunne ikke legge til: "+res.error.message); return; }
+      refetchOfficeBoxItems();
+    });
+  }
+  function toggleOfficeBoxItem(id, done){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_items").update({ done: done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; } refetchOfficeBoxItems(); });
+  }
+  function deleteOfficeBoxItem(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxItems(); });
+  }
   function saveWeeklyScripture(text, weekStart){
     if(!sb) return;
     var pid = currentProjectId();
@@ -9959,6 +10161,8 @@
     refetchOpenAccounts();
     refetchSiteCodes();
     refetchDeliveries();
+    refetchOfficeBoxes();
+    refetchOfficeBoxItems();
     refetchWeeklyScriptures();
     refetchTeamMeetings();
     refetchFlexRequests();
@@ -10005,6 +10209,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "open_accounts" }, refetchOpenAccounts)
       .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, refetchDeliveries)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_boxes" }, refetchOfficeBoxes)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "weekly_scriptures" }, refetchWeeklyScriptures)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
       .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
