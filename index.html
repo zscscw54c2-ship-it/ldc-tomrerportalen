@@ -264,6 +264,13 @@
   .drawcard .dactions{display:flex; justify-content:flex-end; padding:0 8px 8px;}
 
   .peoplecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); padding:16px;}
+  .board-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; align-items:start;}
+  .board-card{border-top:5px solid var(--accent);}
+  .board-card.size-small{grid-column:span 1;}
+  .board-card.size-medium{grid-column:span 2;}
+  .board-card.size-large{grid-column:span 3;}
+  .board-card.kind-info{background:var(--surface-alt);}
+  @media (max-width:640px){ .board-card{grid-column:span 1 !important;} }
   .personrow{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border);}
   .personrow:last-child{border-bottom:none;}
   .personrow .pname{font-weight:600; font-size:14px;}
@@ -1710,12 +1717,9 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 1</h2>
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="btn small" data-addbox="kontor1" data-boxkind="checklist">+ Sjekkliste-boks</button>
-        <button type="button" class="btn small ghost" data-addbox="kontor1" data-boxkind="info">+ Infoboks</button>
-      </div>
+      <button type="button" class="btn small primary" data-opencreatebox="kontor1">+ Opprett tavle</button>
     </div>
-    <div id="officeBoxes-kontor1" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div id="officeBoxes-kontor1" class="board-grid"></div>
     <div class="peoplecard" style="margin-top:16px;">
       <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
@@ -1731,12 +1735,9 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 2</h2>
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="btn small" data-addbox="kontor2" data-boxkind="checklist">+ Sjekkliste-boks</button>
-        <button type="button" class="btn small ghost" data-addbox="kontor2" data-boxkind="info">+ Infoboks</button>
-      </div>
+      <button type="button" class="btn small primary" data-opencreatebox="kontor2">+ Opprett tavle</button>
     </div>
-    <div id="officeBoxes-kontor2" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div id="officeBoxes-kontor2" class="board-grid"></div>
     <div class="peoplecard" style="margin-top:16px;">
       <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
@@ -2114,6 +2115,43 @@
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="deliveryEditCancel">Avbryt</button>
       <button type="submit" class="btn primary">Lagre</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="createBoxDialog">
+  <form class="dlg-body" id="createBoxForm" method="dialog">
+    <h3>Opprett tavle</h3>
+    <input type="hidden" id="createBoxOffice" />
+    <div class="field">
+      <label for="createBoxTitle">Navn på tavlen</label>
+      <input type="text" id="createBoxTitle" maxlength="80" required />
+    </div>
+    <div class="field">
+      <label for="createBoxKind">Type tavle</label>
+      <select id="createBoxKind">
+        <option value="checklist">Sjekkliste</option>
+        <option value="note">Notat</option>
+        <option value="info">Opplysning</option>
+      </select>
+    </div>
+    <div class="fieldrow">
+      <div class="field">
+        <label for="createBoxColor">Farge</label>
+        <input type="color" id="createBoxColor" value="#4b82f0" style="width:100%; height:38px; padding:2px;" />
+      </div>
+      <div class="field">
+        <label for="createBoxSize">Størrelse</label>
+        <select id="createBoxSize">
+          <option value="small">Liten</option>
+          <option value="medium" selected>Middels</option>
+          <option value="large">Stor</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="createBoxCancel">Avbryt</button>
+      <button type="submit" class="btn primary">Opprett</button>
     </div>
   </form>
 </dialog>
@@ -5760,10 +5798,10 @@
       status:function(){ return { badge:0, text:"Prosjekt, TO-møte og referat" }; } },
     { key:"kontor1", name:"Kontor 1", color:"var(--good)",
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
-      status:function(){ return { badge:0, text: officeBoxesFor("kontor1").length+" boks(er)" }; } },
+      status:function(){ return { badge:0, text: officeBoxesFor("kontor1").length+" tavle(r)" }; } },
     { key:"kontor2", name:"Kontor 2", color:"var(--warn)",
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
-      status:function(){ return { badge:0, text: officeBoxesFor("kontor2").length+" boks(er)" }; } }
+      status:function(){ return { badge:0, text: officeBoxesFor("kontor2").length+" tavle(r)" }; } }
   ];
   function renderCg1HomeGrid(){
     var grid = byId("cg1HomeGrid");
@@ -5782,20 +5820,28 @@
   document.querySelectorAll("[data-backtocg1]").forEach(function(b){
     b.addEventListener("click", function(){ switchTab("cg1"); });
   });
+  var BOX_KIND_LABELS = { checklist: "Sjekkliste", note: "Notat", info: "Opplysning" };
+  var BOX_SIZE_LABELS = { small: "Liten", medium: "Middels", large: "Stor" };
   function renderOfficeBoxes(office){
     var box = byId("officeBoxes-"+office);
     var boxes = officeBoxesFor(office);
     if(!boxes.length){
-      box.innerHTML = '<p class="empty-note">Ingen bokser lagt til ennå - bruk knappene over for å lage en sjekkliste eller infoboks.</p>';
+      box.innerHTML = '<p class="empty-note">Ingen tavler lagt til ennå - trykk «Opprett tavle» over for å lage din egen.</p>';
       return;
     }
     box.innerHTML = boxes.map(function(b){
-      var header = '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">' +
-        '<h3 style="font-size:15px;">'+escapeHtml(b.title)+'</h3>' +
-        '<div style="display:flex; gap:6px;">' +
+      var header = '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; flex-wrap:wrap;">' +
+        '<h3 style="font-size:15px; margin:0;">'+escapeHtml(b.title)+'</h3>' +
+        '<span class="badge group">'+(BOX_KIND_LABELS[b.kind]||b.kind)+'</span>' +
+        '</div>' +
+        '<div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;">' +
+        '<input type="color" data-boxcolor="'+b.id+'" value="'+escapeHtml(b.color)+'" title="Farge på tavlen" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
+        '<select data-boxsize="'+b.id+'" title="Størrelse" style="border:1px solid var(--border); border-radius:7px; padding:3px 5px; font-size:12px; background:var(--surface);">' +
+        Object.keys(BOX_SIZE_LABELS).map(function(s){ return '<option value="'+s+'"'+(s===b.size?' selected':'')+'>'+BOX_SIZE_LABELS[s]+'</option>'; }).join("") +
+        '</select>' +
         '<button type="button" class="btn small" data-renamebox="'+b.id+'">Rediger navn</button>' +
         '<button type="button" class="btn small danger" data-delbox="'+b.id+'">Fjern boks</button>' +
-        '</div></div>';
+        '</div>';
       var body;
       if(b.kind === "checklist"){
         var items = officeBoxItemsFor(b.id);
@@ -5809,7 +5855,7 @@
         body = '<textarea data-boxbody="'+b.id+'" rows="4" placeholder="Fri tekst …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;">'+escapeHtml(b.body)+'</textarea>' +
           '<div style="margin-top:6px; display:flex; justify-content:flex-end;"><button type="button" class="btn small primary" data-saveboxbody="'+b.id+'">Lagre</button></div>';
       }
-      return '<div class="peoplecard">' + header + body + '</div>';
+      return '<div class="peoplecard board-card size-'+b.size+' kind-'+b.kind+'" style="border-top-color:'+escapeHtml(b.color)+';">' + header + body + '</div>';
     }).join("");
     box.querySelectorAll("[data-renamebox]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -5821,6 +5867,20 @@
     });
     box.querySelectorAll("[data-delbox]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Fjerne denne boksen? Alle punkter i den forsvinner også.")) deleteOfficeBox(this.dataset.delbox); });
+    });
+    box.querySelectorAll("[data-boxcolor]").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var boxId = this.dataset.boxcolor;
+        var cur = officeBoxesFor(office).find(function(x){ return x.id === boxId; });
+        updateOfficeBoxStyle(boxId, this.value, cur ? cur.size : "medium");
+      });
+    });
+    box.querySelectorAll("[data-boxsize]").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var boxId = this.dataset.boxsize;
+        var cur = officeBoxesFor(office).find(function(x){ return x.id === boxId; });
+        updateOfficeBoxStyle(boxId, cur ? cur.color : "#4b82f0", this.value);
+      });
     });
     box.querySelectorAll("[data-toggleboxitem]").forEach(function(cb){
       cb.addEventListener("change", function(){ toggleOfficeBoxItem(this.dataset.toggleboxitem, this.checked); });
@@ -5849,13 +5909,31 @@
     renderOfficeBoxes("kontor1");
     renderOfficeBoxes("kontor2");
   }
-  document.querySelectorAll("[data-addbox]").forEach(function(b){
+  var createBoxDialog = byId("createBoxDialog");
+  var CREATE_BOX_DEFAULT_TITLES = { checklist: "Ny sjekkliste", note: "Nytt notat", info: "Ny opplysning" };
+  document.querySelectorAll("[data-opencreatebox]").forEach(function(b){
     b.addEventListener("click", function(){
-      var office = this.dataset.addbox, kind = this.dataset.boxkind;
-      var defaultTitle = kind === "checklist" ? "Ny sjekkliste" : "Ny infoboks";
-      var title = prompt("Navn på boksen:", defaultTitle);
-      if(title && title.trim()) addOfficeBox(office, kind, title.trim());
+      byId("createBoxOffice").value = this.dataset.opencreatebox;
+      byId("createBoxTitle").value = CREATE_BOX_DEFAULT_TITLES.checklist;
+      byId("createBoxKind").value = "checklist";
+      byId("createBoxColor").value = "#4b82f0";
+      byId("createBoxSize").value = "medium";
+      createBoxDialog.showModal();
     });
+  });
+  byId("createBoxKind").addEventListener("change", function(){
+    var titleInput = byId("createBoxTitle");
+    var wasDefault = Object.keys(CREATE_BOX_DEFAULT_TITLES).some(function(k){ return titleInput.value === CREATE_BOX_DEFAULT_TITLES[k]; });
+    if(wasDefault) titleInput.value = CREATE_BOX_DEFAULT_TITLES[this.value];
+  });
+  byId("createBoxCancel").addEventListener("click", function(){ createBoxDialog.close(); });
+  createBoxDialog.addEventListener("click", function(ev){ if(ev.target === createBoxDialog) createBoxDialog.close(); });
+  byId("createBoxForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var title = byId("createBoxTitle").value.trim();
+    if(!title) return;
+    addOfficeBox(byId("createBoxOffice").value, byId("createBoxKind").value, title, byId("createBoxColor").value, byId("createBoxSize").value);
+    createBoxDialog.close();
   });
 
   // Flere refetch-kall som blir ferdige tett i tid (f.eks. ved oppstart eller det periodiske
@@ -5995,7 +6073,7 @@
     return state.siteCodes.filter(function(c){ return c.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? -1 : 1; });
   }
   function rowToOfficeBox(row){
-    return { id: row.id, project_id: row.project_id, office: row.office, kind: row.kind, title: row.title, body: row.body || "", sortOrder: row.sort_order, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, office: row.office, kind: row.kind, title: row.title, body: row.body || "", color: row.color || "#4b82f0", size: row.size || "medium", sortOrder: row.sort_order, createdAt: row.created_at };
   }
   function rowToOfficeBoxItem(row){
     return { id: row.id, boxId: row.box_id, text: row.text, done: !!row.done, sortOrder: row.sort_order, createdAt: row.created_at };
@@ -9406,13 +9484,13 @@
     if(!sb || !isByggeleder()) return;
     sb.from("deliveries").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchDeliveries(); });
   }
-  function addOfficeBox(office, kind, title){
+  function addOfficeBox(office, kind, title, color, size){
     if(!sb || !isByggeleder()) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
     var sortOrder = officeBoxesFor(office).length;
-    sb.from("office_boxes").insert({ project_id: pid, office: office, kind: kind, title: title.slice(0,80), sort_order: sortOrder }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+    sb.from("office_boxes").insert({ project_id: pid, office: office, kind: kind, title: title.slice(0,80), color: color || null, size: size || "medium", sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql og sql/69-tavle-type-farge-storrelse.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
       refetchOfficeBoxes();
     });
   }
@@ -9423,6 +9501,10 @@
   function saveOfficeBoxBody(id, body){
     if(!sb || !isByggeleder()) return;
     sb.from("office_boxes").update({ body: body.slice(0,4000) || null }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function updateOfficeBoxStyle(id, color, size){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").update({ color: color, size: size }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
   }
   function deleteOfficeBox(id){
     if(!sb || !isByggeleder()) return;
