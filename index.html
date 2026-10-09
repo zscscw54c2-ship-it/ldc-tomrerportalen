@@ -1006,25 +1006,6 @@
 
     <div class="peoplecard" style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
       <button type="button" class="btn primary" id="dashCreateMeetingBtn"></button>
-      <label class="btn" id="dashDokuTrigger" for="dashDokuFile" style="margin:0; cursor:pointer;">+ Last opp dokumentasjonsbilde</label>
-      <input type="file" id="dashDokuFile" accept="image/*" capture="environment" multiple style="display:none;" />
-      <span class="empty-note" id="dashDokuStatus"></span>
-    </div>
-
-    <div class="peoplecard" id="dashDokuFormWrap" style="margin-top:12px;" hidden>
-      <div class="fieldrow">
-        <div class="field">
-          <label for="dashDokuFag">Hvilket fag gjelder det?</label>
-          <select id="dashDokuFag"></select>
-        </div>
-        <div class="field" style="flex:1;">
-          <label for="dashDokuCaption">Beskrivelse</label>
-          <input type="text" id="dashDokuCaption" maxlength="160" placeholder="Hva viser bildet?" />
-        </div>
-      </div>
-      <div style="margin-top:10px; display:flex; justify-content:flex-end;">
-        <button type="button" class="btn primary" id="dashDokuUploadBtn">Last opp</button>
-      </div>
     </div>
 
     <div class="cols2" style="margin-top:16px;">
@@ -3895,7 +3876,7 @@
     byId("addPersonOpenBtn").hidden = !isByggeleder();
     byId("importPeopleBtn").hidden = !isByggeleder();
 
-    var projectPeople = peopleForCurrentProject();
+    var projectPeople = peopleForCurrentProject().slice().sort(compareByLastName);
     if(projectPeople.length === 0){
       byId("peopleByFag").innerHTML = '<p class="empty-note">Ingen personer lagt til ennå.</p>';
     } else {
@@ -6686,7 +6667,17 @@
     }
   }
   // ---------- frivillige "etter fag": samme rutenett-stil som behov, men viser hvem som er tilgjengelig hvilke dager ----------
-  // Gir frivillige en manuell rekkefølge innen et fag (satt via dra-og-slipp), med alfabetisk
+  // Oversikten over frivillige sorteres etter etternavn (siste navn i "Fornavn Etternavn") i
+  // stedet for fornavn - navnefeltet har ingen egen etternavn-kolonne, så vi plukker siste ord.
+  function lastNameOf(name){
+    var parts = String(name||"").trim().split(/\s+/);
+    return parts.length ? parts[parts.length-1] : "";
+  }
+  function compareByLastName(a,b){
+    var c = lastNameOf(a.name).localeCompare(lastNameOf(b.name), "no");
+    return c !== 0 ? c : a.name.localeCompare(b.name, "no");
+  }
+  // Gir frivillige en manuell rekkefølge innen et fag (satt via dra-og-slipp), med etternavn-
   // rekkefølge som fallback for alle som ikke har fått en manuell plassering ennå.
   function orderPeopleForFag(project, fag, peopleArr){
     var orderMap = {};
@@ -6699,7 +6690,7 @@
       if(oa !== null && ob !== null) return oa - ob;
       if(oa !== null) return -1;
       if(ob !== null) return 1;
-      return a.name.localeCompare(b.name,"no");
+      return compareByLastName(a,b);
     });
   }
   function peopleInFagForProject(project, fag){
@@ -6815,7 +6806,7 @@
       if(fag === "team"){
         var ids = teamPersonIds.slice();
         state.people.forEach(function(p){ if(byPerson[p.id] && byPerson[p.id][fag] && ids.indexOf(p.id) === -1) ids.push(p.id); });
-        people = state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
+        people = state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(compareByLastName);
       } else {
         people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; });
         people = orderPeopleForFag(project, fag, people);
@@ -7593,36 +7584,6 @@
     if(existing){ view.toMeetingId = existing.id; } else { createToMeeting(mon); }
     switchTab("tomote");
   });
-  byId("dashDokuFile").addEventListener("change", function(){
-    var has = this.files && this.files.length > 0;
-    byId("dashDokuFormWrap").hidden = !has;
-    if(has){
-      byId("dashDokuFag").innerHTML = OVERVIEW_FAG_LIST.map(function(f){ return '<option value="'+f+'">'+escapeHtml(FAG_LABELS[f]||f)+'</option>'; }).join("");
-    }
-  });
-  byId("dashDokuUploadBtn").addEventListener("click", function(){
-    var fileInput = byId("dashDokuFile");
-    var files = fileInput.files;
-    if(!files || !files.length) return;
-    if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    var fag = byId("dashDokuFag").value;
-    var caption = byId("dashDokuCaption").value;
-    var total = files.length, i = 0;
-    function next(){
-      if(i >= total){
-        byId("dashDokuStatus").textContent = "";
-        fileInput.value = "";
-        byId("dashDokuCaption").value = "";
-        byId("dashDokuFormWrap").hidden = true;
-        refetchDokuPhotos();
-        return;
-      }
-      byId("dashDokuStatus").textContent = total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …";
-      uploadDokuPhoto(files[i], caption, fag).then(function(){ i++; next(); });
-    }
-    next();
-  });
-
   // Menigheten deler nå én innlogging for alle prosjekter (ikke lenger én konto per
   // prosjekt), så "hvilket prosjekt er åpnet i denne nettleseren" lagres lokalt her i
   // stedet for å komme fra kontoen - se sql/51-delt-menighetstilgang.sql.
