@@ -4867,7 +4867,7 @@
       var matchId = findExistingPersonByName(name);
       var originalFag = matchId ? singleCurrentTradeFagForPerson(matchId) : "";
       var fallbackLabel = matchId && !originalFag ? currentFagLabelForPerson(matchId) : "";
-      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: originalFag, originalFag: originalFag, matchId: matchId, currentFagLabel: fallbackLabel };
+      return { name: name, phone: phone, address: address, congregation: congregation, status: status, confirmed: confirmed, removed: false, fag: originalFag, originalFag: originalFag, matchId: matchId, currentFagLabel: fallbackLabel, lokal: !!lokal };
     });
     byId("impPeopleShowUnconfirmedWrap").style.display = impPeople.hasMarkerCols ? "flex" : "none";
     renderImpPeopleTable();
@@ -4903,7 +4903,7 @@
     if(impPeople.hasMarkerCols && !impPeople.showUnconfirmed) summary += " " + hiddenUnconfirmed + " uten kryss i «Deltok»/«Har svart ja»/«Lokal frivillig» er utelatt.";
     summary += " Fag er valgfritt – sett det bare på de du vil sette opp i kalenderen med en gang.";
     byId("impPeopleSummary").textContent = summary;
-    var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Menighet</th><th>Fag</th><th></th></tr></thead><tbody>";
+    var html = "<thead><tr><th></th><th>Navn</th><th>Telefon</th><th>Adresse</th><th>Menighet</th><th>Fag</th><th>Lokal</th><th></th></tr></thead><tbody>";
     var shown = rows.map(function(r, idx){ return { r: r, idx: idx }; }).filter(function(x){ return impPeopleRowShown(x.r); });
     shown.sort(function(a, b){ return (a.r.matchId ? 1 : 0) - (b.r.matchId ? 1 : 0); });
     shown.forEach(function(x){
@@ -4916,6 +4916,7 @@
         '<td><input type="text" data-impfield="address" value="'+escapeHtml(r.address)+'" maxlength="160" /></td>' +
         '<td><input type="text" data-impfield="congregation" value="'+escapeHtml(r.congregation)+'" maxlength="120" /></td>' +
         '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select>'+(r.currentFagLabel ? '<div class="imp-status-chip">Nå: '+escapeHtml(r.currentFagLabel)+'</div>' : '')+'</td>' +
+        '<td style="text-align:center;"><input type="checkbox" data-implokal="'+idx+'" title="Lokal frivillig - får tag og blir ikke lagt inn under Logi"'+(r.lokal?' checked':'')+' /></td>' +
         '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
       '</tr>';
     });
@@ -4928,6 +4929,9 @@
         impPeople.rows[idx][this.dataset.impfield] = this.value;
         updateImpPeopleUploadState();
       });
+    });
+    byId("impPeopleTable").querySelectorAll("[data-implokal]").forEach(function(el){
+      el.addEventListener("change", function(){ impPeople.rows[+this.dataset.implokal].lokal = this.checked; });
     });
     byId("impPeopleTable").querySelectorAll("[data-improwremove]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -4958,7 +4962,8 @@
       if(r.phone.trim() && r.phone.trim() !== (existing.phone||"")) patch.phone = r.phone.trim().slice(0,40);
       if(r.address.trim() && r.address.trim() !== (existing.address||"")) patch.address = r.address.trim().slice(0,160);
       if(r.congregation.trim() && r.congregation.trim() !== (existing.congregation||"")) patch.congregation = r.congregation.trim().slice(0,120);
-      return { id: r.matchId, patch: patch, fag: r.fag, originalFag: r.originalFag };
+      if(r.lokal && !existing.tag) patch.tag = "Lokal";
+      return { id: r.matchId, patch: patch, fag: r.fag, originalFag: r.originalFag, lokal: r.lokal };
     });
     var workdays = projectWorkdayIsoList(cur);
     var insertPromise = toInsert.length
@@ -4968,6 +4973,7 @@
             phone: r.phone.trim().slice(0,40) || null,
             address: r.address.trim().slice(0,160) || null,
             congregation: r.congregation.trim().slice(0,120) || null,
+            tag: r.lokal ? "Lokal" : null,
             project_id: cur.id
           };
         })).select()
@@ -4975,6 +4981,11 @@
     insertPromise.then(function(res){
       if(res.error) throw res.error;
       var inserted = res.data || [];
+      // Lokale frivillige (markert med avkrysning i forhåndsvisningen) skal ikke dukke opp
+      // under Logi - setter status "ordner_selv" direkte, uten å røre andre logi_info-felt.
+      var logiRows = [];
+      inserted.forEach(function(row, i){ if(toInsert[i] && toInsert[i].lokal) logiRows.push({ project_id: cur.id, person_id: row.id, status: "ordner_selv" }); });
+      toPatch.forEach(function(r){ if(r.lokal) logiRows.push({ project_id: cur.id, person_id: r.id, status: "ordner_selv" }); });
       var fagRows = [];       // brukes til nye, fulle oppmøte-rader (nye personer, eller eksisterende uten tidligere fag)
       var fagRenames = [];    // bytter fag på eksisterende oppmøte-rader (eksisterende person som endrer fag)
       inserted.forEach(function(row, i){ if(toInsert[i] && toInsert[i].fag) fagRows.push({ personId: row.id, fag: toInsert[i].fag }); });
@@ -4997,19 +5008,22 @@
         });
       }
       var attendanceChunks = chunkArray(attendanceRows, 1000);
-      return Promise.all(patchPromises.concat(renamePromises)).then(function(){
+      var logiPromise = logiRows.length ? sb.from("logi_info").upsert(logiRows, { onConflict: "project_id,person_id" }) : Promise.resolve();
+      return Promise.all(patchPromises.concat(renamePromises).concat([logiPromise])).then(function(){
         return attendanceChunks.reduce(function(p, chunk){
           return p.then(function(){ return sb.from("attendance").upsert(chunk, { onConflict: "project_id,person_id,day" }); });
         }, Promise.resolve());
       }).then(function(){
-        return { insertedCount: inserted.length, patchedCount: toPatch.length, fagCount: fagRows.length + fagRenames.length, skippedAttendance: !workdays.length && fagRows.length > 0 };
+        return { insertedCount: inserted.length, patchedCount: toPatch.length, fagCount: fagRows.length + fagRenames.length, logiCount: logiRows.length, skippedAttendance: !workdays.length && fagRows.length > 0 };
       });
     }).then(function(summary){
       refetchPeople();
       if(summary.fagCount) refetchAttendance();
+      if(summary.logiCount) refetchLogiInfo();
       impPeopleDialog.close();
       uploadBtn.textContent = origLabel;
       var msg = summary.insertedCount + " nye personer lagt til, " + summary.patchedCount + " oppdatert.";
+      if(summary.logiCount) msg += " " + summary.logiCount + " merket som lokal frivillig (utelatt fra Logi).";
       if(summary.skippedAttendance) msg += " Prosjektet mangler start-/sluttdato, så fag kunne ikke settes i kalenderen – sett det fra «Frivillige etter fag» etter at datoene er lagt inn.";
       showInfo(msg);
     }).catch(function(err){
