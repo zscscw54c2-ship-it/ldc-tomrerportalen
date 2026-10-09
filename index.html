@@ -1717,7 +1717,10 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 1</h2>
-      <button type="button" class="btn small primary" data-opencreatebox="kontor1">+ Opprett tavle</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn small primary" data-opencreatebox="kontor1" data-editonly>+ Opprett tavle</button>
+        <button type="button" class="btn small" id="kontor1EditBtn">Rediger</button>
+      </div>
     </div>
     <div id="officeBoxes-kontor1" class="board-grid"></div>
     <div class="peoplecard" style="margin-top:16px;">
@@ -1735,7 +1738,10 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 2</h2>
-      <button type="button" class="btn small primary" data-opencreatebox="kontor2">+ Opprett tavle</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn small primary" data-opencreatebox="kontor2" data-editonly>+ Opprett tavle</button>
+        <button type="button" class="btn small" id="kontor2EditBtn">Rediger</button>
+      </div>
     </div>
     <div id="officeBoxes-kontor2" class="board-grid"></div>
     <div class="peoplecard" style="margin-top:16px;">
@@ -5834,7 +5840,7 @@
         '<h3 style="font-size:15px; margin:0;">'+escapeHtml(b.title)+'</h3>' +
         '<span class="badge group">'+(BOX_KIND_LABELS[b.kind]||b.kind)+'</span>' +
         '</div>' +
-        '<div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;">' +
+        '<div data-editonly style="display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;">' +
         '<input type="color" data-boxcolor="'+b.id+'" value="'+escapeHtml(b.color)+'" title="Farge på tavlen" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
         '<select data-boxsize="'+b.id+'" title="Størrelse" style="border:1px solid var(--border); border-radius:7px; padding:3px 5px; font-size:12px; background:var(--surface);">' +
         Object.keys(BOX_SIZE_LABELS).map(function(s){ return '<option value="'+s+'"'+(s===b.size?' selected':'')+'>'+BOX_SIZE_LABELS[s]+'</option>'; }).join("") +
@@ -5909,6 +5915,13 @@
     renderOfficeBoxes("kontor1");
     renderOfficeBoxes("kontor2");
   }
+  ["kontor1","kontor2"].forEach(function(office){
+    byId(office+"EditBtn").addEventListener("click", function(){
+      var editing = byId("panel-"+office).classList.toggle("editing");
+      this.textContent = editing ? "Ferdig" : "Rediger";
+      this.classList.toggle("primary", editing);
+    });
+  });
   var createBoxDialog = byId("createBoxDialog");
   var CREATE_BOX_DEFAULT_TITLES = { checklist: "Ny sjekkliste", note: "Nytt notat", info: "Ny opplysning" };
   document.querySelectorAll("[data-opencreatebox]").forEach(function(b){
