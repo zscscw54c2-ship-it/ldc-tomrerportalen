@@ -8968,6 +8968,13 @@
     try{ localStorage.setItem("ldc_current_project", id); }catch(e){}
     renderAll();
   }
+  // Standard ansvarspunkt-sjekkliste for privilege-uken. Samme liste for alle nye prosjekter,
+  // så den ikke må skrives inn på nytt hver gang - se createProject().
+  var DEFAULT_PW_DUTIES = [
+    "Live MW (fredag)", "Åndelig tanke teammøte", "Avslutte med sang – fredag", "Lede familiestudie",
+    "Lede & skrive risikoanalyse", "Starte streaming", "Sikkerhetstale (tirsdag)", "Napo (torsdag)",
+    "Sikkerhetsrunde (torsdag)", "Inn & ut-sjekkings"
+  ];
   function createProject(name, start, end, closeOut){
     if(!sb) return;
     sb.from("projects").insert({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null })
@@ -8975,6 +8982,9 @@
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke opprette prosjektet: "+res.error.message); return; }
         selectProject(res.data.id);
         refetchProjects();
+        sb.from("spiritual_duties").insert(DEFAULT_PW_DUTIES.map(function(text, i){ return { project_id: res.data.id, text: text, sort_order: i }; })).then(function(res2){
+          if(!res2.error) refetchDuties();
+        });
       });
   }
   function updateProject(id, name, start, end, closeOut){
