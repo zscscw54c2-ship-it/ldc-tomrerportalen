@@ -1193,10 +1193,15 @@
         <button class="btn small" id="dokuEditBtn">Rediger</button>
       </div>
       <p class="sub" data-etkey="doku_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Ta bilde eller last opp dokumentasjonsbilder, og legg ved en tekst om hva bildet viser.</p>
-      <form class="inline-add" id="addDokuForm">
-        <input type="file" id="newDokuFile" accept="image/*" multiple required style="flex:1; min-width:200px;" />
+      <form class="inline-add" id="addDokuForm" style="flex-wrap:wrap;">
+        <label class="btn small" id="newDokuCameraTrigger" for="newDokuCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>
+        <input type="file" id="newDokuCameraInput" accept="image/*" capture="environment" multiple style="display:none;" />
+        <label class="btn small ghost" id="newDokuFileTrigger" for="newDokuFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>
+        <input type="file" id="newDokuFileInput" accept="image/*" multiple style="display:none;" />
         <input type="text" id="newDokuCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />
-        <button class="btn primary" type="submit">Last opp</button>
+        <select id="newDokuWeek" hidden style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"></select>
+        <span class="empty-note" id="newDokuFileStatus"></span>
+        <button class="btn primary" type="submit" id="newDokuSubmitBtn" disabled>Last opp</button>
       </form>
       <p class="empty-note" id="dokuUploadStatus" style="margin-top:6px;"></p>
       <div class="drawgrid" id="dokuGrid" style="margin-top:14px;"></div>
@@ -3772,11 +3777,17 @@
       box.innerHTML = '<p class="empty-note">Ingen dokumentasjonsbilder lastet opp ennå.</p>';
       return;
     }
+    var curMon = toISODate(mondayOf(new Date()));
     box.innerHTML = list.map(function(d){
       var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
+      var weekBadge = "";
+      if(d.weekStart){
+        var isCur = d.weekStart === curMon;
+        weekBadge = '<span class="badge" style="background:'+(isCur?"var(--good-soft)":"var(--surface-alt)")+'; color:'+(isCur?"var(--good-ink)":"var(--muted)")+';">Uke '+isoWeekInfo(fromISODate(d.weekStart)).week+(isCur?' (nåværende uke)':'')+'</span>';
+      }
       return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
         '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
-        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div>'+fagBadgeHtml(d.fag)+'</div>' +
+        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div>'+fagBadgeHtml(d.fag)+weekBadge+'</div>' +
         '<div class="dactions" data-editonly>' +
         '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
         '<button type="button" class="btn small danger" data-deldoku="'+d.id+'">Slett</button>' +
@@ -3800,15 +3811,51 @@
     byId("dokuEditBtn").classList.toggle("primary", editing);
     renderEditableStatics("panel-dokumentasjon", editing);
   });
+  // Kamerabilder tagges automatisk til nåværende uke. Opplastede bilder (fra galleri/filsystem)
+  // må velge en uke selv, begrenset til prosjektets uker - viser derfor et ukevalg kun for den
+  // ruten, ikke for kamera-ruten.
+  var dokuSelectedFiles = null, dokuSelectedSource = null;
+  function updateDokuSubmitState(){
+    var hasFiles = !!(dokuSelectedFiles && dokuSelectedFiles.length);
+    var weekOk = dokuSelectedSource === "camera" || (dokuSelectedSource === "upload" && byId("newDokuWeek").value);
+    byId("newDokuSubmitBtn").disabled = !(hasFiles && weekOk);
+  }
+  byId("newDokuCameraInput").addEventListener("change", function(){
+    if(this.files && this.files.length){
+      dokuSelectedFiles = Array.prototype.slice.call(this.files);
+      dokuSelectedSource = "camera";
+      byId("newDokuWeek").hidden = true;
+      byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - legges i nåværende uke.";
+    }
+    updateDokuSubmitState();
+  });
+  byId("newDokuFileInput").addEventListener("change", function(){
+    if(this.files && this.files.length){
+      dokuSelectedFiles = Array.prototype.slice.call(this.files);
+      dokuSelectedSource = "upload";
+      var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+      var mondays = projectWeekMondays(cur);
+      byId("newDokuWeek").innerHTML = '<option value="">– velg uke –</option>' + mondays.map(function(m){
+        var iso = toISODate(m);
+        return '<option value="'+iso+'">Uke '+isoWeekInfo(m).week+' ('+fmtRange(iso,iso)+')</option>';
+      }).join("");
+      byId("newDokuWeek").hidden = false;
+      byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - velg hvilken uke.";
+    }
+    updateDokuSubmitState();
+  });
+  byId("newDokuWeek").addEventListener("change", updateDokuSubmitState);
   byId("addDokuForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var fileInput = byId("newDokuFile");
-    var captionInput = byId("newDokuCaption");
-    var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
-    if(!files.length) return;
-    uploadDokuPhotos(files, captionInput.value);
-    fileInput.value = "";
-    captionInput.value = "";
+    if(!dokuSelectedFiles || !dokuSelectedFiles.length) return;
+    var weekStart = dokuSelectedSource === "camera" ? toISODate(mondayOf(new Date())) : byId("newDokuWeek").value;
+    if(!weekStart) return;
+    uploadDokuPhotos(dokuSelectedFiles, byId("newDokuCaption").value, null, weekStart);
+    byId("newDokuCameraInput").value = ""; byId("newDokuFileInput").value = "";
+    byId("newDokuCaption").value = ""; byId("newDokuFileStatus").textContent = "";
+    byId("newDokuWeek").hidden = true; byId("newDokuWeek").value = "";
+    dokuSelectedFiles = null; dokuSelectedSource = null;
+    updateDokuSubmitState();
   });
 
   // ---------- people tab ----------
@@ -9580,7 +9627,7 @@
   }
 
   function rowToDokuPhoto(row){
-    return { id: row.id, project_id: row.project_id, path: row.file_path, caption: row.caption || "", fag: row.fag || "tomrer", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, path: row.file_path, caption: row.caption || "", fag: row.fag || "tomrer", weekStart: row.week_start || "", createdAt: row.created_at };
   }
   function refetchDokuPhotos(){
     sb.from("documentation_photos").select("*").order("created_at", { ascending:false }).then(function(res){
@@ -9621,7 +9668,7 @@
       img.src = url;
     });
   }
-  function uploadDokuPhoto(file, caption, fagOverride){
+  function uploadDokuPhoto(file, caption, fagOverride, weekStart){
     return compressImage(file, 1920, 0.82).then(function(f){
       if(f.size > MAX_DOKU_BYTES){ showError('«'+f.name+'» er for stor (maks 20 MB).'); return; }
       var safeName = f.name.replace(/[^a-zA-Z0-9_.\-]/g, "_");
@@ -9630,14 +9677,14 @@
         .then(function(res){
           if(res.error){ showError('Kunne ikke laste opp «'+f.name+'»: '+res.error.message); return; }
           return sb.from("documentation_photos").insert({
-            project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: fagOverride || activeFag()
+            project_id: currentProjectId(), file_path: path, caption: (caption && caption.trim()) ? caption.trim().slice(0,160) : null, fag: fagOverride || activeFag(), week_start: weekStart || null
           }).then(function(res2){
             if(res2.error){ showError('«'+f.name+'» ble lastet opp, men kunne ikke lagres i listen: '+res2.error.message); }
           });
         });
     });
   }
-  function uploadDokuPhotos(files, caption, fagOverride){
+  function uploadDokuPhotos(files, caption, fagOverride, weekStart){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
     var fag = fagOverride || activeFag();
@@ -9646,7 +9693,7 @@
     function next(){
       if(i >= total){ showDokuStatus(""); refetchDokuPhotos(); return; }
       showDokuStatus(total > 1 ? "Laster opp "+(i+1)+" av "+total+" …" : "Laster opp …");
-      uploadDokuPhoto(files[i], caption, fag).then(function(){ i++; next(); });
+      uploadDokuPhoto(files[i], caption, fag, weekStart).then(function(){ i++; next(); });
     }
     next();
   }
