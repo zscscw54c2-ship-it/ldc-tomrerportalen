@@ -4328,13 +4328,24 @@
     state.attendance.forEach(function(a){ if(a.project_id === pidProject && mwWeekDays.indexOf(a.day) !== -1) presentPersonIds[a.person_id] = true; });
     var availableThisWeek = state.people.filter(function(p){ return presentPersonIds[p.id]; });
     var bySlot = mwForWeek(view.mwWeekId);
-    byId("mwSlots").innerHTML = MW_SLOTS.map(function(label, i){
-      var slot = i+1, pid = bySlot[slot] || "";
+    function mwOptionsFor(pid){
       var options = availableThisWeek.slice();
       if(pid && !options.some(function(p){ return p.id === pid; })){
         var picked = state.people.find(function(p){ return p.id === pid; });
         if(picked) options.push(picked);
       }
+      return options;
+    }
+    var sikkerhetstalePid = bySlot[0] || "";
+    var sikkerhetstaleOptions = mwOptionsFor(sikkerhetstalePid);
+    var sikkerhetstaleLabel = "Sikkerhetstale" + (curWeekObj && curWeekObj.sikkerhetstale ? " " + escapeHtml(curWeekObj.sikkerhetstale) : " (ingen kode satt - sett den på privilege-uken)");
+    var sikkerhetstaleRow = '<div class="field"><label>'+sikkerhetstaleLabel+'</label>'+
+      '<select data-mwslot="0"><option value="">— Ikke satt —</option>' +
+      sikkerhetstaleOptions.map(function(p){ return '<option value="'+p.id+'"'+(p.id===sikkerhetstalePid?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+      '</select></div>';
+    byId("mwSlots").innerHTML = sikkerhetstaleRow + MW_SLOTS.map(function(label, i){
+      var slot = i+1, pid = bySlot[slot] || "";
+      var options = mwOptionsFor(pid);
       return '<div class="field"><label>'+slot+'. '+escapeHtml(label)+'</label>'+
         '<select data-mwslot="'+slot+'"><option value="">— Ikke satt —</option>' +
         options.map(function(p){ return '<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
