@@ -1359,7 +1359,7 @@
           <form class="inline-add" id="addDeliveryForm" data-editonly style="flex-wrap:wrap;">
             <input type="text" id="newDeliveryName" placeholder="Navn (f.eks. Lindab)" required maxlength="120" style="flex:1; min-width:160px;" />
             <input type="date" id="newDeliveryDate" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);" />
-            <label class="checkrow" style="font-size:12.5px; margin:0;"><input type="checkbox" id="newDeliveryUncertain" /> Usikker dato</label>
+            <select id="newDeliveryStatus" style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"></select>
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
@@ -2003,6 +2003,29 @@
   </div>
 </dialog>
 
+<dialog id="deliveryEditDialog">
+  <form class="dlg-body" id="deliveryEditForm" method="dialog">
+    <h3>Rediger leveranse</h3>
+    <input type="hidden" id="deliveryEditId" />
+    <div class="field">
+      <label for="deliveryEditName">Navn</label>
+      <input type="text" id="deliveryEditName" maxlength="120" required />
+    </div>
+    <div class="field">
+      <label for="deliveryEditDate">Forventet dato</label>
+      <input type="date" id="deliveryEditDate" />
+    </div>
+    <div class="field">
+      <label for="deliveryEditStatus">Status</label>
+      <select id="deliveryEditStatus"></select>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="deliveryEditCancel">Avbryt</button>
+      <button type="submit" class="btn primary">Lagre</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="pwDialog" class="wide">
   <form class="dlg-body" id="pwForm" method="dialog">
     <h3 id="pwDlgTitle">Ny privilege-uke</h3>
@@ -2187,6 +2210,8 @@
   var OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
   var FAG_LABELS = { tomrer:"Tømrer", vvs:"VVS", maler:"Maler", elektriker:"Elektrikker", landscape:"Landscape", murer:"Murer", ventilasjon:"Ventilasjon", blikkenslager:"Blikkenslager", stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO", ovrig:"Øvrig" };
   var FAG_COLORS = { tomrer:"var(--fag-tomrer)", vvs:"var(--fag-vvs)", maler:"var(--fag-maler)", elektriker:"var(--fag-elektriker)", landscape:"var(--fag-landscape)", murer:"var(--fag-murer)", ventilasjon:"var(--fag-ventilasjon)", blikkenslager:"var(--fag-blikkenslager)", stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)", ovrig:"var(--fag-ovrig)" };
+  var DELIVERY_STATUS_LABELS = { usikker: "Usikker", bekreftet: "Bekreftet, på vei", levert: "Levert" };
+  var DELIVERY_STATUS_COLORS = { usikker: "var(--bad)", bekreftet: "var(--warn)", levert: "var(--good)" };
   var LOGI_RELATION_LIST = ["ektepar","familie","sosken","singel_bror","singel_soster","venner","annet"];
   var LOGI_RELATION_LABELS = { ektepar:"Ektepar", familie:"Familie", sosken:"Søsken", singel_bror:"Singel bror", singel_soster:"Singel søster", venner:"Venner", annet:"Annet" };
   var TO_ROLE_LIST = ["prosjektleder","arbeidsleder"].concat(FAG_LIST);
@@ -4081,18 +4106,20 @@
     var todayIsoD = toISODate(new Date());
     var deliveries = deliveriesForCurrentProject();
     byId("deliveriesList").innerHTML = deliveries.length ? deliveries.map(function(d){
-      var overdue = !d.received && d.expectedDate && d.expectedDate < todayIsoD;
+      var overdue = d.status !== "levert" && d.expectedDate && d.expectedDate < todayIsoD;
       var dateLabel = d.expectedDate ? fmtRange(d.expectedDate, d.expectedDate) : "Ingen dato";
-      var uncertainBadge = d.uncertain ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9px; padding:1px 5px;" title="Dato er ikke bekreftet">usikker</span>' : "";
       var dateStyle = overdue ? "color:var(--bad); font-weight:700;" : "color:var(--muted);";
-      return '<div class="shoprow" style="flex-wrap:wrap;'+(d.received?' opacity:.55;':'')+'">' +
-        '<label class="checkrow" style="margin:0; flex:none;"><input type="checkbox" data-deliverycheck="'+d.id+'"'+(d.received?' checked':'')+' /></label>' +
-        '<span class="sname"'+(d.received?' style="text-decoration:line-through;"':'')+'>'+escapeHtml(d.name)+'</span>' +
-        '<span class="sqty" style="font-size:12px; '+dateStyle+'">'+dateLabel+(overdue?' · forsinket':'')+'</span>' + uncertainBadge +
+      var statusDot = '<i title="'+escapeHtml(DELIVERY_STATUS_LABELS[d.status]||d.status)+'" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:'+(DELIVERY_STATUS_COLORS[d.status]||"var(--muted)")+'; flex:none;"></i>';
+      return '<div class="shoprow" style="flex-wrap:wrap;'+(d.status==="levert"?' opacity:.55;':'')+'">' +
+        statusDot +
+        '<span class="sname"'+(d.status==="levert"?' style="text-decoration:line-through;"':'')+'>'+escapeHtml(d.name)+'</span>' +
+        '<span class="sqty" style="font-size:12px; '+dateStyle+'">'+dateLabel+(overdue?' · forsinket':'')+'</span>' +
+        '<span class="imp-status-chip">'+escapeHtml(DELIVERY_STATUS_LABELS[d.status]||d.status)+'</span>' +
+        '<button class="btn small" data-editonly data-editdelivery="'+d.id+'">Rediger</button>' +
         '<button class="del" data-editonly data-deldelivery="'+d.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen leveranser registrert ennå.</p>';
-    byId("deliveriesList").querySelectorAll("[data-deliverycheck]").forEach(function(cb){
-      cb.addEventListener("change", function(){ toggleDeliveryReceived(this.dataset.deliverycheck); });
+    byId("deliveriesList").querySelectorAll("[data-editdelivery]").forEach(function(b){
+      b.addEventListener("click", function(){ openDeliveryEditDialog(this.dataset.editdelivery); });
     });
     byId("deliveriesList").querySelectorAll("[data-deldelivery]").forEach(function(b){
       b.addEventListener("click", function(){ if(confirm("Fjerne denne leveransen?")) deleteDelivery(this.dataset.deldelivery); });
@@ -4267,13 +4294,33 @@
     addSiteCode(label, value);
     labelInput.value = ""; valueInput.value = "";
   });
+  byId("newDeliveryStatus").innerHTML = Object.keys(DELIVERY_STATUS_LABELS).map(function(s){ return '<option value="'+s+'">'+escapeHtml(DELIVERY_STATUS_LABELS[s])+'</option>'; }).join("");
   byId("addDeliveryForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var nameInput = byId("newDeliveryName"), dateInput = byId("newDeliveryDate"), uncertainInput = byId("newDeliveryUncertain");
+    var nameInput = byId("newDeliveryName"), dateInput = byId("newDeliveryDate"), statusInput = byId("newDeliveryStatus");
     var name = nameInput.value.trim();
     if(!name) return;
-    addDelivery(name, dateInput.value, uncertainInput.checked);
-    nameInput.value = ""; dateInput.value = ""; uncertainInput.checked = false;
+    addDelivery(name, dateInput.value, statusInput.value);
+    nameInput.value = ""; dateInput.value = ""; statusInput.value = "usikker";
+  });
+  var deliveryEditDialog = byId("deliveryEditDialog");
+  function openDeliveryEditDialog(id){
+    var d = state.deliveries.find(function(x){ return x.id === id; });
+    if(!d) return;
+    byId("deliveryEditId").value = d.id;
+    byId("deliveryEditName").value = d.name;
+    byId("deliveryEditDate").value = d.expectedDate || "";
+    byId("deliveryEditStatus").innerHTML = Object.keys(DELIVERY_STATUS_LABELS).map(function(s){ return '<option value="'+s+'"'+(s===d.status?' selected':'')+'>'+escapeHtml(DELIVERY_STATUS_LABELS[s])+'</option>'; }).join("");
+    deliveryEditDialog.showModal();
+  }
+  byId("deliveryEditCancel").addEventListener("click", function(){ deliveryEditDialog.close(); });
+  deliveryEditDialog.addEventListener("click", function(ev){ if(ev.target === deliveryEditDialog) deliveryEditDialog.close(); });
+  byId("deliveryEditForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = byId("deliveryEditName").value.trim();
+    if(!name) return;
+    updateDelivery(byId("deliveryEditId").value, name, byId("deliveryEditDate").value, byId("deliveryEditStatus").value);
+    deliveryEditDialog.close();
   });
   byId("addOpenAccountForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -5167,7 +5214,7 @@
       };
     });
     var deliveryRows = visDeliv.map(function(r){
-      return { project_id: cur.id, name: r.name.trim().slice(0,120), expected_date: r.expectedDate || null, uncertain: !!r.uncertain };
+      return { project_id: cur.id, name: r.name.trim().slice(0,120), expected_date: r.expectedDate || null, status: r.uncertain ? "usikker" : "bekreftet" };
     });
     Promise.all([
       taskRows.length ? chunkArray(taskRows, 300).reduce(function(p, chunk){
@@ -5627,13 +5674,14 @@
     return { id: row.id, project_id: row.project_id, label: row.label, value: row.value, createdAt: row.created_at };
   }
   function rowToDelivery(row){
-    return { id: row.id, project_id: row.project_id, name: row.name, expectedDate: row.expected_date || "", uncertain: !!row.uncertain, received: !!row.received, receivedDate: row.received_date || "", notes: row.notes || "", createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, name: row.name, expectedDate: row.expected_date || "", status: row.status || "usikker", notes: row.notes || "", createdAt: row.created_at };
   }
   function deliveriesForCurrentProject(){
     var pid = currentProjectId();
     return state.deliveries.filter(function(d){ return d.project_id === pid; }).sort(function(a,b){
-      // Ikke mottatt først (sortert på forventet dato, de uten dato sist), så mottatt nederst.
-      if(a.received !== b.received) return a.received ? 1 : -1;
+      // Levert sist (sortert på forventet dato, de uten dato sist), resten øverst.
+      var ar = a.status === "levert", br = b.status === "levert";
+      if(ar !== br) return ar ? 1 : -1;
       var ad = a.expectedDate || "9999-99-99", bd = b.expectedDate || "9999-99-99";
       return ad < bd ? -1 : ad > bd ? 1 : 0;
     });
@@ -8891,21 +8939,18 @@
     if(!sb) return;
     sb.from("site_codes").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchSiteCodes(); });
   }
-  function addDelivery(name, expectedDate, uncertain, notes){
+  function addDelivery(name, expectedDate, status, notes){
     if(!sb || !isByggeleder()) return;
     var pid = currentProjectId();
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("deliveries").insert({ project_id: pid, name: name.slice(0,120), expected_date: expectedDate || null, uncertain: !!uncertain, notes: (notes||"").slice(0,300) || null }).then(function(res){
+    sb.from("deliveries").insert({ project_id: pid, name: name.slice(0,120), expected_date: expectedDate || null, status: status || "usikker", notes: (notes||"").slice(0,300) || null }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("deliveries") !== -1 ? "Databasen mangler tabellen for leveranser. Kjør sql/60-leveranser.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
       refetchDeliveries();
     });
   }
-  function toggleDeliveryReceived(id){
+  function updateDelivery(id, name, expectedDate, status){
     if(!sb || !isByggeleder()) return;
-    var d = state.deliveries.find(function(x){ return x.id === id; });
-    if(!d) return;
-    var nowReceived = !d.received;
-    sb.from("deliveries").update({ received: nowReceived, received_date: nowReceived ? toISODate(new Date()) : null }).eq("id", id).then(function(res){
+    sb.from("deliveries").update({ name: name.slice(0,120), expected_date: expectedDate || null, status: status }).eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; }
       refetchDeliveries();
     });
