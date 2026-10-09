@@ -269,7 +269,10 @@
   .board-card.size-small{grid-column:span 1;}
   .board-card.size-medium{grid-column:span 2;}
   .board-card.size-large{grid-column:span 3;}
-  .board-card.kind-info{background:var(--surface-alt);}
+  .board-card.pinned{background:var(--surface-alt);}
+  .board-card .statusdot{display:inline-block; width:12px; height:12px; border-radius:50%; cursor:pointer; flex:none;}
+  .board-card .linkrow a{color:var(--accent); text-decoration:none; font-weight:600;}
+  .board-card .linkrow a:hover{text-decoration:underline;}
   @media (max-width:640px){ .board-card{grid-column:span 1 !important;} }
   .personrow{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border);}
   .personrow:last-child{border-bottom:none;}
@@ -2136,9 +2139,12 @@
     <div class="field">
       <label for="createBoxKind">Type tavle</label>
       <select id="createBoxKind">
-        <option value="checklist">Sjekkliste</option>
-        <option value="note">Notat</option>
-        <option value="info">Opplysning</option>
+        <option value="checklist">✅ Sjekkliste</option>
+        <option value="note">📝 Notat</option>
+        <option value="links">🔗 Lenker/ressurser</option>
+        <option value="contacts">👤 Kontaktliste</option>
+        <option value="status">🚦 Status/trafikklys</option>
+        <option value="deadline">⏳ Frist/nedtelling</option>
       </select>
     </div>
     <div class="fieldrow">
@@ -2340,7 +2346,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [] };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -5826,8 +5832,24 @@
   document.querySelectorAll("[data-backtocg1]").forEach(function(b){
     b.addEventListener("click", function(){ switchTab("cg1"); });
   });
-  var BOX_KIND_LABELS = { checklist: "Sjekkliste", note: "Notat", info: "Opplysning" };
+  var BOX_KIND_LABELS = { checklist: "✅ Sjekkliste", note: "📝 Notat", links: "🔗 Lenker", contacts: "👤 Kontakter", status: "🚦 Status", deadline: "⏳ Frist" };
   var BOX_SIZE_LABELS = { small: "Liten", medium: "Middels", large: "Stor" };
+  var STATUS_ITEM_COLORS = { red: "var(--bad)", yellow: "var(--warn)", green: "var(--good)" };
+  var STATUS_ITEM_CYCLE = { red: "yellow", yellow: "green", green: "red" };
+  // Antall hele døgn til datoen (negativt = passert) - brukt av Frist-tavlen for "X dager igjen".
+  function daysUntil(dateIso){
+    if(!dateIso) return null;
+    var today = new Date(); today.setHours(0,0,0,0);
+    var target = fromISODate(dateIso);
+    return Math.round((target - today) / 86400000);
+  }
+  function deadlineText(dateIso){
+    var d = daysUntil(dateIso);
+    if(d === null) return "Ingen dato satt ennå.";
+    if(d === 0) return "I dag!";
+    if(d < 0) return Math.abs(d)+" dag"+(Math.abs(d)===1?"":"er")+" siden fristen";
+    return d+" dag"+(d===1?"":"er")+" igjen";
+  }
   function renderOfficeBoxes(office){
     var box = byId("officeBoxes-"+office);
     var boxes = officeBoxesFor(office);
@@ -5857,11 +5879,48 @@
           }).join("") : '<p class="empty-note">Ingen punkter lagt til ennå.</p>') +
           '</div>' +
           '<form class="inline-add" data-additemform="'+b.id+'"><input type="text" placeholder="Nytt punkt" maxlength="200" required style="flex:1; min-width:140px;" /><button class="btn small primary" type="submit">Legg til</button></form>';
-      } else {
-        body = '<textarea data-boxbody="'+b.id+'" rows="4" placeholder="Fri tekst …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;">'+escapeHtml(b.body)+'</textarea>' +
+      } else if(b.kind === "note"){
+        body = '<label class="checkrow" style="margin-bottom:6px;"><input type="checkbox" data-boxpinned="'+b.id+'"'+(b.pinned?' checked':'')+' /> 📌 Vis som kunngjøring</label>' +
+          '<textarea data-boxbody="'+b.id+'" rows="4" placeholder="Fri tekst …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;">'+escapeHtml(b.body)+'</textarea>' +
+          '<div style="margin-top:6px; display:flex; justify-content:flex-end;"><button type="button" class="btn small primary" data-saveboxbody="'+b.id+'">Lagre</button></div>';
+      } else if(b.kind === "links"){
+        var links = officeBoxLinksFor(b.id);
+        body = '<div style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">' +
+          (links.length ? links.map(function(l){
+            return '<div class="shoprow linkrow"><a href="'+encodeURI(l.url)+'" target="_blank" rel="noopener">'+escapeHtml(l.label)+'</a><button type="button" class="del" data-dellink="'+l.id+'" title="Fjern" style="margin-left:auto;">×</button></div>';
+          }).join("") : '<p class="empty-note">Ingen lenker lagt til ennå.</p>') +
+          '</div>' +
+          '<form class="inline-add" data-addlinkform="'+b.id+'"><input type="text" placeholder="Navn" maxlength="100" required style="flex:1; min-width:100px;" /><input type="url" placeholder="https://…" maxlength="500" required style="flex:2; min-width:140px;" /><button class="btn small primary" type="submit">Legg til</button></form>';
+      } else if(b.kind === "contacts"){
+        var contacts = officeBoxContactsFor(b.id);
+        body = '<div style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">' +
+          (contacts.length ? contacts.map(function(c){
+            var bits = [];
+            if(c.phone) bits.push('<a href="tel:'+encodeURIComponent(c.phone)+'">'+escapeHtml(c.phone)+'</a>');
+            if(c.email) bits.push('<a href="mailto:'+encodeURIComponent(c.email)+'">'+escapeHtml(c.email)+'</a>');
+            return '<div class="shoprow"><span class="sname">'+escapeHtml(c.name)+'</span><span style="font-size:12px; color:var(--muted); display:flex; gap:8px;">'+bits.join(" · ")+'</span><button type="button" class="del" data-delcontact="'+c.id+'" title="Fjern" style="margin-left:auto;">×</button></div>';
+          }).join("") : '<p class="empty-note">Ingen kontakter lagt til ennå.</p>') +
+          '</div>' +
+          '<form class="inline-add" data-addcontactform="'+b.id+'"><input type="text" placeholder="Navn" maxlength="100" required style="flex:1; min-width:100px;" /><input type="tel" placeholder="Telefon" maxlength="40" style="flex:1; min-width:100px;" /><input type="email" placeholder="E-post" maxlength="120" style="flex:1; min-width:120px;" /><button class="btn small primary" type="submit">Legg til</button></form>';
+      } else if(b.kind === "status"){
+        var statusItems = officeBoxStatusItemsFor(b.id);
+        body = '<div style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">' +
+          (statusItems.length ? statusItems.map(function(s){
+            return '<div class="shoprow"><span class="statusdot" data-statusdot="'+s.id+'" data-curstatus="'+s.status+'" title="Klikk for å endre status" style="background:'+STATUS_ITEM_COLORS[s.status]+';"></span><span class="sname">'+escapeHtml(s.text)+'</span><button type="button" class="del" data-delstatusitem="'+s.id+'" title="Fjern" style="margin-left:auto;">×</button></div>';
+          }).join("") : '<p class="empty-note">Ingen punkter lagt til ennå.</p>') +
+          '</div>' +
+          '<form class="inline-add" data-addstatusform="'+b.id+'"><input type="text" placeholder="F.eks. Strøm, internett …" maxlength="150" required style="flex:1; min-width:140px;" /><button class="btn small primary" type="submit">Legg til</button></form>';
+      } else if(b.kind === "deadline"){
+        var daysLeft = daysUntil(b.deadlineDate);
+        var daysColor = daysLeft === null ? "var(--muted)" : (daysLeft < 0 ? "var(--bad)" : (daysLeft <= 3 ? "var(--warn)" : "var(--good)"));
+        body = '<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">' +
+          '<input type="date" data-boxdeadline="'+b.id+'" value="'+escapeHtml(b.deadlineDate)+'" style="border:1px solid var(--border); border-radius:7px; padding:6px 8px; background:var(--surface); font:inherit;" />' +
+          '<span data-deadlinetext="'+b.id+'" style="font-weight:700; color:'+daysColor+';">'+deadlineText(b.deadlineDate)+'</span>' +
+          '</div>' +
+          '<textarea data-boxbody="'+b.id+'" rows="2" placeholder="Valgfri beskrivelse …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;">'+escapeHtml(b.body)+'</textarea>' +
           '<div style="margin-top:6px; display:flex; justify-content:flex-end;"><button type="button" class="btn small primary" data-saveboxbody="'+b.id+'">Lagre</button></div>';
       }
-      return '<div class="peoplecard board-card size-'+b.size+' kind-'+b.kind+'" style="border-top-color:'+escapeHtml(b.color)+';">' + header + body + '</div>';
+      return '<div class="peoplecard board-card size-'+b.size+(b.kind==="note"&&b.pinned?' pinned':'')+'" style="border-top-color:'+escapeHtml(b.color)+';">' + header + body + '</div>';
     }).join("");
     box.querySelectorAll("[data-renamebox]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -5872,7 +5931,7 @@
       });
     });
     box.querySelectorAll("[data-delbox]").forEach(function(b){
-      b.addEventListener("click", function(){ if(confirm("Fjerne denne boksen? Alle punkter i den forsvinner også.")) deleteOfficeBox(this.dataset.delbox); });
+      b.addEventListener("click", function(){ if(confirm("Fjerne denne boksen? Alt innhold i den forsvinner også.")) deleteOfficeBox(this.dataset.delbox); });
     });
     box.querySelectorAll("[data-boxcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){
@@ -5887,6 +5946,12 @@
         var cur = officeBoxesFor(office).find(function(x){ return x.id === boxId; });
         updateOfficeBoxStyle(boxId, cur ? cur.color : "#4b82f0", this.value);
       });
+    });
+    box.querySelectorAll("[data-boxpinned]").forEach(function(cb){
+      cb.addEventListener("change", function(){ updateOfficeBoxPinned(this.dataset.boxpinned, this.checked); });
+    });
+    box.querySelectorAll("[data-boxdeadline]").forEach(function(inp){
+      inp.addEventListener("change", function(){ updateOfficeBoxDeadline(this.dataset.boxdeadline, this.value); });
     });
     box.querySelectorAll("[data-toggleboxitem]").forEach(function(cb){
       cb.addEventListener("change", function(){ toggleOfficeBoxItem(this.dataset.toggleboxitem, this.checked); });
@@ -5910,6 +5975,50 @@
         saveOfficeBoxBody(this.dataset.saveboxbody, ta.value);
       });
     });
+    box.querySelectorAll("[data-dellink]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteOfficeBoxLink(this.dataset.dellink); });
+    });
+    box.querySelectorAll("[data-addlinkform]").forEach(function(f){
+      f.addEventListener("submit", function(ev){
+        ev.preventDefault();
+        var inputs = f.querySelectorAll("input");
+        var label = inputs[0].value.trim(), url = inputs[1].value.trim();
+        if(!label || !url) return;
+        addOfficeBoxLink(f.dataset.addlinkform, label, url);
+        inputs[0].value = ""; inputs[1].value = "";
+      });
+    });
+    box.querySelectorAll("[data-delcontact]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteOfficeBoxContact(this.dataset.delcontact); });
+    });
+    box.querySelectorAll("[data-addcontactform]").forEach(function(f){
+      f.addEventListener("submit", function(ev){
+        ev.preventDefault();
+        var inputs = f.querySelectorAll("input");
+        var name = inputs[0].value.trim(), phone = inputs[1].value.trim(), email = inputs[2].value.trim();
+        if(!name) return;
+        addOfficeBoxContact(f.dataset.addcontactform, name, phone, email);
+        inputs[0].value = ""; inputs[1].value = ""; inputs[2].value = "";
+      });
+    });
+    box.querySelectorAll("[data-statusdot]").forEach(function(dot){
+      dot.addEventListener("click", function(){
+        updateOfficeBoxStatusItemStatus(this.dataset.statusdot, STATUS_ITEM_CYCLE[this.dataset.curstatus] || "yellow");
+      });
+    });
+    box.querySelectorAll("[data-delstatusitem]").forEach(function(b){
+      b.addEventListener("click", function(){ deleteOfficeBoxStatusItem(this.dataset.delstatusitem); });
+    });
+    box.querySelectorAll("[data-addstatusform]").forEach(function(f){
+      f.addEventListener("submit", function(ev){
+        ev.preventDefault();
+        var input = f.querySelector("input");
+        var text = input.value.trim();
+        if(!text) return;
+        addOfficeBoxStatusItem(f.dataset.addstatusform, text, "yellow");
+        input.value = "";
+      });
+    });
   }
   function renderKontorTabs(){
     renderOfficeBoxes("kontor1");
@@ -5923,7 +6032,7 @@
     });
   });
   var createBoxDialog = byId("createBoxDialog");
-  var CREATE_BOX_DEFAULT_TITLES = { checklist: "Ny sjekkliste", note: "Nytt notat", info: "Ny opplysning" };
+  var CREATE_BOX_DEFAULT_TITLES = { checklist: "Ny sjekkliste", note: "Nytt notat", links: "Lenker/ressurser", contacts: "Kontaktliste", status: "Status", deadline: "Frist" };
   document.querySelectorAll("[data-opencreatebox]").forEach(function(b){
     b.addEventListener("click", function(){
       byId("createBoxOffice").value = this.dataset.opencreatebox;
@@ -6086,12 +6195,21 @@
     return state.siteCodes.filter(function(c){ return c.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? -1 : 1; });
   }
   function rowToOfficeBox(row){
-    return { id: row.id, project_id: row.project_id, office: row.office, kind: row.kind, title: row.title, body: row.body || "", color: row.color || "#4b82f0", size: row.size || "medium", sortOrder: row.sort_order, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, office: row.office, kind: row.kind, title: row.title, body: row.body || "", color: row.color || "#4b82f0", size: row.size || "medium", pinned: !!row.pinned, deadlineDate: row.deadline_date || "", sortOrder: row.sort_order, createdAt: row.created_at };
   }
   function rowToOfficeBoxItem(row){
     return { id: row.id, boxId: row.box_id, text: row.text, done: !!row.done, sortOrder: row.sort_order, createdAt: row.created_at };
   }
-  // Kontor 1/2s egne bokser (sjekkliste eller fri infotekst) - per prosjekt og kontor.
+  function rowToOfficeBoxLink(row){
+    return { id: row.id, boxId: row.box_id, label: row.label, url: row.url, sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  function rowToOfficeBoxContact(row){
+    return { id: row.id, boxId: row.box_id, name: row.name, phone: row.phone || "", email: row.email || "", sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  function rowToOfficeBoxStatusItem(row){
+    return { id: row.id, boxId: row.box_id, text: row.text, status: row.status, sortOrder: row.sort_order, createdAt: row.created_at };
+  }
+  // Kontor 1/2s egne tavler (sjekkliste, notat, lenker, kontakter, status eller frist) - per prosjekt og kontor.
   function officeBoxesFor(office){
     var pid = currentProjectId();
     return state.officeBoxes.filter(function(b){ return b.project_id === pid && b.office === office; })
@@ -6099,6 +6217,18 @@
   }
   function officeBoxItemsFor(boxId){
     return state.officeBoxItems.filter(function(i){ return i.boxId === boxId; })
+      .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
+  }
+  function officeBoxLinksFor(boxId){
+    return state.officeBoxLinks.filter(function(i){ return i.boxId === boxId; })
+      .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
+  }
+  function officeBoxContactsFor(boxId){
+    return state.officeBoxContacts.filter(function(i){ return i.boxId === boxId; })
+      .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
+  }
+  function officeBoxStatusItemsFor(boxId){
+    return state.officeBoxStatusItems.filter(function(i){ return i.boxId === boxId; })
       .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
   }
   function rowToOpenAccount(row){
@@ -8462,6 +8592,27 @@
       scheduleRender();
     });
   }
+  function refetchOfficeBoxLinks(){
+    sb.from("office_box_links").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.officeBoxLinks = res.data.map(rowToOfficeBoxLink);
+      scheduleRender();
+    });
+  }
+  function refetchOfficeBoxContacts(){
+    sb.from("office_box_contacts").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.officeBoxContacts = res.data.map(rowToOfficeBoxContact);
+      scheduleRender();
+    });
+  }
+  function refetchOfficeBoxStatusItems(){
+    sb.from("office_box_status_items").select("*").order("sort_order").then(function(res){
+      if(res.error){ return; }
+      state.officeBoxStatusItems = res.data.map(rowToOfficeBoxStatusItem);
+      scheduleRender();
+    });
+  }
   function refetchWeeklyScriptures(){
     sb.from("weekly_scriptures").select("*").order("week_start").then(function(res){
       if(res.error){ return; }
@@ -9503,7 +9654,7 @@
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
     var sortOrder = officeBoxesFor(office).length;
     sb.from("office_boxes").insert({ project_id: pid, office: office, kind: kind, title: title.slice(0,80), color: color || null, size: size || "medium", sort_order: sortOrder }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql og sql/69-tavle-type-farge-storrelse.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql, sql/69-tavle-type-farge-storrelse.sql og sql/70-flere-tavletyper.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
       refetchOfficeBoxes();
     });
   }
@@ -9518,6 +9669,14 @@
   function updateOfficeBoxStyle(id, color, size){
     if(!sb || !isByggeleder()) return;
     sb.from("office_boxes").update({ color: color, size: size }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function updateOfficeBoxPinned(id, pinned){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").update({ pinned: pinned }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
+  }
+  function updateOfficeBoxDeadline(id, date){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_boxes").update({ deadline_date: date || null }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; } refetchOfficeBoxes(); });
   }
   function deleteOfficeBox(id){
     if(!sb || !isByggeleder()) return;
@@ -9538,6 +9697,46 @@
   function deleteOfficeBoxItem(id){
     if(!sb || !isByggeleder()) return;
     sb.from("office_box_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxItems(); });
+  }
+  function addOfficeBoxLink(boxId, label, url){
+    if(!sb || !isByggeleder()) return;
+    var sortOrder = officeBoxLinksFor(boxId).length;
+    sb.from("office_box_links").insert({ box_id: boxId, label: label.slice(0,100), url: url.slice(0,500), sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError("Kunne ikke legge til: "+res.error.message); return; }
+      refetchOfficeBoxLinks();
+    });
+  }
+  function deleteOfficeBoxLink(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_links").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxLinks(); });
+  }
+  function addOfficeBoxContact(boxId, name, phone, email){
+    if(!sb || !isByggeleder()) return;
+    var sortOrder = officeBoxContactsFor(boxId).length;
+    sb.from("office_box_contacts").insert({ box_id: boxId, name: name.slice(0,100), phone: phone ? phone.slice(0,40) : null, email: email ? email.slice(0,120) : null, sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError("Kunne ikke legge til: "+res.error.message); return; }
+      refetchOfficeBoxContacts();
+    });
+  }
+  function deleteOfficeBoxContact(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_contacts").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxContacts(); });
+  }
+  function addOfficeBoxStatusItem(boxId, text, status){
+    if(!sb || !isByggeleder()) return;
+    var sortOrder = officeBoxStatusItemsFor(boxId).length;
+    sb.from("office_box_status_items").insert({ box_id: boxId, text: text.slice(0,150), status: status || "yellow", sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError("Kunne ikke legge til: "+res.error.message); return; }
+      refetchOfficeBoxStatusItems();
+    });
+  }
+  function updateOfficeBoxStatusItemStatus(id, status){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_status_items").update({ status: status }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; } refetchOfficeBoxStatusItems(); });
+  }
+  function deleteOfficeBoxStatusItem(id){
+    if(!sb || !isByggeleder()) return;
+    sb.from("office_box_status_items").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOfficeBoxStatusItems(); });
   }
   function saveWeeklyScripture(text, weekStart){
     if(!sb) return;
@@ -10316,6 +10515,9 @@
     refetchDeliveries();
     refetchOfficeBoxes();
     refetchOfficeBoxItems();
+    refetchOfficeBoxLinks();
+    refetchOfficeBoxContacts();
+    refetchOfficeBoxStatusItems();
     refetchWeeklyScriptures();
     refetchTeamMeetings();
     refetchFlexRequests();
@@ -10364,6 +10566,9 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, refetchDeliveries)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_boxes" }, refetchOfficeBoxes)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_box_links" }, refetchOfficeBoxLinks)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_box_contacts" }, refetchOfficeBoxContacts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_box_status_items" }, refetchOfficeBoxStatusItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "weekly_scriptures" }, refetchWeeklyScriptures)
       .on("postgres_changes", { event: "*", schema: "public", table: "team_meetings" }, refetchTeamMeetings)
       .on("postgres_changes", { event: "*", schema: "public", table: "flex_requests" }, refetchFlexRequests)
