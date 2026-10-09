@@ -1316,6 +1316,10 @@
   </section>
 
   <section id="panel-andelig" class="panel">
+    <div class="peoplecard" id="pwStaffingAlert" hidden style="margin-bottom:16px; border-color:var(--warn); background:var(--warn-soft);">
+      <strong style="color:var(--warn-ink);">⚠ Du har privilege week denne uken</strong>
+      <p id="pwStaffingAlertText" style="margin-top:4px; color:var(--warn-ink);"></p>
+    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
         <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25; flex:1; min-width:180px;"></div>
@@ -2061,8 +2065,10 @@
     </div>
     <div class="field">
       <label for="pwResponsible">Ansvarlig (familie/team)</label>
+      <input type="hidden" id="pwResponsiblePersonId" />
       <select id="pwResponsiblePick" style="margin-bottom:6px;"><option value="">— Velg fra teamet, eller skriv inn under —</option></select>
       <input type="text" id="pwResponsible" required maxlength="60" placeholder="F.eks. Bakken" />
+      <p class="empty-note" style="margin-top:4px;">Velg fra teamet for at varsel om manglende bemanning skal fungere. Skriver du inn fritekst i stedet, kobles ikke en bestemt person.</p>
     </div>
     <div class="field">
       <label for="pwLabel">Merknad (valgfritt)</label>
@@ -4250,6 +4256,14 @@
       ? ('Privilege Week: <span style="color:var(--accent);">'+escapeHtml(curWeek.responsible)+'</span>')
       : "Ingen privilege-uke registrert for denne uken.";
 
+    var realCurWeek = currentPrivilegeWeek();
+    var myPersonForAlert = myLinkedPerson();
+    var myMissing = (realCurWeek && myPersonForAlert && realCurWeek.responsiblePersonId === myPersonForAlert.id) ? pwStaffingMissingCount(realCurWeek) : 0;
+    byId("pwStaffingAlert").hidden = myMissing === 0;
+    if(myMissing > 0){
+      byId("pwStaffingAlertText").textContent = "Dere mangler å sette person på "+myMissing+" rad"+(myMissing===1?"":"er")+" i morgentilbedelsen/sikkerhetstalen denne uken.";
+    }
+
     var duties = dutiesForCurrentProject();
     byId("pwWeekLabel").textContent = curWeek
       ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
@@ -4464,15 +4478,23 @@
 
   function fillPwResponsiblePick(){
     byId("pwResponsiblePick").innerHTML = '<option value="">— Velg fra teamet, eller skriv inn under —</option>' +
-      teamMemberPeopleForCurrentProject().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); }).map(function(t){ return '<option value="'+escapeHtml(t.name)+'">'+escapeHtml(t.name)+'</option>'; }).join("");
+      teamMemberPeopleForCurrentProject().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); }).map(function(t){ return '<option value="'+t.id+'">'+escapeHtml(t.name)+'</option>'; }).join("");
   }
-  byId("pwResponsiblePick").addEventListener("change", function(){ if(this.value) byId("pwResponsible").value = this.value; });
+  byId("pwResponsiblePick").addEventListener("change", function(){
+    var pickedId = this.value;
+    if(!pickedId) return;
+    var picked = state.people.find(function(p){ return p.id === pickedId; });
+    if(picked){ byId("pwResponsible").value = picked.name; byId("pwResponsiblePersonId").value = picked.id; }
+  });
+  // Fritekst-redigering etter et dropdown-valg betyr vi ikke lenger kan garantere at teksten
+  // fortsatt stemmer med den koblede personen - rydder da koblingen for å ikke lagre feil kobling.
+  byId("pwResponsible").addEventListener("input", function(){ byId("pwResponsiblePersonId").value = ""; });
   var pwDialog = byId("pwDialog");
   byId("pwNewBtn").addEventListener("click", function(){
     byId("pwDlgTitle").textContent = "Ny privilege-uke";
     byId("pwId").value = "";
     byId("pwStart").value = ""; byId("pwEnd").value = "";
-    byId("pwResponsible").value = ""; byId("pwLabel").value = "";
+    byId("pwResponsible").value = ""; byId("pwResponsiblePersonId").value = ""; byId("pwLabel").value = "";
     byId("pwFamiliestudie").value = ""; byId("pwSikkerhetstale").value = "";
     byId("pwBibellesning").value = ""; byId("pwNote").value = "";
     fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
@@ -4484,10 +4506,10 @@
     byId("pwDlgTitle").textContent = "Rediger privilege-uke";
     byId("pwId").value = w.id;
     byId("pwStart").value = w.start; byId("pwEnd").value = w.end;
-    byId("pwResponsible").value = w.responsible; byId("pwLabel").value = w.label;
+    byId("pwResponsible").value = w.responsible; byId("pwResponsiblePersonId").value = w.responsiblePersonId || ""; byId("pwLabel").value = w.label;
     byId("pwFamiliestudie").value = w.familiestudie; byId("pwSikkerhetstale").value = w.sikkerhetstale;
     byId("pwBibellesning").value = w.bibellesning; byId("pwNote").value = w.note;
-    fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
+    fillPwResponsiblePick(); byId("pwResponsiblePick").value = w.responsiblePersonId || "";
     pwDialog.showModal();
   }
   byId("pwCancel").addEventListener("click", function(){ pwDialog.close(); });
@@ -4502,6 +4524,7 @@
     if(!responsible) return;
     var payload = {
       start_date: start, end_date: end, responsible: responsible.slice(0,60),
+      responsible_person_id: byId("pwResponsiblePersonId").value || null,
       label: byId("pwLabel").value.trim().slice(0,60) || null,
       familiestudie: byId("pwFamiliestudie").value.trim().slice(0,60) || null,
       sikkerhetstale: byId("pwSikkerhetstale").value.trim().slice(0,30) || null,
@@ -5519,6 +5542,11 @@
     if(tab === "andelig"){
       var curWeek = currentPrivilegeWeek();
       if(!curWeek) return { badge: 0, text: "Ingen aktiv uke" };
+      var myPerson = myLinkedPerson();
+      if(myPerson && curWeek.responsiblePersonId === myPerson.id){
+        var missing = pwStaffingMissingCount(curWeek);
+        if(missing > 0) return { badge: missing, text: missing+" mangler bemanning" };
+      }
       var duties = dutiesForCurrentProject();
       return { badge: 0, text: duties.length+" ansvarspunkter" };
     }
@@ -5988,7 +6016,7 @@
     return { id: row.id, project_id: row.project_id, kind: row.kind, name: row.name, time: row.time_text || "", ansvarlig: row.ansvarlig || "", sortOrder: row.sort_order };
   }
   function rowToPrivilegeWeek(row){
-    return { id: row.id, project_id: row.project_id, start: row.start_date, end: row.end_date, responsible: row.responsible,
+    return { id: row.id, project_id: row.project_id, start: row.start_date, end: row.end_date, responsible: row.responsible, responsiblePersonId: row.responsible_person_id || null,
       label: row.label || "", familiestudie: row.familiestudie || "", sikkerhetstale: row.sikkerhetstale || "", bibellesning: row.bibellesning || "", note: row.note || "" };
   }
   function rowToMW(row){
@@ -6010,6 +6038,15 @@
     var bySlot = {};
     state.morningWorship.filter(function(m){ return m.privilegeWeekId === weekId; }).forEach(function(m){ bySlot[m.slot] = m.personId; });
     return bySlot;
+  }
+  // Antall rader (sikkerhetstale = slot 0, morgentilbedelsens 6 rader = slot 1-6) som ikke har
+  // fått satt opp en person ennå for en gitt privilege-uke.
+  function pwStaffingMissingCount(week){
+    if(!week) return 0;
+    var bySlot = mwForWeek(week.id);
+    var missing = 0;
+    for(var slot = 0; slot <= 6; slot++){ if(!bySlot[slot]) missing++; }
+    return missing;
   }
   function currentPrivilegeWeek(refDate){
     var refIso = toISODate(refDate || new Date());
