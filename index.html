@@ -3696,9 +3696,25 @@
   });
 
   // ---------- tegninger tab ----------
+  var DRAWING_FOLDER_FAGS = FAG_LIST.concat(["stillas"]);
   function renderDrawingsTab(){
     renderEditableStatics("panel-tegninger", byId("panel-tegninger").classList.contains("editing"));
     var box = byId("drawGrid");
+    byId("addDrawingForm").hidden = activeFag() === "alle";
+    if(activeFag() === "alle"){
+      var allDrawings = state.drawings.filter(inCurrentProject);
+      box.innerHTML = '<div class="mh-grid">' + DRAWING_FOLDER_FAGS.map(function(f){
+        var count = allDrawings.filter(function(d){ return d.fag === f; }).length;
+        return '<button type="button" class="mh-tile" data-drawingfolder="'+f+'">' +
+          '<span class="fag-badge" style="background:'+(FAG_COLORS[f]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[f]||f)+'</span>' +
+          '<span style="font-size:12px; color:var(--muted); margin-top:4px;">'+count+' tegning'+(count===1?'':'er')+'</span>' +
+          '</button>';
+      }).join("") + '</div>';
+      box.querySelectorAll("[data-drawingfolder]").forEach(function(b){
+        b.addEventListener("click", function(){ view.byggeleiderFag = this.dataset.drawingfolder; renderAll(); });
+      });
+      return;
+    }
     var list = drawingsForCurrentProject();
     if(list.length === 0){
       box.innerHTML = '<p class="empty-note">Ingen tegninger lastet opp ennå.</p>';
@@ -3706,11 +3722,17 @@
     }
     box.innerHTML = list.map(function(d){
       var url = sb ? drawingPublicUrl(d.path) : "#";
-      return '<div class="shoprow" data-drawing="'+d.id+'">' +
-        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
-        fagBadgeHtml(d.fag) +
-        '<button type="button" class="btn small" data-editonly data-renamedrawing="'+d.id+'">Rediger navn</button>' +
-        '<button type="button" class="btn small danger" data-editonly data-deldrawing="'+d.id+'">Slett</button>' +
+      var isImage = (d.contentType||"").indexOf("image/") === 0;
+      var thumb = isImage
+        ? '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>'
+        : '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb" style="display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted);">PDF</a>';
+      return '<div class="drawcard" data-drawing="'+d.id+'">' +
+        thumb +
+        '<div class="dmeta"><div class="dname">'+escapeHtml(d.name)+'</div>'+fagBadgeHtml(d.fag)+'</div>' +
+        '<div class="dactions" data-editonly>' +
+        '<button type="button" class="btn small" data-renamedrawing="'+d.id+'">Rediger navn</button>' +
+        '<button type="button" class="btn small danger" data-deldrawing="'+d.id+'">Slett</button>' +
+        '</div>' +
         '</div>';
     }).join("");
     document.querySelectorAll("[data-renamedrawing]").forEach(function(b){
