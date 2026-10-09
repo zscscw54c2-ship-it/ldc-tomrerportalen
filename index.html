@@ -1028,6 +1028,11 @@
       </div>
     </div>
 
+    <div class="peoplecard" id="dashFlexWrap" style="margin-top:16px;" hidden>
+      <h2 style="font-size:16px; margin-bottom:8px;">Åpne flex-forespørsler</h2>
+      <div id="dashFlexList"></div>
+    </div>
+
     <div class="peoplecard" style="margin-top:16px;">
       <h2 style="font-size:16px; margin-bottom:8px;">Handleliste – mangler å kjøpe</h2>
       <div id="dashShopList"></div>
@@ -7681,6 +7686,24 @@
     byId("dashProgramList").innerHTML = prog.length ? prog.map(function(o){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'</div>';
     }).join("") : '<p class="empty-note">Ingen rader lagt til ennå. Legg til under Åndelig.</p>';
+
+    var pid = currentProjectId();
+    var openFlex = state.flexRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; })
+      .sort(function(a,b){ return a.day < b.day ? -1 : a.day > b.day ? 1 : 0; });
+    byId("dashFlexWrap").hidden = openFlex.length === 0;
+    if(openFlex.length){
+      byId("dashFlexList").innerHTML = openFlex.map(function(r){
+        var p = state.people.find(function(x){ return x.id === r.personId; });
+        var periodLabel = r.period === "formiddag" ? "Formiddag" : "Ettermiddag";
+        return '<div class="shoprow" data-dashnav="andelig" style="cursor:pointer;">' +
+          '<span class="sname">'+escapeHtml(p ? p.name : "?")+'</span>' +
+          '<span class="sqty">'+fmtRange(r.day, r.day)+' · '+periodLabel+'</span>' +
+          '</div>';
+      }).join("");
+      byId("dashFlexList").querySelectorAll("[data-dashnav]").forEach(function(el){
+        el.addEventListener("click", function(){ switchTab(this.dataset.dashnav); });
+      });
+    }
   }
   byId("dashCreateMeetingBtn").addEventListener("click", function(){
     var meetings = toMeetingsForCurrentProject();
