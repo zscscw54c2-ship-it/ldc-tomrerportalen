@@ -367,6 +367,13 @@
   .progress .bar i{display:block; height:100%;}
   .unplanned-note{padding:10px 16px; border-bottom:1px solid var(--border); background:var(--accent-soft); font-size:12.5px; color:var(--text);}
   .unplanned-note button{border:none; background:none; padding:0; color:var(--accent); font-weight:600; cursor:pointer; text-decoration:underline; font-size:12.5px;}
+  .room-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; align-items:start;}
+  .room-card .bar{height:5px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin:6px 0 10px; display:flex;}
+  .room-card .bar i{display:block; height:100%;}
+  .room-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px solid var(--border);}
+  .room-row:first-of-type{border-top:none;}
+  .room-row.done .room-text{color:var(--muted); text-decoration:line-through;}
+  .room-text{flex:1; min-width:0; font-size:13.5px;}
   .checkrow{display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; margin:4px 0 12px; cursor:pointer;}
   .checkrow input{width:17px; height:17px; accent-color:var(--accent);}
   .statuspicker.big button{padding:8px 14px; font-size:12.5px; flex:1;}
@@ -1218,7 +1225,7 @@
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
-    <div id="roomTodoGroups"></div>
+    <div id="roomTodoGroups" class="room-grid"></div>
   </section>
 
   <section id="panel-personer" class="panel">
@@ -4086,7 +4093,9 @@
     box.innerHTML = rooms.map(function(room){
       var items = list.filter(function(t){ return t.room === room; });
       var doneC = items.filter(function(t){ return t.done; }).length;
-      return '<div class="peoplecard" style="margin-bottom:14px;"><h2 style="font-size:15px; margin-bottom:8px;">'+escapeHtml(room)+' <span class="badge group">'+doneC+' / '+items.length+'</span></h2>' +
+      var pct = items.length ? Math.round(doneC/items.length*100) : 0;
+      return '<div class="peoplecard room-card"><h2 style="font-size:15px; margin-bottom:0; display:flex; justify-content:space-between; align-items:baseline; gap:8px;"><span>'+escapeHtml(room)+'</span><span class="badge group">'+doneC+' / '+items.length+'</span></h2>' +
+        '<div class="bar"><i style="width:'+pct+'%; background:var(--good)"></i></div>' +
         items.map(function(t){
           var teamPeople = teamMemberPeopleForCurrentProject();
           var assignedPerson = t.assignedPersonId ? teamPeople.find(function(p){ return p.id === t.assignedPersonId; }) : null;
@@ -4099,7 +4108,7 @@
               teamPeople.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.assignedPersonId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
               '</select>';
           }
-          return '<div class="shoprow'+(t.done?' bought':'')+'" style="flex-wrap:wrap;"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="sname">'+escapeHtml(t.text)+'</span>'+personField+'<button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
+          return '<div class="room-row'+(t.done?' done':'')+'"><input type="checkbox" data-roomtodo="'+t.id+'" '+(t.done?'checked':'')+' /><span class="room-text">'+escapeHtml(t.text)+'</span>'+personField+'<button class="del" data-delroomtodo="'+t.id+'" title="Fjern">×</button></div>';
         }).join("") +
         '</div>';
     }).join("");
