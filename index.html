@@ -1213,20 +1213,8 @@
         <h2 data-etkey="doku_title" style="font-size:16px;">Dokumentasjon</h2>
         <button class="btn small" id="dokuEditBtn">Rediger</button>
       </div>
-      <p class="sub" data-etkey="doku_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Ta bilde eller last opp dokumentasjonsbilder, og legg ved en tekst om hva bildet viser.</p>
-      <form class="inline-add" id="addDokuForm" style="flex-wrap:wrap;">
-        <label class="btn small" id="newDokuCameraTrigger" for="newDokuCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>
-        <input type="file" id="newDokuCameraInput" accept="image/*" capture="environment" multiple style="display:none;" />
-        <label class="btn small ghost" id="newDokuFileTrigger" for="newDokuFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>
-        <input type="file" id="newDokuFileInput" accept="image/*" multiple style="display:none;" />
-        <input type="text" id="newDokuCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />
-        <span id="newDokuWeekLabel" hidden style="font-size:12.5px; font-weight:600; color:var(--text); align-self:center;">Velg uke:</span>
-        <select id="newDokuWeek" hidden style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"></select>
-        <span class="empty-note" id="newDokuFileStatus"></span>
-        <button class="btn primary" type="submit" id="newDokuSubmitBtn" disabled>Last opp</button>
-      </form>
-      <p class="empty-note" id="dokuUploadStatus" style="margin-top:6px;"></p>
-      <div class="drawgrid" id="dokuGrid" style="margin-top:14px;"></div>
+      <p class="sub" data-etkey="doku_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">Velg fag og uke, og ta bilde eller last opp dokumentasjonsbilder direkte der.</p>
+      <div id="dokuGrid" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -2321,6 +2309,7 @@
     <div class="field"><label for="peTelefonInput">Telefon</label><input type="text" id="peTelefonInput" maxlength="40" /></div>
     <div class="field"><label for="peAdresseInput">Adresse</label><input type="text" id="peAdresseInput" maxlength="200" /></div>
     <div class="field"><label for="peTagInput">Tag (f.eks. Lokal eller Under 18)</label><input type="text" id="peTagInput" maxlength="30" placeholder="Valgfritt" /></div>
+    <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:6px; margin-top:4px;"><input type="checkbox" id="peLokalInput" /> Lokal (ordner losji selv)</label>
     <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:6px; margin-top:4px;"><input type="checkbox" id="peOnTeamInput" /> Med i teamet</label>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="personInfoEditCancel">Avbryt</button>
@@ -2347,7 +2336,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [] };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -3570,6 +3559,7 @@
     }).join("") + '<div class="dropmenu-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag (oversikt)", "var(--muted)");
     openDropdownMenu(this, itemsHtml, function(value){
       view.byggeleiderFag = value;
+      view.dokuWeek = null;
       renderAll();
     });
   });
@@ -3888,40 +3878,118 @@
   });
 
   // ---------- dokumentasjon tab ----------
+  // Dokumentasjon bruker samme mappemønster som Tegninger: "Alle fag" viser fag-mapper,
+  // inne i et fag vises én mappe per uke (med antall bilder), og inne i en uke vises bildene
+  // for den uken - med opplasting rett der, automatisk knyttet til riktig fag og uke.
+  var dokuWeekSelectedFiles = null;
   function renderDokumentasjonTab(){
     renderEditableStatics("panel-dokumentasjon", byId("panel-dokumentasjon").classList.contains("editing"));
     var box = byId("dokuGrid");
-    var list = dokuPhotosForCurrentProject();
-    if(list.length === 0){
-      box.innerHTML = '<p class="empty-note">Ingen dokumentasjonsbilder lastet opp ennå.</p>';
+    if(activeFag() === "alle"){
+      var allPhotos = state.dokuPhotos.filter(inCurrentProject);
+      box.innerHTML = '<div class="fagfolder-grid">' + DRAWING_FOLDER_FAGS.map(function(f){
+        var count = allPhotos.filter(function(d){ return d.fag === f; }).length;
+        return '<button type="button" class="fagfolder-tile" data-dokufolder="'+f+'" style="background:'+(FAG_COLORS[f]||"var(--muted)")+'">' +
+          '<span class="fagfolder-name">'+escapeHtml(FAG_LABELS[f]||f)+'</span>' +
+          '<span class="fagfolder-count">'+count+' bilde'+(count===1?'':'r')+'</span>' +
+          '</button>';
+      }).join("") + '</div>';
+      box.querySelectorAll("[data-dokufolder]").forEach(function(b){
+        b.addEventListener("click", function(){ view.byggeleiderFag = this.dataset.dokufolder; view.dokuWeek = null; renderAll(); });
+      });
       return;
     }
-    var curMon = toISODate(mondayOf(new Date()));
-    box.innerHTML = list.map(function(d){
-      var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
-      var weekBadge = "";
-      if(d.weekStart){
-        var isCur = d.weekStart === curMon;
-        weekBadge = '<span class="badge" style="background:'+(isCur?"var(--good-soft)":"var(--surface-alt)")+'; color:'+(isCur?"var(--good-ink)":"var(--muted)")+';">Uke '+isoWeekInfo(fromISODate(d.weekStart)).week+(isCur?' (nåværende uke)':'')+'</span>';
+
+    var fagPhotos = dokuPhotosForCurrentProject();
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    var mondays = projectWeekMondays(cur);
+
+    if(!view.dokuWeek){
+      var backBtn = '<button type="button" class="btn small ghost" data-dokubacktoall style="margin-bottom:12px;">← Alle fag</button>';
+      if(!mondays.length){
+        box.innerHTML = backBtn + '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
+      } else {
+        box.innerHTML = backBtn + '<div class="fagfolder-grid">' + mondays.map(function(m){
+          var iso = toISODate(m);
+          var count = fagPhotos.filter(function(d){ return d.weekStart === iso; }).length;
+          return '<button type="button" class="fagfolder-tile" data-dokuweekfolder="'+iso+'" style="background:'+(FAG_COLORS[activeFag()]||"var(--muted)")+'">' +
+            '<span class="fagfolder-name">Uke '+isoWeekInfo(m).week+'</span>' +
+            '<span class="fagfolder-count">'+count+' bilde'+(count===1?'':'r')+'</span>' +
+            '</button>';
+        }).join("") + '</div>';
       }
-      return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
-        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
-        '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div>'+fagBadgeHtml(d.fag)+weekBadge+'</div>' +
-        '<div class="dactions" data-editonly>' +
-        '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
-        '<button type="button" class="btn small danger" data-deldoku="'+d.id+'">Slett</button>' +
-        '</div>' +
-        '</div>';
-    }).join("");
-    document.querySelectorAll("[data-renamedoku]").forEach(function(b){
+      box.querySelectorAll("[data-dokubacktoall]").forEach(function(b){
+        b.addEventListener("click", function(){ view.byggeleiderFag = "alle"; view.dokuWeek = null; renderAll(); });
+      });
+      box.querySelectorAll("[data-dokuweekfolder]").forEach(function(b){
+        b.addEventListener("click", function(){ view.dokuWeek = this.dataset.dokuweekfolder; renderAll(); });
+      });
+      return;
+    }
+
+    var weekIso = view.dokuWeek;
+    var weekPhotos = fagPhotos.filter(function(d){ return d.weekStart === weekIso; });
+    var uploadFormHtml =
+      '<form class="inline-add" id="dokuWeekUploadForm" style="flex-wrap:wrap; margin-bottom:10px;">' +
+      '<label class="btn small" id="dokuWeekCameraTrigger" for="dokuWeekCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>' +
+      '<input type="file" id="dokuWeekCameraInput" accept="image/*" capture="environment" multiple style="display:none;" />' +
+      '<label class="btn small ghost" id="dokuWeekFileTrigger" for="dokuWeekFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>' +
+      '<input type="file" id="dokuWeekFileInput" accept="image/*" multiple style="display:none;" />' +
+      '<input type="text" id="dokuWeekCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />' +
+      '<span class="empty-note" id="dokuWeekFileStatus"></span>' +
+      '<button class="btn primary" type="submit" id="dokuWeekSubmitBtn" disabled>Last opp</button>' +
+      '</form>' +
+      '<p class="empty-note" id="dokuWeekUploadStatus"></p>';
+    box.innerHTML = '<button type="button" class="btn small ghost" data-dokubacktoweeks style="margin-bottom:12px;">← '+escapeHtml(FAG_LABELS[activeFag()]||activeFag())+' – ukeoversikt</button>' +
+      '<h3 style="font-size:15px; margin-bottom:10px;">Uke '+isoWeekInfo(fromISODate(weekIso)).week+'</h3>' +
+      uploadFormHtml +
+      (weekPhotos.length === 0 ? '<p class="empty-note">Ingen bilder lastet opp for denne uken ennå.</p>' : '<div class="drawgrid">' + weekPhotos.map(function(d){
+        var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
+        return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
+          '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
+          '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div></div>' +
+          '<div class="dactions" data-editonly>' +
+          '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
+          '<button type="button" class="btn small danger" data-deldoku="'+d.id+'">Slett</button>' +
+          '</div>' +
+          '</div>';
+      }).join("") + '</div>');
+
+    box.querySelectorAll("[data-dokubacktoweeks]").forEach(function(b){
+      b.addEventListener("click", function(){ view.dokuWeek = null; renderAll(); });
+    });
+    box.querySelectorAll("[data-renamedoku]").forEach(function(b){
       b.addEventListener("click", function(){ renameDokuCaption(this.dataset.renamedoku); });
     });
-    document.querySelectorAll("[data-deldoku]").forEach(function(b){
+    box.querySelectorAll("[data-deldoku]").forEach(function(b){
       b.addEventListener("click", function(){
         var id = this.dataset.deldoku;
         var d = state.dokuPhotos.find(function(x){ return x.id === id; });
         if(d && confirm("Slette dette bildet?")) deleteDokuPhoto(d);
       });
+    });
+
+    dokuWeekSelectedFiles = null;
+    function updateDokuWeekSubmitState(){
+      byId("dokuWeekSubmitBtn").disabled = !(dokuWeekSelectedFiles && dokuWeekSelectedFiles.length);
+    }
+    function handleDokuWeekFileChange(){
+      if(this.files && this.files.length){
+        dokuWeekSelectedFiles = Array.prototype.slice.call(this.files);
+        byId("dokuWeekFileStatus").textContent = dokuWeekSelectedFiles.length + " bilde(r) valgt.";
+      }
+      updateDokuWeekSubmitState();
+    }
+    byId("dokuWeekCameraInput").addEventListener("change", handleDokuWeekFileChange);
+    byId("dokuWeekFileInput").addEventListener("change", handleDokuWeekFileChange);
+    byId("dokuWeekUploadForm").addEventListener("submit", function(ev){
+      ev.preventDefault();
+      if(!dokuWeekSelectedFiles || !dokuWeekSelectedFiles.length) return;
+      uploadDokuPhotos(dokuWeekSelectedFiles, byId("dokuWeekCaption").value, null, weekIso);
+      byId("dokuWeekCameraInput").value = ""; byId("dokuWeekFileInput").value = "";
+      byId("dokuWeekCaption").value = ""; byId("dokuWeekFileStatus").textContent = "";
+      dokuWeekSelectedFiles = null;
+      updateDokuWeekSubmitState();
     });
   }
   byId("dokuEditBtn").addEventListener("click", function(){
@@ -3929,55 +3997,6 @@
     byId("dokuEditBtn").textContent = editing ? "Ferdig" : "Rediger";
     byId("dokuEditBtn").classList.toggle("primary", editing);
     renderEditableStatics("panel-dokumentasjon", editing);
-  });
-  // Kamerabilder tagges automatisk til nåværende uke. Opplastede bilder (fra galleri/filsystem)
-  // må velge en uke selv, begrenset til prosjektets uker - viser derfor et ukevalg kun for den
-  // ruten, ikke for kamera-ruten.
-  var dokuSelectedFiles = null, dokuSelectedSource = null;
-  function updateDokuSubmitState(){
-    var hasFiles = !!(dokuSelectedFiles && dokuSelectedFiles.length);
-    var weekOk = dokuSelectedSource === "camera" || (dokuSelectedSource === "upload" && byId("newDokuWeek").value);
-    byId("newDokuSubmitBtn").disabled = !(hasFiles && weekOk);
-  }
-  byId("newDokuCameraInput").addEventListener("change", function(){
-    if(this.files && this.files.length){
-      dokuSelectedFiles = Array.prototype.slice.call(this.files);
-      dokuSelectedSource = "camera";
-      byId("newDokuWeek").hidden = true;
-      byId("newDokuWeekLabel").hidden = true;
-      byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - legges i nåværende uke.";
-    }
-    updateDokuSubmitState();
-  });
-  byId("newDokuFileInput").addEventListener("change", function(){
-    if(this.files && this.files.length){
-      dokuSelectedFiles = Array.prototype.slice.call(this.files);
-      dokuSelectedSource = "upload";
-      var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-      var mondays = projectWeekMondays(cur);
-      byId("newDokuWeek").innerHTML = '<option value="">– velg uke –</option>' + mondays.map(function(m){
-        var iso = toISODate(m);
-        return '<option value="'+iso+'">Uke '+isoWeekInfo(m).week+' ('+fmtRange(iso,iso)+')</option>';
-      }).join("");
-      byId("newDokuWeek").hidden = false;
-      byId("newDokuWeekLabel").hidden = false;
-      byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - velg hvilken uke.";
-    }
-    updateDokuSubmitState();
-  });
-  byId("newDokuWeek").addEventListener("change", updateDokuSubmitState);
-  byId("addDokuForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    if(!dokuSelectedFiles || !dokuSelectedFiles.length) return;
-    var weekStart = dokuSelectedSource === "camera" ? toISODate(mondayOf(new Date())) : byId("newDokuWeek").value;
-    if(!weekStart) return;
-    uploadDokuPhotos(dokuSelectedFiles, byId("newDokuCaption").value, null, weekStart);
-    byId("newDokuCameraInput").value = ""; byId("newDokuFileInput").value = "";
-    byId("newDokuCaption").value = ""; byId("newDokuFileStatus").textContent = "";
-    byId("newDokuWeek").hidden = true; byId("newDokuWeek").value = "";
-    byId("newDokuWeekLabel").hidden = true;
-    dokuSelectedFiles = null; dokuSelectedSource = null;
-    updateDokuSubmitState();
   });
 
   // ---------- people tab ----------
@@ -9026,11 +9045,23 @@
     byId("peTelefonInput").value = person.phone || "";
     byId("peAdresseInput").value = person.address || "";
     byId("peTagInput").value = person.tag || "";
+    byId("peLokalInput").checked = person.tag === "Lokal";
+    personInfoEditDialog.dataset.wasLokal = person.tag === "Lokal" ? "1" : "";
     byId("peOnTeamInput").checked = !!person.onTeam;
     personInfoEditDialog.dataset.wasOnTeam = person.onTeam ? "1" : "";
     personInfoEditDialog.showModal();
   }
   byId("personInfoEditCancel").addEventListener("click", function(){ personInfoEditDialog.close(); });
+  // "Lokal"-avkrysningen og Tag-feltet speiler hverandre, siden "Lokal" bare er en vanlig tag
+  // med en ekstra automatikk (se submit under) - krysser man av boksen settes/fjernes tag-
+  // teksten med det samme, og skriver man "Lokal" direkte i tag-feltet krysses boksen av.
+  byId("peLokalInput").addEventListener("change", function(){
+    if(this.checked){ byId("peTagInput").value = "Lokal"; }
+    else if(byId("peTagInput").value.trim() === "Lokal"){ byId("peTagInput").value = ""; }
+  });
+  byId("peTagInput").addEventListener("input", function(){
+    byId("peLokalInput").checked = this.value.trim() === "Lokal";
+  });
   byId("personInfoEditForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var personId = personInfoEditDialog.dataset.personId;
@@ -9038,6 +9069,8 @@
     if(!name) return;
     var onTeamChecked = byId("peOnTeamInput").checked;
     var wasOnTeam = personInfoEditDialog.dataset.wasOnTeam === "1";
+    var lokalChecked = byId("peLokalInput").checked;
+    var wasLokal = personInfoEditDialog.dataset.wasLokal === "1";
     updatePerson(personId, {
       name: name.slice(0,80),
       congregation: byId("peMenighetInput").value.trim().slice(0,120) || null,
@@ -9050,6 +9083,10 @@
     // automatikk som når man huker av dette ved opprettelse. Huker man AV, røres ikke
     // eksisterende tilgjengelighet - personen forblir som vanlig frivillig.
     if(onTeamChecked && !wasOnTeam) markAvailableWholeProject(personId, null);
+    // Samme rutine som ved lokal-import: "Lokal" legger personen under "Ordner losji selv" i
+    // Logi, og fjerner man haken reverseres logi-statusen igjen.
+    if(lokalChecked && !wasLokal) upsertLogiInfo(personId, { status: "ordner_selv" });
+    else if(!lokalChecked && wasLokal) upsertLogiInfo(personId, { status: "uavklart" });
     personInfoEditDialog.close();
     if(logiDialog.open) openLogiDialog(personId);
   });
@@ -10347,7 +10384,7 @@
       return sb.from("documentation_photos").delete().eq("id", photo.id);
     }).then(function(res){ if(res && res.error){ showError("Kunne ikke slette bildet: "+res.error.message); return; } refetchDokuPhotos(); });
   }
-  function showDokuStatus(msg){ byId("dokuUploadStatus").textContent = msg; }
+  function showDokuStatus(msg){ var el = byId("dokuWeekUploadStatus"); if(el) el.textContent = msg; }
   function renameDokuCaption(id){
     if(!sb) return;
     var d = state.dokuPhotos.find(function(x){ return x.id === id; });
