@@ -250,6 +250,11 @@
   .shoprow button.del:hover{color:var(--bad-ink);}
 
   .drawgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;}
+  .fagfolder-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px;}
+  .fagfolder-tile{border:none; border-radius:14px; padding:14px 10px; min-height:84px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; font-family:inherit; color:#fff; transition:transform .12s ease;}
+  .fagfolder-tile:active{transform:scale(.96);}
+  .fagfolder-tile .fagfolder-name{font-size:15px; font-weight:800; line-height:1.2;}
+  .fagfolder-tile .fagfolder-count{font-size:11.5px; font-weight:600; opacity:.85;}
   .drawcard{background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:flex; flex-direction:column;}
   .drawcard a.thumb{aspect-ratio:1/1; background:var(--surface); display:flex; align-items:center; justify-content:center; overflow:hidden;}
   .drawcard a.thumb img{width:100%; height:100%; object-fit:cover; display:block;}
@@ -1205,6 +1210,7 @@
         <label class="btn small ghost" id="newDokuFileTrigger" for="newDokuFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>
         <input type="file" id="newDokuFileInput" accept="image/*" multiple style="display:none;" />
         <input type="text" id="newDokuCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />
+        <span id="newDokuWeekLabel" hidden style="font-size:12.5px; font-weight:600; color:var(--text); align-self:center;">Velg uke:</span>
         <select id="newDokuWeek" hidden style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface);"></select>
         <span class="empty-note" id="newDokuFileStatus"></span>
         <button class="btn primary" type="submit" id="newDokuSubmitBtn" disabled>Last opp</button>
@@ -1689,6 +1695,15 @@
       <h2 style="font-size:16px; margin-bottom:8px;">E-postmaler</h2>
       <div id="cgoStartupEmails"></div>
     </div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+      <div id="portalSuggestionList-cgo" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addPortalSuggestionForm-cgo" style="margin-top:10px;">
+        <input type="text" id="newPortalSuggestionText-cgo" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
   </section>
 
   <section id="panel-kontor1" class="panel">
@@ -1701,6 +1716,15 @@
       </div>
     </div>
     <div id="officeBoxes-kontor1" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+      <div id="portalSuggestionList-kontor1" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addPortalSuggestionForm-kontor1" style="margin-top:10px;">
+        <input type="text" id="newPortalSuggestionText-kontor1" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
   </section>
 
   <section id="panel-kontor2" class="panel">
@@ -1713,6 +1737,15 @@
       </div>
     </div>
     <div id="officeBoxes-kontor2" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+      <div id="portalSuggestionList-kontor2" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addPortalSuggestionForm-kontor2" style="margin-top:10px;">
+        <input type="text" id="newPortalSuggestionText-kontor2" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
   </section>
 
   <section id="panel-tomote" class="panel">
@@ -3750,11 +3783,11 @@
     byId("addDrawingForm").hidden = activeFag() === "alle";
     if(activeFag() === "alle"){
       var allDrawings = state.drawings.filter(inCurrentProject);
-      box.innerHTML = '<div class="mh-grid">' + DRAWING_FOLDER_FAGS.map(function(f){
+      box.innerHTML = '<div class="fagfolder-grid">' + DRAWING_FOLDER_FAGS.map(function(f){
         var count = allDrawings.filter(function(d){ return d.fag === f; }).length;
-        return '<button type="button" class="mh-tile" data-drawingfolder="'+f+'">' +
-          '<span class="fag-badge" style="background:'+(FAG_COLORS[f]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[f]||f)+'</span>' +
-          '<span style="font-size:12px; color:var(--muted); margin-top:4px;">'+count+' tegning'+(count===1?'':'er')+'</span>' +
+        return '<button type="button" class="fagfolder-tile" data-drawingfolder="'+f+'" style="background:'+(FAG_COLORS[f]||"var(--muted)")+'">' +
+          '<span class="fagfolder-name">'+escapeHtml(FAG_LABELS[f]||f)+'</span>' +
+          '<span class="fagfolder-count">'+count+' tegning'+(count===1?'':'er')+'</span>' +
           '</button>';
       }).join("") + '</div>';
       box.querySelectorAll("[data-drawingfolder]").forEach(function(b){
@@ -3769,17 +3802,11 @@
     }
     box.innerHTML = list.map(function(d){
       var url = sb ? drawingPublicUrl(d.path) : "#";
-      var isImage = (d.contentType||"").indexOf("image/") === 0;
-      var thumb = isImage
-        ? '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>'
-        : '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb" style="display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted);">PDF</a>';
-      return '<div class="drawcard" data-drawing="'+d.id+'">' +
-        thumb +
-        '<div class="dmeta"><div class="dname">'+escapeHtml(d.name)+'</div>'+fagBadgeHtml(d.fag)+'</div>' +
-        '<div class="dactions" data-editonly>' +
-        '<button type="button" class="btn small" data-renamedrawing="'+d.id+'">Rediger navn</button>' +
-        '<button type="button" class="btn small danger" data-deldrawing="'+d.id+'">Slett</button>' +
-        '</div>' +
+      return '<div class="shoprow" data-drawing="'+d.id+'">' +
+        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
+        fagBadgeHtml(d.fag) +
+        '<button type="button" class="btn small" data-editonly data-renamedrawing="'+d.id+'">Rediger navn</button>' +
+        '<button type="button" class="btn small danger" data-editonly data-deldrawing="'+d.id+'">Slett</button>' +
         '</div>';
     }).join("");
     document.querySelectorAll("[data-renamedrawing]").forEach(function(b){
@@ -3867,6 +3894,7 @@
       dokuSelectedFiles = Array.prototype.slice.call(this.files);
       dokuSelectedSource = "camera";
       byId("newDokuWeek").hidden = true;
+      byId("newDokuWeekLabel").hidden = true;
       byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - legges i nåværende uke.";
     }
     updateDokuSubmitState();
@@ -3882,6 +3910,7 @@
         return '<option value="'+iso+'">Uke '+isoWeekInfo(m).week+' ('+fmtRange(iso,iso)+')</option>';
       }).join("");
       byId("newDokuWeek").hidden = false;
+      byId("newDokuWeekLabel").hidden = false;
       byId("newDokuFileStatus").textContent = dokuSelectedFiles.length + " bilde(r) valgt - velg hvilken uke.";
     }
     updateDokuSubmitState();
@@ -3896,6 +3925,7 @@
     byId("newDokuCameraInput").value = ""; byId("newDokuFileInput").value = "";
     byId("newDokuCaption").value = ""; byId("newDokuFileStatus").textContent = "";
     byId("newDokuWeek").hidden = true; byId("newDokuWeek").value = "";
+    byId("newDokuWeekLabel").hidden = true;
     dokuSelectedFiles = null; dokuSelectedSource = null;
     updateDokuSubmitState();
   });
@@ -5869,6 +5899,7 @@
     renderProsjektTab();
     renderCgoTab();
     renderKontorTabs();
+    renderAllPortalSuggestionLists();
     renderToMoteTab();
     renderDashboardTab();
     renderKontaktView();
@@ -6473,24 +6504,42 @@
       b.addEventListener("click", function(){ rejectFagRequest(this.dataset.rejectreq); });
     });
 
+  }
+  // Forslagsboksen er global (ikke prosjekt- eller kontorspesifikk) og vises identisk i alle
+  // CG1-boksene (ACGO/CGO/Kontor 1/Kontor 2) - samme liste og samme lagring overalt.
+  var PORTAL_SUGGESTION_LIST_IDS = ["portalSuggestionList", "portalSuggestionList-cgo", "portalSuggestionList-kontor1", "portalSuggestionList-kontor2"];
+  function renderPortalSuggestionList(listId){
+    var box = byId(listId);
+    if(!box) return;
     var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
-    byId("portalSuggestionList").innerHTML = suggestions.length ? suggestions.map(function(s){
+    box.innerHTML = suggestions.length ? suggestions.map(function(s){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
-    byId("portalSuggestionList").querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
+    box.querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
       b.addEventListener("click", function(){
         if(confirm("Slette dette forslaget?")) deletePortalSuggestion(this.dataset.delportalsuggestion);
       });
     });
   }
-  byId("addPortalSuggestionForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var input = byId("newPortalSuggestionText");
-    var text = input.value.trim();
-    if(!text) return;
-    addPortalSuggestion(text);
-    input.value = "";
-  });
+  function renderAllPortalSuggestionLists(){
+    PORTAL_SUGGESTION_LIST_IDS.forEach(renderPortalSuggestionList);
+  }
+  function wirePortalSuggestionForm(formId, inputId){
+    var form = byId(formId);
+    if(!form) return;
+    form.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var input = byId(inputId);
+      var text = input.value.trim();
+      if(!text) return;
+      addPortalSuggestion(text);
+      input.value = "";
+    });
+  }
+  wirePortalSuggestionForm("addPortalSuggestionForm", "newPortalSuggestionText");
+  wirePortalSuggestionForm("addPortalSuggestionForm-cgo", "newPortalSuggestionText-cgo");
+  wirePortalSuggestionForm("addPortalSuggestionForm-kontor1", "newPortalSuggestionText-kontor1");
+  wirePortalSuggestionForm("addPortalSuggestionForm-kontor2", "newPortalSuggestionText-kontor2");
 
   var accessCodeLoadedForProject = null;
   function renderProsjektTab(){
