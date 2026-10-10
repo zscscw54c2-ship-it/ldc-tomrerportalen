@@ -880,7 +880,8 @@
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
     <form id="fagCodeLoginForm" hidden>
-      <select id="fagCodeSelect" required style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:14px; background:var(--surface); margin-bottom:8px;"></select>
+      <select id="fagCodeProjectSelect" required style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:14px; background:var(--surface); margin-bottom:8px;"></select>
+      <select id="fagCodeSelect" required disabled style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:14px; background:var(--surface); margin-bottom:8px;"><option value="">Velg prosjekt først …</option></select>
       <input type="password" id="fagCodeInput" placeholder="Kode" required autocomplete="current-password" />
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
@@ -6748,14 +6749,15 @@
       refetchFags();
     });
   }
-  // ---------- delte fag-kode-kontoer (fase 4) ----------
+  // ---------- delte fag-kode-kontoer, låst til prosjekt+fag (fase 4) ----------
   // Samme e-post-formel som Edge Function "fag-account-admin" bruker server-side - kontoen finnes
   // aldri i klientkoden med noe annet enn denne deterministiske, aldri-leverbare adressen.
-  function fagAccountEmail(fagKey){
-    return "fag-" + fagKey + "@fagkonto.ldc-tomrerportalen.invalid";
+  // Inkluderer prosjekt-id, siden samme fag kan ha forskjellig kode i to prosjekter.
+  function fagAccountEmail(projectId, fagKey){
+    return "acct-" + fagKey + "-" + projectId + "@fagkonto.ldc-tomrerportalen.invalid";
   }
   function rowToFagAccount(row){
-    return { fagKey: row.fag_key, authUserId: row.auth_user_id, updatedAt: row.updated_at };
+    return { projectId: row.project_id, fagKey: row.fag_key, authUserId: row.auth_user_id };
   }
   function refetchFagAccounts(){
     if(!isByggeleder()) return;
@@ -6765,11 +6767,13 @@
       scheduleRender();
     });
   }
-  // Oppretter (hvis faget ikke har en konto ennå) eller endrer koden på fagets delte konto, via
-  // Edge Function-en - aldri direkte fra klienten, siden det krever service-rollen.
+  // Oppretter (hvis faget ikke har en konto for DETTE prosjektet ennå) eller endrer koden på den
+  // eksisterende, via Edge Function-en - aldri direkte fra klienten, siden det krever service-rollen.
   function setFagCode(fagKey, code){
     if(!sb || !isByggeleder()) return;
-    sb.functions.invoke("fag-account-admin", { body: { fagKey: fagKey, code: code } }).then(function(res){
+    var pid = currentProjectId();
+    if(!pid){ showError("Velg et prosjekt først."); return; }
+    sb.functions.invoke("fag-account-admin", { body: { projectId: pid, fagKey: fagKey, code: code } }).then(function(res){
       if(res.error){
         var ctx = res.error.context;
         if(ctx && typeof ctx.json === "function"){
@@ -6991,7 +6995,7 @@
       var isWholeProject = active && curProj && curProj.start && curProj.end && start === curProj.start && end === curProj.end;
       var visible = visMap[f.key] !== false;
       var usage = fagUsageCount(f.key);
-      var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key; });
+      var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key && a.projectId === currentProjectId(); });
       return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">' +
         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
@@ -7017,7 +7021,7 @@
       btn.addEventListener("click", function(){
         var key = this.dataset.setfagcode;
         var fag = state.fags.find(function(f){ return f.key === key; });
-        var code = prompt("Sett innloggingskode for «"+(fag?fag.label:key)+"» (minst 6 tegn). Denne kommer i tillegg til eventuelle individuelle kontoer - ingenting annet endres:");
+        var code = prompt("Sett innloggingskode for «"+(fag?fag.label:key)+"» i dette prosjektet (minst 6 tegn). Gjelder kun dette prosjektet, og kommer i tillegg til eventuelle individuelle kontoer:");
         if(code === null) return;
         code = code.trim();
         if(code.length < 6){ showError("Koden må være minst 6 tegn."); return; }
@@ -10980,39 +10984,63 @@
     });
   });
 
-  // ---------- alternativ innlogging: velg fag + kode (delt fag-konto, fase 4) ----------
-  // Fag-listen må kunne vises FØR noen er innlogget - hentes derfor via list_fags_public() (anon
-  // kan kalle den), ikke via den vanlige "fags"-tabellen som krever innlogging. Faller tilbake på
-  // dagens faste FAG_LABELS/FAG_LIST hvis kallet feiler (f.eks. ingen nettforbindelse ennå).
-  function populateFagCodeSelect(){
-    var sel = byId("fagCodeSelect");
-    var fallback = FAG_LIST.map(function(k){ return { key: k, label: FAG_LABELS[k] || k }; });
-    function render(list){
-      sel.innerHTML = list.map(function(f){ return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>'; }).join("");
-    }
-    render(fallback);
+  // ---------- alternativ innlogging: velg prosjekt → fag/Menighet → kode (fase 4) ----------
+  // Både prosjekt-listen og fag-listen må kunne vises FØR noen er innlogget - hentes derfor via
+  // list_projects_public()/list_project_login_roles() (anon kan kalle begge), ikke via de vanlige
+  // tabellene som krever innlogging. Innlogging er låst til BÅDE kode og prosjekt: samme fag kan
+  // ha forskjellig kode i to prosjekter som går samtidig, derfor må prosjektet velges først.
+  function populateFagCodeProjectSelect(){
+    var sel = byId("fagCodeProjectSelect");
+    sel.innerHTML = '<option value="">Laster prosjekter …</option>';
     if(!sb) return;
-    sb.rpc("list_fags_public").then(function(res){
-      if(res.error || !res.data || !res.data.length) return;
-      render(res.data.map(function(f){ return { key: f.key, label: f.label }; }));
+    sb.rpc("list_projects_public").then(function(res){
+      if(res.error || !res.data){ sel.innerHTML = '<option value="">Kunne ikke laste prosjekter</option>'; return; }
+      sel.innerHTML = '<option value="">Velg prosjekt …</option>' + res.data.map(function(p){
+        return '<option value="'+escapeHtml(p.id)+'">'+escapeHtml(p.name)+'</option>';
+      }).join("");
+      populateFagCodeRoleSelect("");
     });
   }
+  function populateFagCodeRoleSelect(projectId){
+    var sel = byId("fagCodeSelect");
+    if(!projectId){
+      sel.innerHTML = '<option value="">Velg prosjekt først …</option>';
+      sel.disabled = true;
+      return;
+    }
+    sel.innerHTML = '<option value="">Laster fag …</option>';
+    sel.disabled = true;
+    if(!sb) return;
+    sb.rpc("list_project_login_roles", { p_project_id: projectId }).then(function(res){
+      if(res.error){ sel.innerHTML = '<option value="">Kunne ikke laste fag</option>'; return; }
+      var roles = (res.data || []).map(function(f){ return { key: f.key, label: f.label }; });
+      roles.push({ key: "kontakt", label: "Menighet" });
+      sel.innerHTML = '<option value="">Velg fag …</option>' + roles.map(function(f){
+        return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>';
+      }).join("");
+      sel.disabled = false;
+    });
+  }
+  byId("fagCodeProjectSelect").addEventListener("change", function(){ populateFagCodeRoleSelect(this.value); });
   byId("loginToggleMode").addEventListener("click", function(){
     var toFagCode = byId("loginForm").hidden === false;
     byId("loginForm").hidden = toFagCode;
     byId("fagCodeLoginForm").hidden = !toFagCode;
     byId("loginToggleMode").textContent = toFagCode ? "Logg inn med e-post i stedet" : "Logg inn med fagkode i stedet";
     byId("loginError").textContent = "";
-    if(toFagCode) populateFagCodeSelect();
+    if(toFagCode) populateFagCodeProjectSelect();
   });
   byId("fagCodeLoginForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     if(!sb) return;
+    var projectId = byId("fagCodeProjectSelect").value;
     var fagKey = byId("fagCodeSelect").value;
     var code = byId("fagCodeInput").value;
     byId("loginError").textContent = "";
-    sb.auth.signInWithPassword({ email: fagAccountEmail(fagKey), password: code }).then(function(res){
-      if(res.error){ byId("loginError").textContent = "Feil fag eller kode."; return; }
+    if(!projectId || !fagKey){ byId("loginError").textContent = "Velg prosjekt og fag."; return; }
+    sb.auth.signInWithPassword({ email: fagAccountEmail(projectId, fagKey), password: code }).then(function(res){
+      if(res.error){ byId("loginError").textContent = "Feil prosjekt, fag eller kode."; return; }
+      try{ localStorage.setItem("ldc_current_project", projectId); }catch(e){}
       byId("fagCodeInput").value = "";
     });
   });
