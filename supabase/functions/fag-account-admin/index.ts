@@ -1,10 +1,15 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// Setter eller oppretter den delte innloggingskoden for et fag. Kalles fra Administrasjon-siden
-// av en innlogget byggeleder - aldri direkte fra noen annen rolle. Service-rollen (SUPABASE_SERVICE_ROLE_KEY)
-// er tilgjengelig som miljøvariabel automatisk i alle Edge Functions, og brukes HER - ALDRI i
-// nettleserkoden - til å opprette/endre den delte Supabase Auth-kontoen for faget.
+// Setter eller oppretter den delte innloggingskoden for et fag (eller "Menighet") I ET GITT
+// PROSJEKT. Kalles fra Administrasjon-siden av en innlogget byggeleder - aldri direkte fra noen
+// annen rolle. Service-rollen (SUPABASE_SERVICE_ROLE_KEY) er tilgjengelig som miljøvariabel
+// automatisk i alle Edge Functions, og brukes HER - ALDRI i nettleserkoden - til å
+// opprette/endre den delte Supabase Auth-kontoen.
+//
+// Kontoen er nøkkelen (project_id, fag_key) - samme fag kan derfor ha forskjellig kode i to
+// prosjekter som går samtidig. "kontakt" er et gyldig fag_key (Menighet), selv om det ikke er en
+// rad i "fags" - det er en av de faste rollene profiles.role allerede godtar.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -19,8 +24,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function fagAccountEmail(fagKey: string): string {
-  return "fag-" + fagKey + "@fagkonto.ldc-tomrerportalen.invalid";
+function accountEmail(projectId: string, fagKey: string): string {
+  return "acct-" + fagKey + "-" + projectId + "@fagkonto.ldc-tomrerportalen.invalid";
 }
 
 function jsonResponse(body: unknown, status: number): Response {
@@ -66,34 +71,48 @@ Deno.serve(async (req: Request) => {
   }
 
   // 3) Valider input.
-  let body: { fagKey?: string; code?: string };
+  let body: { projectId?: string; fagKey?: string; code?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Ugyldig forespørsel." }, 400);
   }
+  const projectId = (body.projectId || "").trim();
   const fagKey = (body.fagKey || "").trim();
   const code = (body.code || "").trim();
+  if (!projectId) return jsonResponse({ error: "Mangler projectId." }, 400);
   if (!fagKey) return jsonResponse({ error: "Mangler fagKey." }, 400);
   if (code.length < 6) return jsonResponse({ error: "Koden må være minst 6 tegn." }, 400);
 
-  const { data: fagRow, error: fagErr } = await serviceClient
-    .from("fags")
-    .select("key")
-    .eq("key", fagKey)
+  const { data: projectRow, error: projectErr } = await serviceClient
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
     .maybeSingle();
-  if (fagErr || !fagRow) {
-    return jsonResponse({ error: "Fant ikke faget «" + fagKey + "»." }, 404);
+  if (projectErr || !projectRow) {
+    return jsonResponse({ error: "Fant ikke prosjektet." }, 404);
+  }
+  if (fagKey !== "kontakt") {
+    const { data: fagRow, error: fagErr } = await serviceClient
+      .from("fags")
+      .select("key")
+      .eq("key", fagKey)
+      .maybeSingle();
+    if (fagErr || !fagRow) {
+      return jsonResponse({ error: "Fant ikke faget «" + fagKey + "»." }, 404);
+    }
   }
 
-  // 4) Opprett kontoen hvis den ikke finnes, eller sett ny kode på den eksisterende.
+  // 4) Opprett kontoen hvis den ikke finnes for dette prosjektet+faget, eller sett ny kode på
+  // den eksisterende.
   const { data: existing, error: existingErr } = await serviceClient
     .from("fag_accounts")
     .select("auth_user_id")
+    .eq("project_id", projectId)
     .eq("fag_key", fagKey)
     .maybeSingle();
   if (existingErr) {
-    return jsonResponse({ error: "Kunne ikke slå opp fag-kontoen: " + existingErr.message }, 500);
+    return jsonResponse({ error: "Kunne ikke slå opp kontoen: " + existingErr.message }, 500);
   }
 
   if (existing) {
@@ -108,7 +127,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const { data: created, error: createErr } = await serviceClient.auth.admin.createUser({
-    email: fagAccountEmail(fagKey),
+    email: accountEmail(projectId, fagKey),
     password: code,
     email_confirm: true,
   });
@@ -118,7 +137,7 @@ Deno.serve(async (req: Request) => {
 
   const { error: profileInsertErr } = await serviceClient
     .from("profiles")
-    .insert({ id: created.user.id, role: fagKey });
+    .insert({ id: created.user.id, role: fagKey, project_id: projectId });
   if (profileInsertErr) {
     // Rydd opp i Auth-brukeren igjen hvis profilraden ikke kunne lages, så vi ikke sitter med en
     // konto uten rolle.
@@ -128,9 +147,9 @@ Deno.serve(async (req: Request) => {
 
   const { error: linkErr } = await serviceClient
     .from("fag_accounts")
-    .insert({ fag_key: fagKey, auth_user_id: created.user.id });
+    .insert({ project_id: projectId, fag_key: fagKey, auth_user_id: created.user.id });
   if (linkErr) {
-    return jsonResponse({ error: "Kontoen ble opprettet, men kunne ikke kobles til faget: " + linkErr.message }, 500);
+    return jsonResponse({ error: "Kontoen ble opprettet, men kunne ikke kobles til prosjektet/faget: " + linkErr.message }, 500);
   }
 
   return jsonResponse({ ok: true, created: true }, 200);
