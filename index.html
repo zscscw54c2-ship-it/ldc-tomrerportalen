@@ -6902,6 +6902,14 @@
     }, function(err){ showError("Kunne ikke hente brukere: "+err.message); view.cg1UsersLoaded = false; });
   }
   function cg1UserAction(body, okMsg){
+    // Oppdater listen med en gang, så en omtegning (f.eks. fra Realtime) ikke viser gammel verdi
+    // mens kallet pågår. Feiler kallet, hentes riktig tilstand inn igjen fra serveren.
+    var u = state.cg1Users.find(function(x){ return x.userId === body.userId; });
+    if(u && body.action === "update"){
+      if("pages" in body) u.pages = body.pages;
+      if("isAdmin" in body) u.isAdmin = body.isAdmin;
+      if("displayName" in body) u.displayName = body.displayName;
+    }
     cg1UserAdmin(body).then(function(){
       if(okMsg) showInfo(okMsg);
       refetchCg1Users();
@@ -7060,7 +7068,13 @@
     } else {
       var profileById = {};
       state.userAccounts.forEach(function(u){ profileById[u.id] = u; });
-      box.innerHTML = state.cg1Users.map(function(u){
+      // Fast rekkefølge (aktive først, så navn/e-post) - databasen gir ingen stabil rekkefølge når
+      // flere kontoer er opprettet samtidig, og listen tegnes på nytt etter hver endring.
+      var usersSorted = state.cg1Users.slice().sort(function(a,b){
+        if(a.active !== b.active) return a.active ? -1 : 1;
+        return (a.displayName || a.email).localeCompare(b.displayName || b.email, "no");
+      });
+      box.innerHTML = usersSorted.map(function(u){
         var isMe = state.me && u.userId === state.me.id;
         var prof = profileById[u.userId];
         var personId = prof ? prof.person_id : null;
@@ -7083,6 +7097,7 @@
           '<span style="flex:1;"></span>' +
           '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
           (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
+          (isMe ? '' : '<button type="button" class="btn small danger" data-cg1delete="'+u.userId+'">Slett</button>') +
           '</div></div>';
       }).join("");
     }
@@ -7113,6 +7128,14 @@
         if(pw === null) return;
         if(pw.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
         cg1UserAction({ action:"setPassword", userId:btn.dataset.cg1password, password:pw }, "Nytt passord satt ✓");
+      });
+    });
+    box.querySelectorAll("[data-cg1delete]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var u = state.cg1Users.find(function(x){ return x.userId === btn.dataset.cg1delete; });
+        var label = u ? (u.displayName || u.email) : "brukeren";
+        if(!confirm("Slette "+label+(u && u.displayName ? " ("+u.email+")" : "")+" for godt?\n\nInnloggingen og tilgangene fjernes. Personen i personlisten og alt innhold i portalen beholdes.\n\nDette kan ikke angres.")) return;
+        cg1UserAction({ action:"delete", userId:btn.dataset.cg1delete }, "Bruker slettet ✓");
       });
     });
     box.querySelectorAll("[data-cg1active]").forEach(function(btn){

@@ -16,6 +16,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 //   update      { userId, displayName?, pages?, isAdmin? }
 //   setPassword { userId, password }
 //   setActive   { userId, active }
+//   delete      { userId }                       -> sletter kontoen helt (Auth + profil + tilganger)
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -97,7 +98,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action === "list") {
-    const { data: rows, error } = await admin.from("cg1_access").select("*").order("created_at");
+    const { data: rows, error } = await admin.from("cg1_access").select("*").order("created_at").order("user_id");
     if (error) return jsonResponse({ error: "Kunne ikke hente brukere: " + error.message }, 500);
     const users = [];
     for (const r of rows || []) {
@@ -195,6 +196,20 @@ Deno.serve(async (req: Request) => {
     if (banErr) return jsonResponse({ error: "Kunne ikke endre kontoen: " + banErr.message }, 500);
     const { error } = await admin.from("cg1_access").update({ active, updated_at: new Date().toISOString() }).eq("user_id", userId);
     if (error) return jsonResponse({ error: "Kunne ikke lagre: " + error.message }, 500);
+    return jsonResponse({ ok: true }, 200);
+  }
+
+  if (action === "delete") {
+    if (userId === callerId) return jsonResponse({ error: "Du kan ikke slette deg selv." }, 400);
+    if (target.is_admin && target.active && (await otherActiveAdmins(userId)) === 0) {
+      return jsonResponse({ error: "Det må alltid være minst én aktiv admin." }, 400);
+    }
+    // project_invites.used_by peker på Auth-brukeren uten "on delete" - nullstill først, ellers
+    // stopper fremmednøkkelen slettingen. profiles og cg1_access slettes automatisk (cascade).
+    const { error: invErr } = await admin.from("project_invites").update({ used_by: null }).eq("used_by", userId);
+    if (invErr) return jsonResponse({ error: "Kunne ikke rydde invitasjoner: " + invErr.message }, 500);
+    const { error: delErr } = await admin.auth.admin.deleteUser(userId);
+    if (delErr) return jsonResponse({ error: "Kunne ikke slette kontoen: " + delErr.message }, 500);
     return jsonResponse({ ok: true }, 200);
   }
 
