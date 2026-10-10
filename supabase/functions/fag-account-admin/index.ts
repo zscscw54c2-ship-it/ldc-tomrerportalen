@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Setter eller oppretter den delte innloggingskoden for et fag (eller "Menighet") I ET GITT
-// PROSJEKT. Kalles fra Administrasjon-siden av en innlogget byggeleder - aldri direkte fra noen
+// PROSJEKT. Kalles fra Administrasjon-siden av en innlogget CG1-admin - aldri direkte fra noen
 // annen rolle. Service-rollen (SUPABASE_SERVICE_ROLE_KEY) er tilgjengelig som miljøvariabel
 // automatisk i alle Edge Functions, og brukes HER - ALDRI i nettleserkoden - til å
 // opprette/endre den delte Supabase Auth-kontoen.
@@ -58,9 +58,10 @@ Deno.serve(async (req: Request) => {
 
   const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  // 2) Sjekk at innringeren faktisk er byggeleder (service-rollen går forbi RLS, så dette MÅ
-  // gjøres i funksjonen - uten denne sjekken kunne hvem som helst med en gyldig innlogging satt
-  // koden for et fag).
+  // 2) Sjekk at innringeren faktisk er byggeleder OG aktiv CG1-admin (cg1_access, sql/79).
+  // Service-rollen går forbi RLS, så dette MÅ gjøres i funksjonen - uten denne sjekken kunne
+  // hvem som helst med en gyldig innlogging satt koden for et fag. Admin-kravet matcher at bare
+  // admin ser Administrasjon (der "Sett kode" ligger) i appen.
   const { data: callerProfile, error: profileErr } = await serviceClient
     .from("profiles")
     .select("role")
@@ -68,6 +69,14 @@ Deno.serve(async (req: Request) => {
     .single();
   if (profileErr || !callerProfile || callerProfile.role !== "byggeleder") {
     return jsonResponse({ error: "Kun byggeleder kan gjøre dette." }, 403);
+  }
+  const { data: callerAccess } = await serviceClient
+    .from("cg1_access")
+    .select("is_admin, active")
+    .eq("user_id", userRes.user.id)
+    .maybeSingle();
+  if (!callerAccess || !callerAccess.is_admin || !callerAccess.active) {
+    return jsonResponse({ error: "Kun admin kan sette innloggingskoder." }, 403);
   }
 
   // 3) Valider input.
