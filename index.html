@@ -1907,13 +1907,9 @@
         <input type="date" id="projStart" />
       </div>
       <div class="field">
-        <label for="projEnd">Slutt</label>
-        <input type="date" id="projEnd" />
+        <label for="projCloseOut">Close out</label>
+        <input type="date" id="projCloseOut" />
       </div>
-    </div>
-    <div class="field">
-      <label for="projCloseOut">Close out-dato (valgfritt)</label>
-      <input type="date" id="projCloseOut" />
     </div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="projectCancel">Avbryt</button>
@@ -3636,7 +3632,6 @@
     byId("projId").value = "";
     byId("projName").value = "";
     byId("projStart").value = "";
-    byId("projEnd").value = "";
     byId("projCloseOut").value = "";
     projectDialog.showModal();
   });
@@ -3648,8 +3643,7 @@
     byId("projId").value = p.id;
     byId("projName").value = p.name;
     byId("projStart").value = p.start || "";
-    byId("projEnd").value = p.end || "";
-    byId("projCloseOut").value = p.closeOut || "";
+    byId("projCloseOut").value = p.closeOut || p.end || "";
     projectDialog.showModal();
   });
   byId("projectCancel").addEventListener("click", function(){ projectDialog.close(); });
@@ -3659,9 +3653,11 @@
     var name = byId("projName").value.trim();
     if(!name) return;
     var id = byId("projId").value;
+    // "Slutt" og "close out" var tidligere to separate datoer, men er i praksis alltid det samme
+    // for dette prosjektet - close out ER sluttdatoen, og lagres derfor i begge kolonner.
     var closeOut = byId("projCloseOut").value;
-    if(id){ updateProject(id, name, byId("projStart").value, byId("projEnd").value, closeOut); }
-    else { createProject(name, byId("projStart").value, byId("projEnd").value, closeOut); }
+    if(id){ updateProject(id, name, byId("projStart").value, closeOut, closeOut); }
+    else { createProject(name, byId("projStart").value, closeOut, closeOut); }
     projectDialog.close();
   });
 
