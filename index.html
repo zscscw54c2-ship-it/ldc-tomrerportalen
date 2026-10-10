@@ -1551,6 +1551,16 @@
         <span id="acgoProjectDates" class="mono" style="color:var(--muted); font-size:12.5px;"></span>
       </div>
     </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <h2 style="font-size:16px; margin:0;">ACGOs tavler</h2>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn small primary" data-opencreatebox="acgo" data-editonly>+ Opprett tavle</button>
+          <button type="button" class="btn small" id="acgoEditBtn">Rediger</button>
+        </div>
+      </div>
+      <div id="officeBoxes-acgo" class="board-grid"></div>
+    </div>
     <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
     <button type="button" class="subhome-back" id="acgoHomeBack">← Tilbake</button>
 
@@ -1641,6 +1651,16 @@
     </div>
     <p class="sub" style="font-size:12px; color:var(--muted); margin:-6px 0 12px;">Samme uke som Team-siden viser – bla for å forberede Flex eller Teammøte-agenda for en annen uke.</p>
     <p class="empty-note" id="cgoEditTextsNote" hidden style="margin:-6px 0 12px;">Redigeringsmodus på – tekster merket med stiplet kant kan endres. Gjelder malen for alle prosjekter, ikke bare dette.</p>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <h2 style="font-size:16px; margin:0;">CGOs tavler</h2>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn small primary" data-opencreatebox="cgo" data-editonly>+ Opprett tavle</button>
+          <button type="button" class="btn small" id="cgoEditBtn">Rediger</button>
+        </div>
+      </div>
+      <div id="officeBoxes-cgo" class="board-grid"></div>
+    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Flex denne uken</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Klikk på en forespurt person for å godkjenne eller avslå. Kun én kan godkjennes per person per uke.</p>
@@ -6065,11 +6085,13 @@
       });
     });
   }
+  // Tavlene finnes på alle fire CG1-sidene (CGO, ACGO, Kontor 1, Kontor 2) og er felles for alle
+  // prosjekter - de følger med videre når et nytt prosjekt opprettes (se sql/78).
+  var BOARD_OFFICES = ["cgo","acgo","kontor1","kontor2"];
   function renderKontorTabs(){
-    renderOfficeBoxes("kontor1");
-    renderOfficeBoxes("kontor2");
+    BOARD_OFFICES.forEach(renderOfficeBoxes);
   }
-  ["kontor1","kontor2"].forEach(function(office){
+  BOARD_OFFICES.forEach(function(office){
     byId(office+"EditBtn").addEventListener("click", function(){
       var editing = byId("panel-"+office).classList.toggle("editing");
       this.textContent = editing ? "Ferdig" : "Rediger";
@@ -6254,10 +6276,10 @@
   function rowToOfficeBoxStatusItem(row){
     return { id: row.id, boxId: row.box_id, text: row.text, status: row.status, sortOrder: row.sort_order, createdAt: row.created_at };
   }
-  // Kontor 1/2s egne tavler (sjekkliste, notat, lenker, kontakter, status eller frist) - per prosjekt og kontor.
+  // CGO/ACGO/Kontor 1/2s egne tavler (sjekkliste, notat, lenker, kontakter, status eller frist) -
+  // per side, felles for alle prosjekter (project_id er null, se sql/78).
   function officeBoxesFor(office){
-    var pid = currentProjectId();
-    return state.officeBoxes.filter(function(b){ return b.project_id === pid && b.office === office; })
+    return state.officeBoxes.filter(function(b){ return b.office === office; })
       .sort(function(a,b){ return a.sortOrder - b.sortOrder || (a.createdAt < b.createdAt ? -1 : 1); });
   }
   function officeBoxItemsFor(boxId){
@@ -9853,11 +9875,9 @@
   }
   function addOfficeBox(office, kind, title, color, size){
     if(!sb || !isByggeleder()) return;
-    var pid = currentProjectId();
-    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
     var sortOrder = officeBoxesFor(office).length;
-    sb.from("office_boxes").insert({ project_id: pid, office: office, kind: kind, title: title.slice(0,80), color: color || null, size: size || "medium", sort_order: sortOrder }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql, sql/69-tavle-type-farge-storrelse.sql og sql/70-flere-tavletyper.sql i Supabase." : "Kunne ikke legge til: "+res.error.message); return; }
+    sb.from("office_boxes").insert({ project_id: null, office: office, kind: kind, title: title.slice(0,80), color: color || null, size: size || "medium", sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("office_boxes") !== -1 ? (res.error.message.indexOf("office_boxes_office_check") !== -1 || res.error.message.indexOf("project_id") !== -1 ? "Databasen mangler støtte for felles tavler på CGO/ACGO. Kjør sql/78-felles-tavler-cgo-acgo.sql i Supabase." : "Databasen mangler tabellen for kontor-bokser. Kjør sql/68-cg1-kontor-bokser.sql, sql/69-tavle-type-farge-storrelse.sql og sql/70-flere-tavletyper.sql i Supabase.") : "Kunne ikke legge til: "+res.error.message); return; }
       refetchOfficeBoxes();
     });
   }
