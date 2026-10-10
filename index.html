@@ -1555,9 +1555,6 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
       </div>
-      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <button type="button" class="btn" id="acgoOpenProsjektBtn" style="width:100%; justify-content:space-between;">Administrasjon <span>→</span></button>
-      </div>
     </div>
     <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
     <button type="button" class="subhome-back" id="acgoHomeBack">← Tilbake</button>
@@ -1607,9 +1604,11 @@
         <div id="userAccountsList"></div>
       </div>
       <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
-        <div id="projectFagList"></div>
+        <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
+        <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
+        <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
+        <div id="adminTeamSearchResults"></div>
       </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
@@ -1625,27 +1624,15 @@
       </form>
       <div id="projectInvitesList"></div>
     </div>
-    <div class="cols2" style="margin-bottom:16px; align-items:start;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
-        <div id="adminTeamList"></div>
-      </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Fag i portalen</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Opprett eller slett fag, og sett egen farge. Gjelder alle prosjekter.</p>
-        <div id="adminFagList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
-        <form class="inline-add" id="addFagForm">
-          <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
-          <input type="text" id="newFagLabel" placeholder="Navn på nytt fag" maxlength="40" required style="flex:1; min-width:140px;" />
-          <button class="btn primary" type="submit">+ Nytt fag</button>
-        </form>
-      </div>
-    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Vis Team-siden for</h2>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin-bottom:8px;">Gjelder kun dette prosjektet.</p>
-      <div id="andeligVisibilityList" style="display:flex; flex-wrap:wrap; gap:14px;"></div>
+      <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alt som har med et fag å gjøre, på ett sted. Farge og innloggingskode gjelder alle prosjekter - resten (aktiv, datoer, Team-siden) gjelder kun dette prosjektet.</p>
+      <div id="unifiedFagList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
+      <form class="inline-add" id="addFagForm">
+        <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
+        <input type="text" id="newFagLabel" placeholder="Navn på nytt fag" maxlength="40" required style="flex:1; min-width:140px;" />
+        <button class="btn primary" type="submit">+ Nytt fag</button>
+      </form>
     </div>
     <div class="peoplecard">
       <h2 style="font-size:16px; margin-bottom:2px;">Tilgangskode for menigheten</h2>
@@ -2374,7 +2361,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], projectInvites: [], fagAccounts: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "" };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -6999,103 +6986,38 @@
       sel.addEventListener("change", function(){ setUserAccountPerson(this.dataset.useraccountperson, this.value || null); });
     });
 
-    byId("projectFagList").innerHTML = FAG_LIST.map(function(f){
-      var pf = pfList.find(function(x){ return x.fag === f; });
+    var visMap = andeligVisibilityMapForCurrentProject();
+    byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
+      var pf = pfList.find(function(x){ return x.fag === f.key; });
       var active = pf ? pf.active : false;
       var start = pf ? pf.start : "";
       var end = pf ? pf.end : "";
       var isWholeProject = active && curProj && curProj.start && curProj.end && start === curProj.start && end === curProj.end;
-      return '<div class="taskrow" style="flex-wrap:wrap;">' +
-        '<label style="display:flex; align-items:center; gap:8px; flex:1; min-width:140px; cursor:pointer;">' +
-        '<input type="checkbox" data-fagactive="'+f+'" '+(active?'checked':'')+' /> <span>'+FAG_LABELS[f]+'</span></label>' +
-        '<input type="date" data-fagstart="'+f+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
-        '<input type="date" data-fagend="'+f+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
-        '<button type="button" class="btn small'+(isWholeProject?' primary':'')+'" data-fagwhole="'+f+'">Hele prosjektet</button>' +
-        '</div>';
-    }).join("");
-    byId("projectFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
-      cb.addEventListener("change", function(){
-        var fag = this.dataset.fagactive;
-        var locked = !this.checked && fagIsLocked(fag);
-        if(locked && !confirm(FAG_LABELS[fag]+" er satt aktivt fra "+fmtRange(locked.start,locked.end)+" i dette prosjektet. Fjerner du avkrysningen forsvinner faget fra Behov-siden – ingenting slettes, men det blir utilgjengelig helt til du krysser av igjen. Fortsette?")){
-          this.checked = true;
-          return;
-        }
-        upsertProjectFag(fag, { active: this.checked });
-      });
-    });
-    byId("projectFagList").querySelectorAll("[data-fagstart]").forEach(function(inp){
-      inp.addEventListener("change", function(){
-        var fag = this.dataset.fagstart;
-        var locked = fagIsLocked(fag);
-        if(locked && this.value !== locked.start && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du startdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
-          this.value = locked.start;
-          return;
-        }
-        upsertProjectFag(fag, { start_date: this.value || null });
-      });
-    });
-    byId("projectFagList").querySelectorAll("[data-fagend]").forEach(function(inp){
-      inp.addEventListener("change", function(){
-        var fag = this.dataset.fagend;
-        var locked = fagIsLocked(fag);
-        if(locked && this.value !== locked.end && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du sluttdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
-          this.value = locked.end;
-          return;
-        }
-        upsertProjectFag(fag, { end_date: this.value || null });
-      });
-    });
-    byId("projectFagList").querySelectorAll("[data-fagwhole]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        var fag = this.dataset.fagwhole;
-        var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
-        if(!cur || !cur.start || !cur.end){ showError("Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt."); return; }
-        var locked = fagIsLocked(fag);
-        if(locked && (locked.start !== cur.start || locked.end !== cur.end) && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Vil du sette den til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") i stedet?")) return;
-        upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
-      });
-    });
-
-    var visMap = andeligVisibilityMapForCurrentProject();
-    var visList = byId("andeligVisibilityList");
-    visList.innerHTML = FAG_LIST.map(function(f){
-      var visible = visMap[f] !== false;
-      return '<label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">' +
-        '<input type="checkbox" data-andeligvis="'+f+'" '+(visible?'checked':'')+' /> '+FAG_LABELS[f]+'</label>';
-    }).join("");
-    visList.querySelectorAll("[data-andeligvis]").forEach(function(cb){
-      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
-    });
-
-    byId("adminTeamList").innerHTML = peopleSorted.length ? peopleSorted.map(function(p){
-      return '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
-    }).join("") : '<p class="empty-note">Ingen personer i dette prosjektet.</p>';
-    byId("adminTeamList").querySelectorAll("[data-adminteamcheck]").forEach(function(cb){
-      cb.addEventListener("change", function(){
-        var id = this.dataset.adminteamcheck;
-        var person = state.people.find(function(x){ return x.id === id; });
-        var wasOnTeam = person ? !!person.onTeam : false;
-        updatePerson(id, { on_team: this.checked });
-        if(this.checked && !wasOnTeam) markAvailableWholeProject(id, null);
-      });
-    });
-
-    byId("adminFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
+      var visible = visMap[f.key] !== false;
       var usage = fagUsageCount(f.key);
       var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key; });
-      return '<div class="shoprow" style="flex-wrap:wrap;">' +
+      return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">' +
+        '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
-        '<span class="sname">'+escapeHtml(f.label)+'</span>' +
+        '<b style="flex:1; min-width:100px;">'+escapeHtml(f.label)+'</b>' +
         (hasAccount ? '<span class="badge group" title="Fag-kode-innlogging er satt opp for dette faget">Kode satt</span>' : '') +
         '<button type="button" class="btn small" data-setfagcode="'+f.key+'">'+(hasAccount?"Endre kode":"Sett kode")+'</button>' +
         '<button type="button" class="btn small ghost danger" data-delfag="'+f.key+'" title="'+(usage>0?'I bruk '+usage+' sted(er) - kan ikke slettes':'Slett fag')+'"'+(usage>0?' disabled':'')+'>Slett</button>' +
-        '</div>';
+        '</div>' +
+        '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">' +
+        '<input type="checkbox" data-fagactive="'+f.key+'" '+(active?'checked':'')+' /> Aktiv i prosjektet</label>' +
+        '<input type="date" data-fagstart="'+f.key+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '<input type="date" data-fagend="'+f.key+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
+        '<button type="button" class="btn small'+(isWholeProject?' primary':'')+'" data-fagwhole="'+f.key+'">Hele prosjektet</button>' +
+        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">' +
+        '<input type="checkbox" data-andeligvis="'+f.key+'" '+(visible?'checked':'')+' /> Vis Team-siden</label>' +
+        '</div></div>';
     }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
-    byId("adminFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
+    byId("unifiedFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
     });
-    byId("adminFagList").querySelectorAll("[data-setfagcode]").forEach(function(btn){
+    byId("unifiedFagList").querySelectorAll("[data-setfagcode]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var key = this.dataset.setfagcode;
         var fag = state.fags.find(function(f){ return f.key === key; });
@@ -7106,13 +7028,81 @@
         setFagCode(key, code);
       });
     });
-    byId("adminFagList").querySelectorAll("[data-delfag]").forEach(function(btn){
+    byId("unifiedFagList").querySelectorAll("[data-delfag]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var key = this.dataset.delfag;
         var fag = state.fags.find(function(f){ return f.key === key; });
         if(confirm("Slette faget «"+(fag?fag.label:key)+"»? Dette kan ikke angres.")) deleteFag(key);
       });
     });
+    byId("unifiedFagList").querySelectorAll("[data-fagactive]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var fag = this.dataset.fagactive;
+        var locked = !this.checked && fagIsLocked(fag);
+        if(locked && !confirm(FAG_LABELS[fag]+" er satt aktivt fra "+fmtRange(locked.start,locked.end)+" i dette prosjektet. Fjerner du avkrysningen forsvinner faget fra Behov-siden – ingenting slettes, men det blir utilgjengelig helt til du krysser av igjen. Fortsette?")){
+          this.checked = true;
+          return;
+        }
+        upsertProjectFag(fag, { active: this.checked });
+      });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-fagstart]").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var fag = this.dataset.fagstart;
+        var locked = fagIsLocked(fag);
+        if(locked && this.value !== locked.start && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du startdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
+          this.value = locked.start;
+          return;
+        }
+        upsertProjectFag(fag, { start_date: this.value || null });
+      });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-fagend]").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var fag = this.dataset.fagend;
+        var locked = fagIsLocked(fag);
+        if(locked && this.value !== locked.end && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Endrer du sluttdatoen kan markerte eller utfylte dager utenfor den nye perioden bli utilgjengelige for redigering i Behov – de slettes ikke. Fortsette?")){
+          this.value = locked.end;
+          return;
+        }
+        upsertProjectFag(fag, { end_date: this.value || null });
+      });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-fagwhole]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var fag = this.dataset.fagwhole;
+        var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+        if(!cur || !cur.start || !cur.end){ showError("Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt."); return; }
+        var locked = fagIsLocked(fag);
+        if(locked && (locked.start !== cur.start || locked.end !== cur.end) && !confirm(FAG_LABELS[fag]+" har allerede perioden "+fmtRange(locked.start,locked.end)+" satt. Vil du sette den til hele prosjektperioden ("+fmtRange(cur.start,cur.end)+") i stedet?")) return;
+        upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
+      });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-andeligvis]").forEach(function(cb){
+      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
+    });
+
+    function adminTeamRowHtml(p){
+      return '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
+    }
+    function wireAdminTeamCheckboxes(container){
+      container.querySelectorAll("[data-adminteamcheck]").forEach(function(cb){
+        cb.addEventListener("change", function(){
+          var id = this.dataset.adminteamcheck;
+          var person = state.people.find(function(x){ return x.id === id; });
+          var wasOnTeam = person ? !!person.onTeam : false;
+          updatePerson(id, { on_team: this.checked });
+          if(this.checked && !wasOnTeam) markAvailableWholeProject(id, null);
+        });
+      });
+    }
+    var teamSelected = peopleSorted.filter(function(p){ return p.onTeam; });
+    byId("adminTeamSelected").innerHTML = teamSelected.length ? teamSelected.map(adminTeamRowHtml).join("") : '<p class="empty-note">Ingen i teamet ennå.</p>';
+    wireAdminTeamCheckboxes(byId("adminTeamSelected"));
+    var teamQuery = (view.adminTeamSearch || "").trim().toLowerCase();
+    var teamMatches = teamQuery ? peopleSorted.filter(function(p){ return !p.onTeam && p.name.toLowerCase().indexOf(teamQuery) !== -1; }) : [];
+    byId("adminTeamSearchResults").innerHTML = !teamQuery ? "" : (teamMatches.length ? teamMatches.map(adminTeamRowHtml).join("") : '<p class="empty-note">Ingen treff.</p>');
+    wireAdminTeamCheckboxes(byId("adminTeamSearchResults"));
 
     var invitesForProject = state.projectInvites.filter(function(i){ return i.projectId === currentProjectId(); });
     byId("projectInvitesList").innerHTML = invitesForProject.length ? invitesForProject.map(function(inv){
@@ -7146,6 +7136,7 @@
       });
     });
   }
+  byId("adminTeamSearch").addEventListener("input", function(){ view.adminTeamSearch = this.value; renderProsjektTab(); });
   byId("addInviteForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     createProjectInvite(byId("newInviteRole").value, byId("newInviteLabel").value.trim());
@@ -7158,7 +7149,6 @@
     addFag(label, byId("newFagColor").value);
     byId("newFagLabel").value = "";
   });
-  byId("acgoOpenProsjektBtn").addEventListener("click", function(){ switchTab("prosjekt"); });
   byId("cgoEditTextsBtn").addEventListener("click", function(){
     view.cgoEditTexts = !view.cgoEditTexts;
     byId("cgoEditTextsBtn").classList.toggle("primary", view.cgoEditTexts);
@@ -9811,6 +9801,15 @@
         sb.from("spiritual_duties").insert(DEFAULT_PW_DUTIES.map(function(text, i){ return { project_id: res.data.id, text: text, sort_order: i }; })).then(function(res2){
           if(!res2.error) refetchDuties();
         });
+        // Fagene som allerede finnes blir aktive med en gang for et nytt prosjekt (med prosjektets
+        // egne datoer, "Hele prosjektet"), i stedet for at byggeleder må krysse av alt på nytt hver gang.
+        if(state.fags.length){
+          sb.from("project_fags").insert(state.fags.map(function(f){
+            return { project_id: res.data.id, fag: f.key, active: true, start_date: start || null, end_date: end || null };
+          })).then(function(res3){
+            if(!res3.error) refetchProjectFags();
+          });
+        }
       });
   }
   function updateProject(id, name, start, end, closeOut){
