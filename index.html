@@ -989,7 +989,7 @@
         <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
         <button role="tab" data-tab="cg1" aria-selected="false" hidden>CG1</button>
         <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
-        <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Prosjektinnstillinger</button>
+        <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Administrasjon</button>
         <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
       </nav>
     </div>
@@ -1550,7 +1550,7 @@
         <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
       </div>
       <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <button type="button" class="btn" id="acgoOpenProsjektBtn" style="width:100%; justify-content:space-between;">Prosjektinnstillinger <span>→</span></button>
+        <button type="button" class="btn" id="acgoOpenProsjektBtn" style="width:100%; justify-content:space-between;">Administrasjon <span>→</span></button>
       </div>
     </div>
     <div class="mh-grid subhome-grid" id="acgoHomeGrid"></div>
@@ -1583,8 +1583,10 @@
   </section>
 
   <section id="panel-prosjekt" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
+    <h2 style="font-size:18px; margin-bottom:12px;">Administrasjon</h2>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:18px; margin-bottom:2px;">Prosjektinnstillinger</h2>
+      <h2 style="font-size:16px; margin-bottom:2px;">Prosjektinnstillinger</h2>
       <p class="sub" id="prosjektSubLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="btn small" id="acgoProjectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
@@ -1602,6 +1604,23 @@
         <h2 style="font-size:16px; margin-bottom:8px;">Fag i dette prosjektet</h2>
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvilke fag som er aktive, og sett start-/sluttdato for hver. "Hele prosjektet" fyller inn prosjektets egne datoer for det faget.</p>
         <div id="projectFagList"></div>
+      </div>
+    </div>
+    <div class="cols2" style="margin-bottom:16px; align-items:start;">
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
+        <div id="adminTeamList"></div>
+      </div>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Fag i portalen</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Opprett eller slett fag, og sett egen farge. Gjelder alle prosjekter.</p>
+        <div id="adminFagList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+        <form class="inline-add" id="addFagForm">
+          <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
+          <input type="text" id="newFagLabel" placeholder="Navn på nytt fag" maxlength="40" required style="flex:1; min-width:140px;" />
+          <button class="btn primary" type="submit">+ Nytt fag</button>
+        </form>
       </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
@@ -2335,7 +2354,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -5832,7 +5851,10 @@
       status:function(){ return { badge:0, text: officeBoxesFor("kontor1").length+" tavle(r)" }; } },
     { key:"kontor2", name:"Kontor 2", color:"var(--warn)",
       icon:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
-      status:function(){ return { badge:0, text: officeBoxesFor("kontor2").length+" tavle(r)" }; } }
+      status:function(){ return { badge:0, text: officeBoxesFor("kontor2").length+" tavle(r)" }; } },
+    { key:"prosjekt", name:"Administrasjon", color:"var(--bad)",
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+      status:function(){ return { badge:0, text: state.fags.length+" fag · "+peopleForCurrentProject().filter(function(p){ return p.onTeam; }).length+" i teamet" }; } }
   ];
   function renderCg1HomeGrid(){
     var grid = byId("cg1HomeGrid");
@@ -6136,7 +6158,7 @@
   function updateCg1TabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="cg1"]');
     if(btn) btn.hidden = !isByggeleder();
-    if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2"].indexOf(view.tab) !== -1) switchTab("kalender");
+    if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2","prosjekt"].indexOf(view.tab) !== -1) switchTab("kalender");
   }
   function updateTomoteTabVisibility(){
     var tomoteBtn = document.querySelector('nav.tabs button[data-tab="tomote"]');
@@ -6644,6 +6666,87 @@
     });
   }
 
+  // ---------- Fag-administrasjon ----------
+  // Fagene (tømrer, VVS osv.) kommer fra "fags"-tabellen i stedet for en hardkodet liste, slik at
+  // byggeleder kan opprette/slette fag og sette egen farge direkte i portalen (se
+  // sql/72-fag-administrasjon.sql). FAG_LIST/FAG_LABELS/FAG_COLORS starter med dagens faste
+  // verdier som sikker standard, og blir overskrevet i samme skuff når denne fetchen kommer inn -
+  // helt likt mønsteret for alle andre tabeller.
+  var FAG_STRUCTURAL_LABELS = { stillas:"Stillas", audio_video:"Audio/Video", behov_menighet:"Behov fra menigheten", team:"Teamet", byggeleder:"ACGO" };
+  var FAG_STRUCTURAL_COLORS = { stillas:"var(--fag-stillas)", audio_video:"var(--fag-audio-video)", behov_menighet:"var(--fag-behov-menighet)", team:"var(--fag-team)" };
+  function rowToFag(row){
+    return { key: row.key, label: row.label, color: row.color, sortOrder: row.sort_order };
+  }
+  function refetchFags(){
+    sb.from("fags").select("*").order("sort_order").then(function(res){
+      if(res.error) return;
+      state.fags = res.data.map(rowToFag);
+      FAG_LIST = state.fags.map(function(f){ return f.key; });
+      var labels = Object.assign({}, FAG_STRUCTURAL_LABELS);
+      var colors = Object.assign({}, FAG_STRUCTURAL_COLORS);
+      state.fags.forEach(function(f){ labels[f.key] = f.label; colors[f.key] = f.color; });
+      FAG_LABELS = labels;
+      FAG_COLORS = colors;
+      OVERVIEW_FAG_LIST = FAG_LIST.concat(OVERVIEW_ONLY_FAGS);
+      DRAWING_FOLDER_FAGS = FAG_LIST.concat(["stillas"]);
+      scheduleRender();
+    });
+  }
+  function slugifyFagKey(label){
+    return (label || "").toLowerCase()
+      .replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a")
+      .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"") || "fag";
+  }
+  var FAG_RESERVED_KEYS = ["stillas","audio_video","behov_menighet","team","byggeleder","kontakt"];
+  function addFag(label, color){
+    if(!sb || !isByggeleder()) return;
+    label = (label || "").trim();
+    if(!label){ showError("Skriv inn et navn på faget."); return; }
+    var key = slugifyFagKey(label);
+    if(FAG_RESERVED_KEYS.indexOf(key) !== -1 || state.fags.some(function(f){ return f.key === key; })){
+      showError("Det finnes allerede et fag med et så likt navn. Velg et litt annet navn.");
+      return;
+    }
+    var sortOrder = state.fags.length ? Math.max.apply(null, state.fags.map(function(f){ return f.sortOrder; })) + 1 : 0;
+    sb.from("fags").insert({ key: key, label: label.slice(0,40), color: color, sort_order: sortOrder }).then(function(res){
+      if(res.error){ showError(res.error.message.indexOf("fags") !== -1 ? "Databasen mangler tabellen for fag-administrasjon. Kjør sql/72-fag-administrasjon.sql i Supabase." : "Kunne ikke opprette faget: "+res.error.message); return; }
+      refetchFags();
+    });
+  }
+  function updateFagColor(key, color){
+    if(!sb || !isByggeleder()) return;
+    sb.from("fags").update({ color: color }).eq("key", key).then(function(res){
+      if(res.error){ showError("Kunne ikke lagre farge: "+res.error.message); return; }
+      refetchFags();
+    });
+  }
+  // Ingen database-FK hindrer sletting av et fag som er i bruk (triggeren i sql/72 validerer bare
+  // innsetting/endring, ikke sletting fra fags-tabellen selv), så denne sjekken må gjøres her for
+  // å unngå at gamle rader blir stående med en fag-verdi som ikke lenger finnes noe sted.
+  function fagUsageCount(key){
+    var n = 0;
+    n += state.elements.filter(function(x){ return x.fag === key; }).length;
+    n += state.shopItems.filter(function(x){ return x.fag === key; }).length;
+    n += state.drawings.filter(function(x){ return x.fag === key; }).length;
+    n += state.dokuPhotos.filter(function(x){ return x.fag === key; }).length;
+    n += state.attendance.filter(function(x){ return x.fag === key; }).length;
+    n += state.andeligVisibility.filter(function(x){ return x.fag === key; }).length;
+    n += state.behovSlots.filter(function(x){ return x.fag === key; }).length;
+    n += state.toFagStatus.filter(function(x){ return x.fag === key; }).length;
+    n += state.projectFags.filter(function(x){ return x.fag === key; }).length;
+    n += state.userAccounts.filter(function(x){ return x.role === key; }).length;
+    return n;
+  }
+  function deleteFag(key){
+    if(!sb || !isByggeleder()) return;
+    var usage = fagUsageCount(key);
+    if(usage > 0){ showError("Faget er i bruk "+usage+" sted(er) i portalen (oppgaver, tegninger, kontoer osv.) og kan ikke slettes. Fjern eller flytt disse først."); return; }
+    sb.from("fags").delete().eq("key", key).then(function(res){
+      if(res.error){ showError("Kunne ikke slette faget: "+res.error.message); return; }
+      refetchFags();
+    });
+  }
+
   // ---------- ACGO-siden ----------
   function refetchUserAccounts(){
     if(!isByggeleder()) return;
@@ -6880,7 +6983,45 @@
       cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
     });
 
+    byId("adminTeamList").innerHTML = peopleSorted.length ? peopleSorted.map(function(p){
+      return '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
+    }).join("") : '<p class="empty-note">Ingen personer i dette prosjektet.</p>';
+    byId("adminTeamList").querySelectorAll("[data-adminteamcheck]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var id = this.dataset.adminteamcheck;
+        var person = state.people.find(function(x){ return x.id === id; });
+        var wasOnTeam = person ? !!person.onTeam : false;
+        updatePerson(id, { on_team: this.checked });
+        if(this.checked && !wasOnTeam) markAvailableWholeProject(id, null);
+      });
+    });
+
+    byId("adminFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
+      var usage = fagUsageCount(f.key);
+      return '<div class="shoprow" style="flex-wrap:wrap;">' +
+        '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
+        '<span class="sname">'+escapeHtml(f.label)+'</span>' +
+        '<button type="button" class="btn small ghost danger" data-delfag="'+f.key+'" title="'+(usage>0?'I bruk '+usage+' sted(er) - kan ikke slettes':'Slett fag')+'"'+(usage>0?' disabled':'')+'>Slett</button>' +
+        '</div>';
+    }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
+    byId("adminFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
+      inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
+    });
+    byId("adminFagList").querySelectorAll("[data-delfag]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var key = this.dataset.delfag;
+        var fag = state.fags.find(function(f){ return f.key === key; });
+        if(confirm("Slette faget «"+(fag?fag.label:key)+"»? Dette kan ikke angres.")) deleteFag(key);
+      });
+    });
   }
+  byId("addFagForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var label = byId("newFagLabel").value.trim();
+    if(!label) return;
+    addFag(label, byId("newFagColor").value);
+    byId("newFagLabel").value = "";
+  });
   byId("acgoOpenProsjektBtn").addEventListener("click", function(){ switchTab("prosjekt"); });
   byId("cgoEditTextsBtn").addEventListener("click", function(){
     view.cgoEditTexts = !view.cgoEditTexts;
@@ -10536,6 +10677,7 @@
     refetchAndeligVisibility();
     refetchProjectFags();
     refetchUserAccounts();
+    refetchFags();
     refetchBehovSlots();
     refetchBehovDays();
     refetchPortalSuggestions();
@@ -10587,6 +10729,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
       .on("postgres_changes", { event: "*", schema: "public", table: "andelig_visibility" }, refetchAndeligVisibility)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fags" }, refetchFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
       .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)
