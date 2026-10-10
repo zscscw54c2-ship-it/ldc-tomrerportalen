@@ -1603,19 +1603,30 @@
         <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
       </div>
     </div>
-    <div class="cols2" style="margin-bottom:16px; align-items:start;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Brukere</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Alle innloggingskontoer. Grønn prikk = faget er aktivt i dette prosjektet.</p>
-        <div id="userAccountsList"></div>
-      </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
-        <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
-        <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
-        <div id="adminTeamSearchResults"></div>
-      </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CGO, ACGO, Kontor 1 og Kontor 2 (e-post + passord). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
+      <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+      <details id="cg1AddUserBox" style="border:1px dashed var(--border-strong); border-radius:10px; padding:10px 12px;">
+        <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">+ Legg til bruker</summary>
+        <form id="cg1AddUserForm" style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+          <div class="cols2">
+            <div class="field"><label for="cg1NewName">Navn</label><input type="text" id="cg1NewName" maxlength="60" placeholder="F.eks. ACGO eller Ola Nordmann" /></div>
+            <div class="field"><label for="cg1NewEmail">E-post</label><input type="email" id="cg1NewEmail" maxlength="120" required /></div>
+          </div>
+          <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label>
+          <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
+        </form>
+      </details>
+    </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
+      <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
+      <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
+      <div id="adminTeamSearchResults"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
@@ -2361,8 +2372,8 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "" };
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: []};
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -2395,6 +2406,26 @@
   var FAG_ACCOUNT_EMAIL_DOMAIN = "@fagkonto.ldc-tomrerportalen.invalid";
   function isSharedFagAccount(){ return !!(state.me && state.me.email && state.me.email.slice(-FAG_ACCOUNT_EMAIL_DOMAIN.length) === FAG_ACCOUNT_EMAIL_DOMAIN); }
   function lockedProjectId(){ return isSharedFagAccount() && !isByggeleder() ? state.me.projectId : null; }
+  // CG1-tilganger (sql/79, cg1_access): hvilke CG1-sider en byggeleder-bruker ser, og om hen er
+  // admin (ser Administrasjon). Før tabellen er hentet vises ingen av sidene/Administrasjon; mangler
+  // tabellen helt (gammel database) faller vi tilbake til at alle byggeledere ser alt, som før.
+  var CG1_PAGES = [{ key:"cgo", label:"CGO" }, { key:"acgo", label:"ACGO" }, { key:"kontor1", label:"Kontor 1" }, { key:"kontor2", label:"Kontor 2" }];
+  function myCg1Access(){
+    if(!state.me) return null;
+    return state.cg1Access.find(function(a){ return a.user_id === state.me.id; }) || null;
+  }
+  function isCg1Admin(){
+    if(!isByggeleder()) return false;
+    if(view.cg1AccessMissing) return true;
+    var a = myCg1Access();
+    return !!(a && a.is_admin && a.active);
+  }
+  function canSeeCg1Page(key){
+    if(!isByggeleder()) return false;
+    if(view.cg1AccessMissing) return true;
+    var a = myCg1Access();
+    return !!(a && a.active && (a.pages || []).indexOf(key) !== -1);
+  }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
   function matchesFag(item){ return activeFag() === "alle" || item.fag === activeFag(); }
   function andeligVisibleForMe(){
@@ -5879,7 +5910,12 @@
   ];
   function renderCg1HomeGrid(){
     var grid = byId("cg1HomeGrid");
-    grid.innerHTML = CG1_HOME_TILES.map(function(t){
+    var tiles = CG1_HOME_TILES.filter(function(t){
+      if(t.key === "prosjekt") return isCg1Admin();
+      if(t.key === "menighet") return true;
+      return canSeeCg1Page(t.key);
+    });
+    grid.innerHTML = tiles.map(function(t){
       var st = t.status();
       var badge = st.badge > 0 ? '<span class="mh-badge">'+st.badge+'</span>' : "";
       return '<button type="button" class="mh-tile" data-cg1tile="'+t.key+'">' + badge +
@@ -6185,6 +6221,11 @@
     var btn = document.querySelector('nav.tabs button[data-tab="cg1"]');
     if(btn) btn.hidden = !isByggeleder();
     if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2","prosjekt"].indexOf(view.tab) !== -1) switchTab("kalender");
+    if(isByggeleder() && view.cg1AccessLoaded){
+      var page = view.tab === "prosjekt" ? null : view.tab;
+      var blocked = view.tab === "prosjekt" ? !isCg1Admin() : (CG1_PAGES.some(function(p){ return p.key === page; }) && !canSeeCg1Page(page));
+      if(blocked) switchTab("cg1");
+    }
   }
   function updateTomoteTabVisibility(){
     var tomoteBtn = document.querySelector('nav.tabs button[data-tab="tomote"]');
@@ -6331,6 +6372,8 @@
     return (p && p.onTeam) ? p : null;
   }
   function byggeleiderIdentityLabel(){
+    var acc = myCg1Access();
+    if(acc && acc.display_name) return acc.display_name;
     var p = myLinkedPerson();
     if(p && p.name === "Sakkestad") return "CGO";
     if(p && p.name === "Ridderberg") return "ACGO";
@@ -6811,6 +6854,60 @@
   }
 
   // ---------- ACGO-siden ----------
+  var didCg1Landing = false;
+  function refetchCg1Access(){
+    if(!isByggeleder()) return;
+    sb.from("cg1_access").select("*").then(function(res){
+      if(res.error){
+        // Tabellen finnes ikke (sql/79 ikke kjørt) -> oppfør oss som før: alle ser alt.
+        if(/cg1_access/.test(res.error.message || "")){ view.cg1AccessMissing = true; view.cg1AccessLoaded = true; scheduleRender(); }
+        return;
+      }
+      state.cg1Access = res.data || [];
+      view.cg1AccessLoaded = true;
+      var mine = myCg1Access();
+      if(mine && !mine.active){
+        byId("loginError").textContent = "Denne kontoen er deaktivert. Kontakt CGO.";
+        sb.auth.signOut({ scope: "local" });
+        return;
+      }
+      // Første innlasting uten lagret fane: en bruker med nøyaktig én CG1-side lander rett på den.
+      if(!didCg1Landing){
+        didCg1Landing = true;
+        if(!hadSavedTabAtLogin && mine && (mine.pages || []).length === 1) switchTab(mine.pages[0]);
+      }
+      if(isCg1Admin() && !view.cg1UsersLoaded) refetchCg1Users();
+      scheduleRender();
+    });
+  }
+  // Fullstendig brukerliste (med e-post og sist innlogget) kommer fra Edge Function-en, siden e-post
+  // ligger i Auth og ikke i en tabell appen kan lese direkte.
+  function cg1UserAdmin(body){
+    return sb.functions.invoke("cg1-user-admin", { body: body }).then(function(res){
+      if(!res.error) return res.data;
+      var ctx = res.error.context;
+      var fallback = res.error.message || "ukjent feil";
+      if(ctx && typeof ctx.json === "function"){
+        return ctx.json().then(function(b){ throw new Error((b && b.error) || fallback); }, function(){ throw new Error(fallback); });
+      }
+      throw new Error(fallback);
+    });
+  }
+  function refetchCg1Users(){
+    if(!isCg1Admin()) return;
+    view.cg1UsersLoaded = true;
+    cg1UserAdmin({ action: "list" }).then(function(data){
+      state.cg1Users = (data && data.users) || [];
+      scheduleRender();
+    }, function(err){ showError("Kunne ikke hente brukere: "+err.message); view.cg1UsersLoaded = false; });
+  }
+  function cg1UserAction(body, okMsg){
+    cg1UserAdmin(body).then(function(){
+      if(okMsg) showInfo(okMsg);
+      refetchCg1Users();
+      refetchCg1Access();
+    }, function(err){ showError(err.message); refetchCg1Users(); });
+  }
   function refetchUserAccounts(){
     if(!isByggeleder()) return;
     sb.from("user_accounts").select("*").then(function(res){
@@ -6863,7 +6960,6 @@
       refetchProjectFags();
     });
   }
-  var HIDDEN_USER_ACCOUNTS = ["robin.ridderberg@gmail.com", "josteinbakken@icloud.com"];
   function renderAcgoTab(){
     if(!isByggeleder()) return;
     renderAcgoHomeGrid();
@@ -6947,8 +7043,102 @@
   wirePortalSuggestionForm("addPortalSuggestionForm-kontor1", "newPortalSuggestionText-kontor1");
   wirePortalSuggestionForm("addPortalSuggestionForm-kontor2", "newPortalSuggestionText-kontor2");
 
+  // ---------- Brukere og tilganger (CG1) ----------
+  function cg1PageCheckboxesHtml(attr, id, pages){
+    return CG1_PAGES.map(function(p){
+      return '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" '+attr+'="'+id+'" data-page="'+p.key+'"'+(pages.indexOf(p.key)!==-1?' checked':'')+' /> '+p.label+'</label>';
+    }).join("");
+  }
+  function renderCg1UserList(peopleSorted){
+    var box = byId("cg1UserList");
+    if(view.cg1AccessMissing){
+      box.innerHTML = '<p class="empty-note">Databasen mangler tabellen for tilganger. Kjør sql/79-cg1-tilganger.sql i Supabase.</p>';
+      return;
+    }
+    if(!state.cg1Users.length){
+      box.innerHTML = '<p class="empty-note">Laster brukere …</p>';
+    } else {
+      var profileById = {};
+      state.userAccounts.forEach(function(u){ profileById[u.id] = u; });
+      box.innerHTML = state.cg1Users.map(function(u){
+        var isMe = state.me && u.userId === state.me.id;
+        var prof = profileById[u.userId];
+        var personId = prof ? prof.person_id : null;
+        var personSelect = '<select data-useraccountperson="'+u.userId+'" title="Hvilken person i personlisten denne innloggingen tilhører (brukes bl.a. for Team/Flex)" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:170px;">' +
+          '<option value="">Ingen person</option>' +
+          peopleSorted.map(function(p){ return '<option value="'+p.id+'"'+(personId===p.id?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+          '</select>';
+        var last = u.lastSignInAt ? "Sist innlogget "+fmtRange(u.lastSignInAt.slice(0,10), u.lastSignInAt.slice(0,10)) : "Aldri innlogget";
+        return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;'+(u.active?'':' opacity:.6;')+'">' +
+          '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">' +
+          '<input type="text" data-cg1name="'+u.userId+'" value="'+escapeHtml(u.displayName)+'" placeholder="Navn" maxlength="60" style="border:1px solid var(--border); border-radius:7px; padding:4px 8px; font-weight:700; width:150px; background:var(--surface);" />' +
+          '<span style="flex:1; min-width:160px; font-size:12.5px; color:var(--muted);">'+escapeHtml(u.email)+(isMe?' (deg)':'')+' · '+last+'</span>' +
+          (u.isAdmin ? '<span class="badge group">Admin</span>' : '') +
+          (u.active ? '' : '<span class="badge" style="background:var(--bad-soft); color:var(--bad-ink);">Deaktivert</span>') +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px;">' +
+          cg1PageCheckboxesHtml("data-cg1page", u.userId, u.pages) +
+          '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; margin-left:6px;"><input type="checkbox" data-cg1admin="'+u.userId+'"'+(u.isAdmin?' checked':'')+' /> Admin</label>' +
+          personSelect +
+          '<span style="flex:1;"></span>' +
+          '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
+          (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
+          '</div></div>';
+      }).join("");
+    }
+    box.querySelectorAll("[data-cg1name]").forEach(function(inp){
+      inp.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1name, displayName:this.value.trim() }, "Navn lagret ✓"); });
+    });
+    box.querySelectorAll("[data-cg1page]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var id = this.dataset.cg1page;
+        var pages = Array.prototype.slice.call(box.querySelectorAll('[data-cg1page="'+id+'"]')).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
+        cg1UserAction({ action:"update", userId:id, pages:pages }, "Tilgang lagret ✓");
+      });
+    });
+    box.querySelectorAll("[data-cg1admin]").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var id = this.dataset.cg1admin;
+        if(!this.checked && state.me && id === state.me.id && !confirm("Fjerne admin fra deg selv? Du mister da tilgangen til Administrasjon.")){ this.checked = true; return; }
+        cg1UserAction({ action:"update", userId:id, isAdmin:this.checked }, this.checked ? "Admin-tilgang gitt ✓" : "Admin-tilgang fjernet ✓");
+      });
+    });
+    box.querySelectorAll("[data-useraccountperson]").forEach(function(sel){
+      sel.addEventListener("change", function(){ setUserAccountPerson(this.dataset.useraccountperson, this.value || null); });
+    });
+    box.querySelectorAll("[data-cg1password]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var u = state.cg1Users.find(function(x){ return x.userId === btn.dataset.cg1password; });
+        var pw = prompt("Nytt passord for "+(u ? (u.displayName || u.email) : "brukeren")+" (minst 8 tegn). Gi det videre til personen selv:");
+        if(pw === null) return;
+        if(pw.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
+        cg1UserAction({ action:"setPassword", userId:btn.dataset.cg1password, password:pw }, "Nytt passord satt ✓");
+      });
+    });
+    box.querySelectorAll("[data-cg1active]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var activate = btn.dataset.next === "1";
+        var u = state.cg1Users.find(function(x){ return x.userId === btn.dataset.cg1active; });
+        if(!activate && !confirm("Deaktivere "+(u ? (u.displayName || u.email) : "brukeren")+"? Personen kan ikke logge inn før kontoen aktiveres igjen.")) return;
+        cg1UserAction({ action:"setActive", userId:btn.dataset.cg1active, active:activate }, activate ? "Bruker aktivert ✓" : "Bruker deaktivert ✓");
+      });
+    });
+  }
+  byId("cg1NewPages").innerHTML = cg1PageCheckboxesHtml("data-cg1newpage", "new", []);
+  byId("cg1AddUserForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var pages = Array.prototype.slice.call(document.querySelectorAll("[data-cg1newpage]")).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
+    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked };
+    if(body.password.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
+    cg1UserAdmin(body).then(function(){
+      showInfo("Bruker opprettet ✓ Gi e-post og passord videre til personen.");
+      byId("cg1AddUserForm").reset();
+      byId("cg1AddUserBox").open = false;
+      refetchCg1Users(); refetchCg1Access(); refetchUserAccounts();
+    }, function(err){ showError(err.message); });
+  });
   function renderProsjektTab(){
-    if(!isByggeleder()) return;
+    if(!isCg1Admin()) return;
     var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
     byId("prosjektSubLabel").textContent = curProj ? (curProj.name+(curProj.isActive?' ★':'')+(curProj.start||curProj.end?' · '+fmtRange(curProj.start||curProj.end, curProj.end||curProj.start):'')) : "Ingen prosjekt valgt";
     var menighetHasCode = state.fagAccounts.some(function(a){ return a.fagKey === "kontakt" && a.projectId === currentProjectId(); });
@@ -6956,22 +7146,8 @@
     byId("menighetCodeBtn").textContent = menighetHasCode ? "Endre kode" : "Sett kode";
 
     var pfList = projectFagsForCurrentProject();
-    var visibleAccounts = state.userAccounts.filter(function(u){ return HIDDEN_USER_ACCOUNTS.indexOf(u.email) === -1; });
     var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-    byId("userAccountsList").innerHTML = visibleAccounts.length ? visibleAccounts.map(function(u){
-      var relevant = u.role === "byggeleder" || (pfList.some(function(x){ return x.fag === u.role && x.active; }));
-      var isFagRole = u.role === "byggeleder" || FAG_LIST.indexOf(u.role) !== -1;
-      var dotColor = !isFagRole ? "var(--muted)" : (relevant ? "var(--good)" : "var(--border-strong)");
-      var dotTitle = !isFagRole ? "" : (relevant ? "Relevant for dette prosjektet" : "Faget er ikke aktivt i dette prosjektet");
-      var personSelect = '<select data-useraccountperson="'+u.id+'" title="Hvilket teammedlem tilhører denne innloggingen" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
-        '<option value="">Ingen person</option>' +
-        peopleSorted.map(function(p){ return '<option value="'+p.id+'"'+(u.person_id===p.id?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-        '</select>';
-      return '<div class="shoprow" style="flex-wrap:wrap;"><span class="sname"><i class="dot" style="background:'+dotColor+'; width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px;" title="'+dotTitle+'"></i>'+escapeHtml(u.email)+'</span><span class="sqty">'+escapeHtml(FAG_LABELS[u.role]||u.role)+'</span>'+personSelect+'</div>';
-    }).join("") : '<p class="empty-note">Ingen kontoer funnet.</p>';
-    byId("userAccountsList").querySelectorAll("[data-useraccountperson]").forEach(function(sel){
-      sel.addEventListener("change", function(){ setUserAccountPerson(this.dataset.useraccountperson, this.value || null); });
-    });
+    renderCg1UserList(peopleSorted);
 
     var visMap = andeligVisibilityMapForCurrentProject();
     byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
@@ -10724,6 +10900,7 @@
     refetchUserAccounts();
     refetchFags();
     refetchFagAccounts();
+    refetchCg1Access();
     refetchBehovSlots();
     refetchBehovDays();
     refetchPortalSuggestions();
@@ -10777,6 +10954,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fags" }, refetchFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_accounts" }, refetchFagAccounts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cg1_access" }, refetchCg1Access)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
       .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)
@@ -10828,6 +11006,7 @@
     }
   }
   var didAutoOpenDashboard = false;
+  var hadSavedTabAtLogin = true;
   var INVITE_TOKEN_KEY = "ldc_pending_invite";
   var pendingInviteToken = null;
   try{ pendingInviteToken = sessionStorage.getItem(INVITE_TOKEN_KEY); }catch(e){}
@@ -10870,6 +11049,7 @@
         didAutoOpenDashboard = true;
         var savedTab = null;
         try{ savedTab = localStorage.getItem("ldc_tab"); }catch(e){}
+        hadSavedTabAtLogin = !!savedTab;
         if(savedTab && document.querySelector('nav.tabs button[data-tab="'+savedTab+'"]')){
           switchTab(savedTab);
         } else if(isByggeleder() && !window.matchMedia("(max-width:640px)").matches){
