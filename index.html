@@ -541,6 +541,16 @@
   .elcard.flash{animation:flash 1.6s ease;}
   @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent);} 100%{box-shadow:none;}}
   dialog.wide{width:min(560px, calc(100vw - 24px));}
+  .pwprog-row{ display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font:inherit; color:inherit; cursor:pointer; }
+  .pwprog-row:hover{ border-color:var(--accent); background:var(--accent-soft); }
+  .pwprog-row.current{ border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); }
+  .pwprog-week{ flex:none; width:92px; }
+  .pwprog-week b{ display:block; font-size:14px; }
+  .pwprog-week span{ font-size:11.5px; color:var(--muted); }
+  .pwprog-main{ flex:1; min-width:0; }
+  .pwprog-resp{ font-weight:700; font-size:14px; }
+  .pwprog-resp.missing{ font-weight:600; color:var(--warn-ink); }
+  .pwprog-meta{ font-size:12px; color:var(--muted); margin-top:2px; }
 
   /* ---------- periode-plukker (start/slutt på en oppgave) ---------- */
   .drp-compact{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; border:1px solid var(--border); border-radius:10px; padding:9px 12px; background:var(--surface-alt); }
@@ -1515,6 +1525,7 @@
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
             <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
             <button type="button" class="btn small" id="mwWeekEditBtn">Rediger uke</button>
+            <button type="button" class="btn small primary" id="pwProgramBtn" title="Alle uker i prosjektet og hvem som har ansvaret">Program</button>
           </div>
           <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
         </div>
@@ -2184,6 +2195,17 @@
       <button type="submit" class="btn primary">Opprett</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="pwProgramDialog" class="wide">
+  <div class="dlg-body">
+    <h3>Program – privilege-uker</h3>
+    <p class="sub" id="pwProgramSub" style="font-size:12.5px; color:var(--muted); margin:-4px 0 12px;">Alle ukene i prosjektet og hvem i teamet som har ansvaret. Trykk på en uke for å fylle inn eller endre.</p>
+    <div id="pwProgramList" style="display:flex; flex-direction:column; gap:8px; max-height:65vh; overflow-y:auto;"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="pwProgramClose">Lukk</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="pwDialog" class="wide">
@@ -4311,6 +4333,7 @@
     }).join("") : '<p class="empty-note">Ingen oppgaver skulle avsluttes denne uken.</p>';
   }
   function renderSpiritualTab(){
+    if(pwProgramDialog && pwProgramDialog.open) renderPwProgram();
     renderEditableStatics("panel-andelig", view.andeligEdit);
     renderTeamHomeGrid();
     var teamWeekMonday = view.teamWeekMonday;
@@ -4662,9 +4685,75 @@
   });
   byId("mwWeekSelect").addEventListener("change", function(){ view.mwWeekId = this.value; renderSpiritualTab(); });
   byId("mwWeekEditBtn").addEventListener("click", function(){
-    if(!view.mwWeekId){ showError("Ingen privilege-uke å redigere ennå."); return; }
+    if(!view.mwWeekId){ openPwProgram(); return; }
     openPwDialog(view.mwWeekId);
   });
+
+  // ---------- Program: alle ukene i prosjektet, med hvem som har ansvaret ----------
+  // Én rad per uke (mandag-fredag) fra prosjektstart til close out, pluss eventuelle privilege-
+  // uker som er lagt inn utenfor den perioden. Trykk på en uke: finnes den, åpnes den for
+  // redigering - ellers åpnes skjemaet for en ny uke med datoene ferdig utfylt.
+  var pwProgramDialog = byId("pwProgramDialog");
+  function pwProgramRows(){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    var weeks = privilegeWeeksForCurrentProject();
+    var byMonday = {};
+    weeks.forEach(function(w){
+      var mon = toISODate(mondayOf(fromISODate(w.start)));
+      if(!byMonday[mon]) byMonday[mon] = w;
+    });
+    var mondays = {};
+    if(cur && cur.start){
+      var endIso = cur.closeOut || cur.end || cur.start;
+      for(var d = mondayOf(fromISODate(cur.start)); toISODate(d) <= endIso; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)){
+        mondays[toISODate(d)] = true;
+      }
+    }
+    Object.keys(byMonday).forEach(function(m){ mondays[m] = true; });
+    return Object.keys(mondays).sort().map(function(mon){
+      var m = fromISODate(mon);
+      var fri = toISODate(new Date(m.getFullYear(), m.getMonth(), m.getDate() + 4));
+      return { monday: mon, friday: fri, week: byMonday[mon] || null };
+    });
+  }
+  function renderPwProgram(){
+    var rows = pwProgramRows();
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    var thisMonday = toISODate(mondayOf(new Date()));
+    var box = byId("pwProgramList");
+    if(!rows.length){
+      box.innerHTML = '<p class="empty-note">'+(cur && !cur.start ? 'Prosjektet mangler startdato. Sett den under Administrasjon → Rediger prosjekt.' : 'Ingen uker å vise.')+'</p>';
+      return;
+    }
+    box.innerHTML = rows.map(function(r){
+      var w = r.week;
+      var info = isoWeekInfo(fromISODate(r.monday));
+      var meta = w ? [w.familiestudie?("Familiestudie: "+w.familiestudie):"", w.sikkerhetstale?("Sikkerhetstale: "+w.sikkerhetstale):"", w.bibellesning?("Bibellesning: "+w.bibellesning):"", w.note||""].filter(Boolean).map(escapeHtml).join(" · ") : "";
+      return '<button type="button" class="pwprog-row'+(r.monday===thisMonday?' current':'')+'" data-pwprog="'+r.monday+'"'+(w?' data-pwid="'+w.id+'"':'')+'>' +
+        '<div class="pwprog-week"><b>Uke '+info.week+'</b><span>'+fmtRange(w ? w.start : r.monday, w ? w.end : r.friday)+'</span></div>' +
+        '<div class="pwprog-main">' +
+        (w ? '<div class="pwprog-resp">'+escapeHtml(w.responsible)+(w.label?' <span class="badge planned">'+escapeHtml(w.label)+'</span>':'')+'</div>'
+           : '<div class="pwprog-resp missing">Ingen ansvarlig satt – trykk for å fylle inn</div>') +
+        (meta ? '<div class="pwprog-meta">'+meta+'</div>' : '') +
+        '</div></button>';
+    }).join("");
+    box.querySelectorAll("[data-pwprog]").forEach(function(b){
+      b.addEventListener("click", function(){
+        if(this.dataset.pwid){ openPwDialog(this.dataset.pwid); return; }
+        var m = fromISODate(this.dataset.pwprog);
+        openNewPwDialog(this.dataset.pwprog, toISODate(new Date(m.getFullYear(), m.getMonth(), m.getDate() + 4)));
+      });
+    });
+  }
+  function openPwProgram(){
+    renderPwProgram();
+    pwProgramDialog.showModal();
+    var current = byId("pwProgramList").querySelector(".pwprog-row.current");
+    if(current) current.scrollIntoView({ block: "center" });
+  }
+  byId("pwProgramBtn").addEventListener("click", openPwProgram);
+  byId("pwProgramClose").addEventListener("click", function(){ pwProgramDialog.close(); });
+  pwProgramDialog.addEventListener("click", function(ev){ if(ev.target === pwProgramDialog) pwProgramDialog.close(); });
 
   function fillPwResponsiblePick(){
     byId("pwResponsiblePick").innerHTML = '<option value="">— Velg fra teamet, eller skriv inn under —</option>' +
@@ -4680,16 +4769,17 @@
   // fortsatt stemmer med den koblede personen - rydder da koblingen for å ikke lagre feil kobling.
   byId("pwResponsible").addEventListener("input", function(){ byId("pwResponsiblePersonId").value = ""; });
   var pwDialog = byId("pwDialog");
-  byId("pwNewBtn").addEventListener("click", function(){
+  function openNewPwDialog(start, end){
     byId("pwDlgTitle").textContent = "Ny privilege-uke";
     byId("pwId").value = "";
-    byId("pwStart").value = ""; byId("pwEnd").value = "";
+    byId("pwStart").value = start || ""; byId("pwEnd").value = end || "";
     byId("pwResponsible").value = ""; byId("pwResponsiblePersonId").value = ""; byId("pwLabel").value = "";
     byId("pwFamiliestudie").value = ""; byId("pwSikkerhetstale").value = "";
     byId("pwBibellesning").value = ""; byId("pwNote").value = "";
     fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
     pwDialog.showModal();
-  });
+  }
+  byId("pwNewBtn").addEventListener("click", function(){ openNewPwDialog("", ""); });
   function openPwDialog(id){
     var w = state.privilegeWeeks.find(function(x){ return x.id === id; });
     if(!w) return;
