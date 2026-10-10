@@ -4755,15 +4755,36 @@
   byId("pwProgramClose").addEventListener("click", function(){ pwProgramDialog.close(); });
   pwProgramDialog.addEventListener("click", function(ev){ if(ev.target === pwProgramDialog) pwProgramDialog.close(); });
 
-  function fillPwResponsiblePick(){
+  // Ansvarlig velges på samme måte som i Flex: ektepar i teamet står én gang, og alle vises med
+  // etternavn (både ektepar og enkeltpersoner). Har to valg samme etternavn, legges fornavnet til
+  // i listen så de kan skilles - selve ansvarlig-teksten blir fortsatt bare etternavnet.
+  function pwResponsibleOptions(){
+    var team = teamMemberPeopleForCurrentProject();
+    var seen = {}, out = [];
+    team.forEach(function(p){
+      if(seen[p.id]) return;
+      var ids = flexCoupleIds(p.id);
+      ids.forEach(function(id){ seen[id] = true; });
+      var members = ids.map(function(id){ return state.people.find(function(x){ return x.id === id; }); }).filter(Boolean);
+      out.push({ id: p.id, ids: ids, label: lastNameOf(p.name), first: members.map(function(m){ return m.name.split(/\s+/)[0]; }).join(" og ") });
+    });
+    out.forEach(function(o){
+      if(out.some(function(x){ return x !== o && x.label === o.label; })) o.display = o.label + " (" + o.first + ")";
+    });
+    return out.sort(function(a,b){ return a.label.localeCompare(b.label, "no"); });
+  }
+  function fillPwResponsiblePick(selectedPersonId){
+    var opts = pwResponsibleOptions();
+    var sel = selectedPersonId ? opts.find(function(o){ return o.ids.indexOf(selectedPersonId) !== -1; }) : null;
     byId("pwResponsiblePick").innerHTML = '<option value="">— Velg fra teamet, eller skriv inn under —</option>' +
-      teamMemberPeopleForCurrentProject().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); }).map(function(t){ return '<option value="'+t.id+'">'+escapeHtml(t.name)+'</option>'; }).join("");
+      opts.map(function(o){ return '<option value="'+o.id+'"'+(sel && sel.id===o.id?' selected':'')+'>'+escapeHtml(o.display || o.label)+'</option>'; }).join("");
+    byId("pwResponsiblePick").value = sel ? sel.id : "";
   }
   byId("pwResponsiblePick").addEventListener("change", function(){
     var pickedId = this.value;
     if(!pickedId) return;
     var picked = state.people.find(function(p){ return p.id === pickedId; });
-    if(picked){ byId("pwResponsible").value = picked.name; byId("pwResponsiblePersonId").value = picked.id; }
+    if(picked){ byId("pwResponsible").value = lastNameOf(picked.name); byId("pwResponsiblePersonId").value = picked.id; }
   });
   // Fritekst-redigering etter et dropdown-valg betyr vi ikke lenger kan garantere at teksten
   // fortsatt stemmer med den koblede personen - rydder da koblingen for å ikke lagre feil kobling.
@@ -4776,7 +4797,7 @@
     byId("pwResponsible").value = ""; byId("pwResponsiblePersonId").value = ""; byId("pwLabel").value = "";
     byId("pwFamiliestudie").value = ""; byId("pwSikkerhetstale").value = "";
     byId("pwBibellesning").value = ""; byId("pwNote").value = "";
-    fillPwResponsiblePick(); byId("pwResponsiblePick").value = "";
+    fillPwResponsiblePick("");
     pwDialog.showModal();
   }
   byId("pwNewBtn").addEventListener("click", function(){ openNewPwDialog("", ""); });
@@ -4789,7 +4810,7 @@
     byId("pwResponsible").value = w.responsible; byId("pwResponsiblePersonId").value = w.responsiblePersonId || ""; byId("pwLabel").value = w.label;
     byId("pwFamiliestudie").value = w.familiestudie; byId("pwSikkerhetstale").value = w.sikkerhetstale;
     byId("pwBibellesning").value = w.bibellesning; byId("pwNote").value = w.note;
-    fillPwResponsiblePick(); byId("pwResponsiblePick").value = w.responsiblePersonId || "";
+    fillPwResponsiblePick(w.responsiblePersonId || "");
     pwDialog.showModal();
   }
   byId("pwCancel").addEventListener("click", function(){ pwDialog.close(); });
