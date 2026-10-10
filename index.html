@@ -879,7 +879,13 @@
       <input type="password" id="loginPassword" placeholder="Passord" required autocomplete="current-password" />
       <button type="submit" class="btn primary">Logg inn</button>
     </form>
+    <form id="fagCodeLoginForm" hidden>
+      <select id="fagCodeSelect" required style="width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:14px; background:var(--surface); margin-bottom:8px;"></select>
+      <input type="password" id="fagCodeInput" placeholder="Kode" required autocomplete="current-password" />
+      <button type="submit" class="btn primary">Logg inn</button>
+    </form>
     <p class="err" id="loginError"></p>
+    <button type="button" class="btn ghost small" id="loginToggleMode" style="margin-top:10px; width:100%;">Logg inn med fagkode i stedet</button>
   </div>
 </div>
 
@@ -2367,7 +2373,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], projectInvites: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], projectInvites: [], fagAccounts: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -6759,6 +6765,41 @@
       refetchFags();
     });
   }
+  // ---------- delte fag-kode-kontoer (fase 4) ----------
+  // Samme e-post-formel som Edge Function "fag-account-admin" bruker server-side - kontoen finnes
+  // aldri i klientkoden med noe annet enn denne deterministiske, aldri-leverbare adressen.
+  function fagAccountEmail(fagKey){
+    return "fag-" + fagKey + "@fagkonto.ldc-tomrerportalen.invalid";
+  }
+  function rowToFagAccount(row){
+    return { fagKey: row.fag_key, authUserId: row.auth_user_id, updatedAt: row.updated_at };
+  }
+  function refetchFagAccounts(){
+    if(!isByggeleder()) return;
+    sb.from("fag_accounts").select("*").then(function(res){
+      if(res.error) return;
+      state.fagAccounts = res.data.map(rowToFagAccount);
+      scheduleRender();
+    });
+  }
+  // Oppretter (hvis faget ikke har en konto ennå) eller endrer koden på fagets delte konto, via
+  // Edge Function-en - aldri direkte fra klienten, siden det krever service-rollen.
+  function setFagCode(fagKey, code){
+    if(!sb || !isByggeleder()) return;
+    sb.functions.invoke("fag-account-admin", { body: { fagKey: fagKey, code: code } }).then(function(res){
+      if(res.error){
+        var ctx = res.error.context;
+        if(ctx && typeof ctx.json === "function"){
+          ctx.json().then(function(body){ showError((body && body.error) || "Kunne ikke sette kode."); }, function(){ showError("Kunne ikke sette kode: "+res.error.message); });
+        } else {
+          showError("Kunne ikke sette kode: "+res.error.message);
+        }
+        return;
+      }
+      showInfo((res.data && res.data.created) ? "Fag-konto opprettet og kode satt." : "Ny kode lagret.");
+      refetchFagAccounts();
+    });
+  }
 
   // ---------- ACGO-siden ----------
   function refetchUserAccounts(){
@@ -7042,14 +7083,28 @@
 
     byId("adminFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
       var usage = fagUsageCount(f.key);
+      var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key; });
       return '<div class="shoprow" style="flex-wrap:wrap;">' +
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
         '<span class="sname">'+escapeHtml(f.label)+'</span>' +
+        (hasAccount ? '<span class="badge group" title="Fag-kode-innlogging er satt opp for dette faget">Kode satt</span>' : '') +
+        '<button type="button" class="btn small" data-setfagcode="'+f.key+'">'+(hasAccount?"Endre kode":"Sett kode")+'</button>' +
         '<button type="button" class="btn small ghost danger" data-delfag="'+f.key+'" title="'+(usage>0?'I bruk '+usage+' sted(er) - kan ikke slettes':'Slett fag')+'"'+(usage>0?' disabled':'')+'>Slett</button>' +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
     byId("adminFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
+    });
+    byId("adminFagList").querySelectorAll("[data-setfagcode]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var key = this.dataset.setfagcode;
+        var fag = state.fags.find(function(f){ return f.key === key; });
+        var code = prompt("Sett innloggingskode for «"+(fag?fag.label:key)+"» (minst 6 tegn). Denne kommer i tillegg til eventuelle individuelle kontoer - ingenting annet endres:");
+        if(code === null) return;
+        code = code.trim();
+        if(code.length < 6){ showError("Koden må være minst 6 tegn."); return; }
+        setFagCode(key, code);
+      });
     });
     byId("adminFagList").querySelectorAll("[data-delfag]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -10760,6 +10815,7 @@
     refetchUserAccounts();
     refetchFags();
     refetchProjectInvites();
+    refetchFagAccounts();
     refetchBehovSlots();
     refetchBehovDays();
     refetchPortalSuggestions();
@@ -10813,6 +10869,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fags" }, refetchFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_invites" }, refetchProjectInvites)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fag_accounts" }, refetchFagAccounts)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
       .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)
@@ -10925,6 +10982,43 @@
     sb.auth.signInWithPassword({ email: email, password: password }).then(function(res){
       if(res.error){ byId("loginError").textContent = "Feil e-post eller passord."; return; }
       byId("loginPassword").value = "";
+    });
+  });
+
+  // ---------- alternativ innlogging: velg fag + kode (delt fag-konto, fase 4) ----------
+  // Fag-listen må kunne vises FØR noen er innlogget - hentes derfor via list_fags_public() (anon
+  // kan kalle den), ikke via den vanlige "fags"-tabellen som krever innlogging. Faller tilbake på
+  // dagens faste FAG_LABELS/FAG_LIST hvis kallet feiler (f.eks. ingen nettforbindelse ennå).
+  function populateFagCodeSelect(){
+    var sel = byId("fagCodeSelect");
+    var fallback = FAG_LIST.map(function(k){ return { key: k, label: FAG_LABELS[k] || k }; });
+    function render(list){
+      sel.innerHTML = list.map(function(f){ return '<option value="'+escapeHtml(f.key)+'">'+escapeHtml(f.label)+'</option>'; }).join("");
+    }
+    render(fallback);
+    if(!sb) return;
+    sb.rpc("list_fags_public").then(function(res){
+      if(res.error || !res.data || !res.data.length) return;
+      render(res.data.map(function(f){ return { key: f.key, label: f.label }; }));
+    });
+  }
+  byId("loginToggleMode").addEventListener("click", function(){
+    var toFagCode = byId("loginForm").hidden === false;
+    byId("loginForm").hidden = toFagCode;
+    byId("fagCodeLoginForm").hidden = !toFagCode;
+    byId("loginToggleMode").textContent = toFagCode ? "Logg inn med e-post i stedet" : "Logg inn med fagkode i stedet";
+    byId("loginError").textContent = "";
+    if(toFagCode) populateFagCodeSelect();
+  });
+  byId("fagCodeLoginForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if(!sb) return;
+    var fagKey = byId("fagCodeSelect").value;
+    var code = byId("fagCodeInput").value;
+    byId("loginError").textContent = "";
+    sb.auth.signInWithPassword({ email: fagAccountEmail(fagKey), password: code }).then(function(res){
+      if(res.error){ byId("loginError").textContent = "Feil fag eller kode."; return; }
+      byId("fagCodeInput").value = "";
     });
   });
 
