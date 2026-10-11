@@ -28,6 +28,16 @@ function accountEmail(projectId: string, fagKey: string): string {
   return "acct-" + fagKey + "-" + projectId + "@fagkonto.ldc-tomrerportalen.invalid";
 }
 
+// Lagrer koden lesbart for «Vis kode» i Administrasjon (sql/84) - i en egen tabell som bare aktiv
+// CG1-admin kan lese. Feiler dette, er selve koden likevel satt; vi returnerer da bare en advarsel.
+// deno-lint-ignore no-explicit-any
+async function rememberCode(client: any, projectId: string, fagKey: string, code: string): Promise<boolean> {
+  const { error } = await client
+    .from("fag_account_codes")
+    .upsert({ project_id: projectId, fag_key: fagKey, code, updated_at: new Date().toISOString() }, { onConflict: "project_id,fag_key" });
+  return !error;
+}
+
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -132,7 +142,8 @@ Deno.serve(async (req: Request) => {
     if (updateErr) {
       return jsonResponse({ error: "Kunne ikke endre koden: " + updateErr.message }, 500);
     }
-    return jsonResponse({ ok: true, created: false }, 200);
+    const remembered = await rememberCode(serviceClient, projectId, fagKey, code);
+    return jsonResponse({ ok: true, created: false, remembered }, 200);
   }
 
   const { data: created, error: createErr } = await serviceClient.auth.admin.createUser({
@@ -161,5 +172,6 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Kontoen ble opprettet, men kunne ikke kobles til prosjektet/faget: " + linkErr.message }, 500);
   }
 
-  return jsonResponse({ ok: true, created: true }, 200);
+  const remembered = await rememberCode(serviceClient, projectId, fagKey, code);
+  return jsonResponse({ ok: true, created: true, remembered }, 200);
 });

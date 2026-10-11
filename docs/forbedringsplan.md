@@ -12,8 +12,8 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
 | P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ✅ I drift (sql/81 kjørt 11. okt) |
 | P5 | Gjør filmappene private | (DB) + kode | ✅ I drift (kode publisert, sql/82 kjørt 11. okt) |
-| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | 🔄 Kode ferdig – publiser, så deployes fag-account-admin (8 tegn) og kjøres sql/83 |
-| P7 | Rydd bort gamle rester | (DB) | ⏳ |
+| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ I drift («Vis kode» venter på publisering) |
+| P7 | Rydd bort gamle rester | (DB) | ⏳ Neste |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
 
 ---
@@ -91,10 +91,11 @@ kode: bruk signerte lenker (tidsbegrensede) i stedet for offentlige.
    krever Pro-abonnement (Rene Hus AS er på gratisplanen). Kompenseres med punkt 2.
 2. ✅ Kode: ny kodedialog (fag + Menighet) med minst 8 tegn og «Lag sterk kode» (ord-tall-ord,
    f.eks. «bjork-47-stige»). fag-account-admin håndhever 8 tegn på serveren.
-3. (DB) Fjern `user_accounts`-visningen (flagget av Supabase): appen leser nå rolle/person rett fra
-   `profiles`, så visningen trengs ikke – `sql/83` kjøres etter publisering.
-4. Foreslått: «Vis kode»-knapp for fag-/menighetskoder (krever lagring av koden, kun lesbar for
-   admin) – venter på «ok vis kode».
+3. ✅ (DB) `user_accounts`-visningen: appen leser rolle/person rett fra `profiles`. Tilgangen til
+   visningen er fjernet for alle (sql/83); selve slettingen hang fra verktøyet og tas i P7.
+4. ✅ «Vis kode» for fag-/menighetskoder: fag-account-admin (v5, krever 8 tegn) lagrer koden i
+   `fag_account_codes` (sql/84), som bare aktiv CG1-admin kan lese. Koder satt før dette vises som
+   «Ukjent – sett ny kode». CG1-passord lagres aldri.
 
 ## P7 – Rydd bort gamle rester (DB)
 - 7 gamle individuelle fag-kontoer (elektriker, landscape, maler, murer, tømrer ×2, ventilasjon, vvs)
@@ -102,6 +103,7 @@ kode: bruk signerte lenker (tidsbegrensede) i stedet for offentlige.
 - `projects.access_code` + funksjonen `verify_project_code`
 - `project_invites` (2 rader) + invitasjonsflyten i appen
 - testtabellen `fag_trigger_test`
+- visningen `user_accounts` (tilgang allerede fjernet i P6)
 - `search_path` på `check_profile_role` / `check_fag_column`
 
 Hver sletting listes opp med konsekvens før «ok».

@@ -1646,6 +1646,7 @@
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
         <h2 style="font-size:16px; flex:1; min-width:140px;">Menighet – innloggingskode</h2>
         <span class="badge group" id="menighetCodeBadge" hidden>Kode satt</span>
+        <button type="button" class="btn small" id="menighetShowCodeBtn" hidden>Vis kode</button>
         <button type="button" class="btn small" id="menighetCodeBtn">Sett kode</button>
       </div>
       <p class="sub" style="font-size:12px; color:var(--muted); margin:0;">Menigheten logger inn på innloggingssiden: velg dette prosjektet → «Menighet» → koden. De ser da kun dette prosjektet. Send koden til menighetens kontaktperson.</p>
@@ -1912,6 +1913,18 @@
 
   <p class="foot-note">Endringer lagres delt og live for alle som er logget inn.</p>
 </div>
+
+<dialog id="showCodeDialog">
+  <div class="dlg-body">
+    <h3 id="showCodeTitle">Innloggingskode</h3>
+    <p class="sub" id="showCodeSub" style="font-size:12.5px; color:var(--muted); margin:-4px 0 10px;"></p>
+    <div id="showCodeValue" style="font-family:var(--mono, monospace); font-size:20px; font-weight:700; letter-spacing:.02em; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:12px 14px; word-break:break-all;"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="showCodeClose">Lukk</button>
+      <button type="button" class="btn primary" id="showCodeCopy">Kopier kode</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="codeDialog">
   <form class="dlg-body" id="codeForm" method="dialog">
@@ -7387,6 +7400,41 @@
     setFagCode(codeDialogKey, code);
   });
 
+  // «Vis kode»: koden leses fra fag_account_codes (sql/84), som bare aktiv CG1-admin kan lese.
+  // Koder satt før denne funksjonen fantes ble aldri lagret lesbart - da må en ny kode settes.
+  var showCodeDialog = byId("showCodeDialog");
+  function showFagCode(fagKey, label){
+    if(!sb) return;
+    var pid = currentProjectId();
+    sb.from("fag_account_codes").select("code, updated_at").eq("project_id", pid).eq("fag_key", fagKey).maybeSingle().then(function(res){
+      byId("showCodeTitle").textContent = "Innloggingskode – " + label;
+      var cur = state.projects.find(function(p){ return p.id === pid; });
+      if(res.error && /fag_account_codes/.test(res.error.message || "")){
+        showError("Databasen mangler støtte for å vise koder. Kjør sql/84-vis-kode.sql i Supabase.");
+        return;
+      }
+      if(res.data && res.data.code){
+        byId("showCodeSub").textContent = (cur ? cur.name + " · " : "") + "Velg prosjektet → «" + label + "» → denne koden på innloggingssiden.";
+        byId("showCodeValue").textContent = res.data.code;
+        byId("showCodeCopy").hidden = false;
+      } else {
+        byId("showCodeSub").textContent = "Koden ble satt før portalen begynte å ta vare på koder, så den kan ikke vises.";
+        byId("showCodeValue").textContent = "Ukjent – sett ny kode for å kunne vise den";
+        byId("showCodeCopy").hidden = true;
+      }
+      showCodeDialog.showModal();
+    });
+  }
+  byId("showCodeClose").addEventListener("click", function(){ showCodeDialog.close(); });
+  showCodeDialog.addEventListener("click", function(ev){ if(ev.target === showCodeDialog) showCodeDialog.close(); });
+  byId("showCodeCopy").addEventListener("click", function(){
+    var code = byId("showCodeValue").textContent, btn = this;
+    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(function(){
+      btn.textContent = "Kopiert ✓"; setTimeout(function(){ btn.textContent = "Kopier kode"; }, 1500);
+    }, function(){ prompt("Kopier koden:", code); });
+  });
+  byId("menighetShowCodeBtn").addEventListener("click", function(){ showFagCode("kontakt", "Menighet"); });
+
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
     var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
@@ -7394,6 +7442,7 @@
     var menighetHasCode = state.fagAccounts.some(function(a){ return a.fagKey === "kontakt" && a.projectId === currentProjectId(); });
     byId("menighetCodeBadge").hidden = !menighetHasCode;
     byId("menighetCodeBtn").textContent = menighetHasCode ? "Endre kode" : "Sett kode";
+    byId("menighetShowCodeBtn").hidden = !menighetHasCode;
 
     var pfList = projectFagsForCurrentProject();
     var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
@@ -7414,6 +7463,7 @@
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
         '<b style="flex:1; min-width:100px;">'+escapeHtml(f.label)+'</b>' +
         (hasAccount ? '<span class="badge group" title="Fag-kode-innlogging er satt opp for dette faget">Kode satt</span>' : '') +
+        (hasAccount ? '<button type="button" class="btn small" data-showfagcode="'+f.key+'">Vis kode</button>' : '') +
         '<button type="button" class="btn small" data-setfagcode="'+f.key+'">'+(hasAccount?"Endre kode":"Sett kode")+'</button>' +
         '<button type="button" class="btn small ghost danger" data-delfag="'+f.key+'" title="'+(usage>0?'I bruk '+usage+' sted(er) - kan ikke slettes':'Slett fag')+'"'+(usage>0?' disabled':'')+'>Slett</button>' +
         '</div>' +
@@ -7429,6 +7479,13 @@
     }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
     byId("unifiedFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-showfagcode]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var key = this.dataset.showfagcode;
+        var fag = state.fags.find(function(f){ return f.key === key; });
+        showFagCode(key, fag ? fag.label : key);
+      });
     });
     byId("unifiedFagList").querySelectorAll("[data-setfagcode]").forEach(function(btn){
       btn.addEventListener("click", function(){

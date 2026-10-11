@@ -10,3 +10,7 @@
 -- Lim hele filen inn i Supabase > SQL Editor > New query, og trykk Run. Trygt å kjøre flere ganger.
 
 drop view if exists public.user_accounts;
+
+-- Status 11. okt: "drop view" hang fra verktøyet som ble brukt, så tilgangen ble i stedet fjernet
+-- (samme sikkerhetsgevinst). Selve visningen slettes i P7 / kan slettes med linjen over.
+revoke all on public.user_accounts from anon, authenticated;
