@@ -3869,7 +3869,7 @@
       return;
     }
     box.innerHTML = items.map(function(s){
-      var thumb = (s.imagePath && sb) ? '<a href="'+encodeURI(shopItemImagePublicUrl(s.imagePath))+'" target="_blank" rel="noopener"><img src="'+encodeURI(shopItemImagePublicUrl(s.imagePath))+'" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px; flex:none;" /></a>' : '';
+      var thumb = (s.imagePath && sb) ? '<a data-fileurl href="'+escapeHtml(shopItemImagePublicUrl(s.imagePath))+'" target="_blank" rel="noopener"><img src="'+escapeHtml(fileImgSrc("handleliste", s.imagePath))+'" alt="" style="width:32px; height:32px; object-fit:cover; border-radius:6px; flex:none;" /></a>' : '';
       return '<div class="shoprow'+(s.bought?' bought':'')+'">' +
         '<input type="checkbox" data-toggleshop="'+s.id+'" '+(s.bought?'checked':'')+' />' +
         thumb +
@@ -3936,7 +3936,7 @@
     box.innerHTML = list.map(function(d){
       var url = sb ? drawingPublicUrl(d.path) : "#";
       return '<div class="shoprow" data-drawing="'+d.id+'">' +
-        '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
+        '<a data-fileurl href="'+escapeHtml(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
         fagBadgeHtml(d.fag) +
         '<button type="button" class="btn small" data-editonly data-renamedrawing="'+d.id+'">Rediger navn</button>' +
         '<button type="button" class="btn small danger" data-editonly data-deldrawing="'+d.id+'">Slett</button>' +
@@ -4039,7 +4039,7 @@
       (weekPhotos.length === 0 ? '<p class="empty-note">Ingen bilder lastet opp for denne uken ennå.</p>' : '<div class="drawgrid">' + weekPhotos.map(function(d){
         var url = sb ? dokuPhotoPublicUrl(d.path) : "#";
         return '<div class="drawcard" data-dokuphoto="'+d.id+'">' +
-          '<a href="'+encodeURI(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+encodeURI(url)+'" loading="lazy" alt="" /></a>' +
+          '<a data-fileurl href="'+escapeHtml(url)+'" target="_blank" rel="noopener" class="thumb"><img src="'+escapeHtml(url === "#" ? BLANK_IMG : url)+'" loading="lazy" alt="" /></a>' +
           '<div class="dmeta"><div class="dname">'+(d.caption ? escapeHtml(d.caption) : '<span class="empty-note" style="font-size:12px;">Ingen tekst lagt til</span>')+'</div></div>' +
           '<div class="dactions" data-editonly>' +
           '<button type="button" class="btn small" data-renamedoku="'+d.id+'">Rediger tekst</button>' +
@@ -7155,7 +7155,7 @@
       return '<div class="shoprow" data-openreferat="'+m.id+'" style="cursor:pointer;">' +
         '<span class="sname">Uke '+info.week+'</span>' +
         '<span class="sqty">'+fmtRange(m.weekStart, toISODate(end))+(m.meetingInfo?' · '+escapeHtml(m.meetingInfo):'')+'</span>' +
-        (m.referatPdfPath ? '<a class="btn small" data-pdflink href="'+referatPdfUrl(m.referatPdfPath)+'" target="_blank" rel="noopener" title="Last ned PDF">PDF</a>' : '<span class="empty-note" style="font-size:11px;">Ingen PDF ennå</span>') +
+        (m.referatPdfPath ? '<a class="btn small" data-pdflink data-fileurl href="'+escapeHtml(referatPdfUrl(m.referatPdfPath))+'" target="_blank" rel="noopener" title="Last ned PDF">PDF</a>' : '<span class="empty-note" style="font-size:11px;">Ingen PDF ennå</span>') +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen avsluttede møter ennå.</p>';
     byId("acgoReferatArchive").querySelectorAll("[data-openreferat]").forEach(function(row){
@@ -10105,9 +10105,51 @@
       .then(function(res){ if(res.error){ showError("Kunne ikke sette aktivt prosjekt: "+res.error.message); return; } refetchProjects(); });
   }
 
-  function shopItemImagePublicUrl(path){
-    return sb.storage.from("handleliste").getPublicUrl(path).data.publicUrl;
+  // ---------- filer: tidsbegrensede (signerte) lenker ----------
+  // Filmappene (tegninger, dokumentasjon, referater, handleliste) er private - en fil kan bare
+  // åpnes via en signert lenke som gjelder i SIGNED_URL_TTL sekunder. Rendringen er synkron, så
+  // lenkene hentes i bakgrunnen (samlet per mappe) og huskes; siden tegnes på nytt når de er klare.
+  // Til da vises "#" (klikk ignoreres) og et gjennomsiktig plassholderbilde.
+  var SIGNED_URL_TTL = 3600;
+  var BLANK_IMG = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+  var signedUrlCache = {}, signedUrlPending = {}, signedUrlFailedAt = {}, signFlushScheduled = false;
+  function fileUrl(bucket, path){
+    if(!sb || !path) return "#";
+    var key = bucket + "|" + path, cached = signedUrlCache[key], now = Date.now();
+    if(cached && cached.exp - now > 5 * 60 * 1000) return cached.url;
+    if(!(signedUrlFailedAt[key] && now - signedUrlFailedAt[key] < 60000)){
+      (signedUrlPending[bucket] = signedUrlPending[bucket] || {})[path] = true;
+      if(!signFlushScheduled){ signFlushScheduled = true; setTimeout(flushSignedUrls, 0); }
+    }
+    return cached ? cached.url : "#";
   }
+  function fileImgSrc(bucket, path){
+    var u = fileUrl(bucket, path);
+    return u === "#" ? BLANK_IMG : u;
+  }
+  function flushSignedUrls(){
+    signFlushScheduled = false;
+    var pending = signedUrlPending; signedUrlPending = {};
+    var gotNew = false;
+    Promise.all(Object.keys(pending).map(function(bucket){
+      var paths = Object.keys(pending[bucket]);
+      return sb.storage.from(bucket).createSignedUrls(paths, SIGNED_URL_TTL).then(function(res){
+        var exp = Date.now() + SIGNED_URL_TTL * 1000;
+        var ok = {};
+        (res && res.data || []).forEach(function(r){
+          var url = r && (r.signedUrl || r.signedURL);
+          if(url && r.path){ signedUrlCache[bucket + "|" + r.path] = { url: url, exp: exp }; ok[r.path] = true; gotNew = true; }
+        });
+        paths.forEach(function(p){ if(!ok[p]) signedUrlFailedAt[bucket + "|" + p] = Date.now(); });
+      }, function(){ paths.forEach(function(p){ signedUrlFailedAt[bucket + "|" + p] = Date.now(); }); });
+    })).then(function(){ if(gotNew) scheduleRender(); });
+  }
+  document.addEventListener("click", function(ev){
+    var a = ev.target.closest && ev.target.closest('a[href="#"][data-fileurl]');
+    if(a) ev.preventDefault();
+  });
+
+  function shopItemImagePublicUrl(path){ return fileUrl("handleliste", path); }
   var MAX_SHOP_IMAGE_BYTES = 20 * 1024 * 1024;
   function uploadShopItemImage(file){
     return compressImage(file, 1600, 0.8).then(function(f){
@@ -10673,9 +10715,7 @@
       return Promise.resolve();
     }
   }
-  function referatPdfUrl(path){
-    return sb.storage.from("referater").getPublicUrl(path).data.publicUrl;
-  }
+  function referatPdfUrl(path){ return fileUrl("referater", path); }
   function deleteToMeeting(id){
     if(!sb) return;
     var m = state.toMeetings.find(function(x){ return x.id === id; });
@@ -10783,9 +10823,7 @@
       scheduleRender();
     });
   }
-  function drawingPublicUrl(path){
-    return sb.storage.from("tegninger").getPublicUrl(path).data.publicUrl;
-  }
+  function drawingPublicUrl(path){ return fileUrl("tegninger", path); }
   var MAX_DRAWING_BYTES = 20 * 1024 * 1024;
   function uploadDrawing(file, name){
     if(file.size > MAX_DRAWING_BYTES){ showError('«'+file.name+'» er for stor (maks 20 MB).'); return Promise.resolve(); }
@@ -10845,9 +10883,7 @@
       scheduleRender();
     });
   }
-  function dokuPhotoPublicUrl(path){
-    return sb.storage.from("dokumentasjon").getPublicUrl(path).data.publicUrl;
-  }
+  function dokuPhotoPublicUrl(path){ return fileUrl("dokumentasjon", path); }
   var MAX_DOKU_BYTES = 20 * 1024 * 1024;
   // Skalerer ned og re-komprimerer bildet til JPEG før opplasting, så det går raskere på dårlig
   // nett på byggeplassen. Faller alltid tilbake til originalfilen uendret hvis noe går galt,

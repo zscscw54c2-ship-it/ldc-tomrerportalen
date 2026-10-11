@@ -11,7 +11,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P2 | Menighetens Behov-utfylling virker ikke helt | Kode + (DB) | ✅ Publisert |
 | P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
 | P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ✅ I drift (sql/81 kjørt 11. okt) |
-| P5 | Gjør filmappene private | (DB) + kode | ⏳ Neste |
+| P5 | Gjør filmappene private | (DB) + kode | 🔄 Trinn 1 (kode) ferdig – publiser, så kjøres trinn 2 (sql/82) |
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ⏳ |
 | P7 | Rydd bort gamle rester | (DB) | ⏳ |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
@@ -74,6 +74,12 @@ lese alle 217 personer (telefon, adresse) på tvers av prosjekter; menigheten og
 4. Kjøres i én migrering, med en ferdig «angre»-fil klar.
 
 ## P5 – Private filmapper
+**Trinn 1 (kode) ✅:** appen bruker tidsbegrensede (signerte) lenker, hentet samlet per mappe og
+husket i en time. Virker både med åpne og private mapper → trygt å publisere først.
+**Trinn 2 (DB, etter publisering):** `sql/82-private-filmapper.sql` – mappene blir private, og
+filer får samme prosjektlås som P4 (filstien starter med prosjekt-id).
+
+### Opprinnelig beskrivelse
 **Problem:** Tegninger, dokumentasjonsbilder, referater og handlelistebilder (65 filer, 70 MB) ligger
 i offentlige mapper – alle med lenken kan åpne dem.
 **Plan:** (DB) Gjør mappene private med lesetilgang kun for innloggede (og per prosjekt etter P4);
