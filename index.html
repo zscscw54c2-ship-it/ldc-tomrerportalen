@@ -1581,6 +1581,11 @@
   <section id="panel-prosjekt" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <h2 style="font-size:18px; margin-bottom:12px;">Administrasjon</h2>
+    <div class="peoplecard" id="setupStatusCard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Oppsett for prosjektet</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Det som må være på plass før oppstart. Grønt er klart, gult mangler.</p>
+      <div id="setupStatusList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Prosjektinnstillinger</h2>
       <p class="sub" id="prosjektSubLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
@@ -1905,7 +1910,8 @@
     <div id="showCodeValue" style="font-family:var(--mono, monospace); font-size:20px; font-weight:700; letter-spacing:.02em; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:12px 14px; word-break:break-all;"></div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="showCodeClose">Lukk</button>
-      <button type="button" class="btn primary" id="showCodeCopy">Kopier kode</button>
+      <button type="button" class="btn" id="showCodeCopy">Kopier kode</button>
+      <button type="button" class="btn primary" id="showCodeCopyMsg" title="Ferdig melding med lenke, prosjekt, rolle og kode – lim inn i SMS eller e-post">Kopier melding</button>
     </div>
   </div>
 </dialog>
@@ -7010,7 +7016,7 @@
   }
   // Oppretter (hvis faget ikke har en konto for DETTE prosjektet ennå) eller endrer koden på den
   // eksisterende, via Edge Function-en - aldri direkte fra klienten, siden det krever service-rollen.
-  function setFagCode(fagKey, code){
+  function setFagCode(fagKey, code, label){
     if(!sb || !isByggeleder()) return;
     var pid = currentProjectId();
     if(!pid){ showError("Velg et prosjekt først."); return; }
@@ -7026,6 +7032,8 @@
       }
       showInfo((res.data && res.data.created) ? "Fag-konto opprettet og kode satt." : "Ny kode lagret.");
       refetchFagAccounts();
+      // Vis koden med en gang, med "Kopier melding", så den kan sendes videre mens den er fersk.
+      if(label) showFagCode(fagKey, label);
     });
   }
 
@@ -7364,9 +7372,10 @@
     do { w2 = CODE_WORDS[randomInt(CODE_WORDS.length)]; } while(w2 === w1);
     return w1 + "-" + (10 + randomInt(90)) + "-" + w2;
   }
-  var codeDialog = byId("codeDialog"), codeDialogKey = null;
+  var codeDialog = byId("codeDialog"), codeDialogKey = null, codeDialogLabel = "";
   function openCodeDialog(fagKey, label){
     codeDialogKey = fagKey;
+    codeDialogLabel = label;
     byId("codeDlgTitle").textContent = "Innloggingskode – " + label;
     byId("codeDlgSub").textContent = "Gjelder kun dette prosjektet. Brukerne velger prosjektet → «" + label + "» → denne koden på innloggingssiden.";
     byId("codeDlgInput").value = generateStrongCode();
@@ -7381,12 +7390,25 @@
     var code = byId("codeDlgInput").value.trim();
     if(code.length < MIN_CODE_LENGTH){ showError("Koden må være minst " + MIN_CODE_LENGTH + " tegn."); return; }
     codeDialog.close();
-    setFagCode(codeDialogKey, code);
+    setFagCode(codeDialogKey, code, codeDialogLabel);
   });
 
   // «Vis kode»: koden leses fra fag_account_codes (sql/84), som bare aktiv CG1-admin kan lese.
   // Koder satt før denne funksjonen fantes ble aldri lagret lesbart - da må en ny kode settes.
-  var showCodeDialog = byId("showCodeDialog");
+  var showCodeDialog = byId("showCodeDialog"), showCodeContext = null;
+  function loginMessageText(ctx){
+    var link = location.protocol === "file:" ? "(lenken til portalen)" : (location.origin + location.pathname);
+    return "Innlogging til LDC-portalen\n" +
+      "1. Gå til " + link + "\n" +
+      "2. Velg prosjekt: " + ctx.project + "\n" +
+      "3. Velg: " + ctx.label + "\n" +
+      "4. Kode: " + ctx.code;
+  }
+  function copyText(text, btn, okLabel, normalLabel){
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function(){
+      btn.textContent = okLabel; setTimeout(function(){ btn.textContent = normalLabel; }, 1500);
+    }, function(){ prompt("Kopier teksten:", text); });
+  }
   function showFagCode(fagKey, label){
     if(!sb) return;
     var pid = currentProjectId();
@@ -7397,7 +7419,9 @@
         showError("Databasen mangler støtte for å vise koder. Kjør sql/84-vis-kode.sql i Supabase.");
         return;
       }
+      showCodeContext = { label: label, project: cur ? cur.name : "", code: res.data && res.data.code ? res.data.code : "" };
       if(res.data && res.data.code){
+        byId("showCodeCopyMsg").hidden = false;
         byId("showCodeSub").textContent = (cur ? cur.name + " · " : "") + "Velg prosjektet → «" + label + "» → denne koden på innloggingssiden.";
         byId("showCodeValue").textContent = res.data.code;
         byId("showCodeCopy").hidden = false;
@@ -7405,22 +7429,47 @@
         byId("showCodeSub").textContent = "Koden ble satt før portalen begynte å ta vare på koder, så den kan ikke vises.";
         byId("showCodeValue").textContent = "Ukjent – sett ny kode for å kunne vise den";
         byId("showCodeCopy").hidden = true;
+        byId("showCodeCopyMsg").hidden = true;
       }
       showCodeDialog.showModal();
     });
   }
   byId("showCodeClose").addEventListener("click", function(){ showCodeDialog.close(); });
   showCodeDialog.addEventListener("click", function(ev){ if(ev.target === showCodeDialog) showCodeDialog.close(); });
-  byId("showCodeCopy").addEventListener("click", function(){
-    var code = byId("showCodeValue").textContent, btn = this;
-    (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(function(){
-      btn.textContent = "Kopiert ✓"; setTimeout(function(){ btn.textContent = "Kopier kode"; }, 1500);
-    }, function(){ prompt("Kopier koden:", code); });
-  });
+  byId("showCodeCopy").addEventListener("click", function(){ copyText(byId("showCodeValue").textContent, this, "Kopiert ✓", "Kopier kode"); });
+  byId("showCodeCopyMsg").addEventListener("click", function(){ if(showCodeContext && showCodeContext.code) copyText(loginMessageText(showCodeContext), this, "Melding kopiert ✓", "Kopier melding"); });
   byId("menighetShowCodeBtn").addEventListener("click", function(){ showFagCode("kontakt", "Menighet"); });
+
+  // Oppsettstatus: en enkel sjekkliste over det som må være på plass i prosjektet som er valgt.
+  function renderSetupStatus(){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    var box = byId("setupStatusList");
+    if(!cur){ box.innerHTML = '<p class="empty-note">Ingen prosjekt valgt.</p>'; return; }
+    var pid = cur.id;
+    var hasCode = function(key){ return state.fagAccounts.some(function(a){ return a.projectId === pid && a.fagKey === key; }); };
+    var activeFags = activeProjectFags();
+    var missingCodes = activeFags.filter(function(f){ return !hasCode(f); });
+    var team = teamMemberPeopleForCurrentProject();
+    var weeks = typeof pwProgramRows === "function" ? pwProgramRows() : [];
+    var weeksMissing = weeks.filter(function(r){ return !r.week; }).length;
+    var items = [
+      { ok: !!(cur.start && (cur.closeOut || cur.end)), text: cur.start && (cur.closeOut || cur.end) ? "Start og close out er satt" : "Prosjektet mangler start- og/eller close out-dato (Rediger prosjekt)" },
+      { ok: activeFags.length > 0, text: activeFags.length ? activeFags.length + " fag er aktive" : "Ingen fag er krysset av som aktive (Fag nedenfor)" },
+      { ok: activeFags.length > 0 && missingCodes.length === 0, text: missingCodes.length ? "Mangler innloggingskode: " + missingCodes.map(function(f){ return FAG_LABELS[f] || f; }).join(", ") : "Alle aktive fag har innloggingskode" },
+      { ok: hasCode("kontakt"), text: hasCode("kontakt") ? "Menigheten har innloggingskode" : "Menigheten mangler innloggingskode (Menighet nederst)" },
+      { ok: team.length > 0, text: team.length ? team.length + " i teamet" : "Ingen er krysset av i teamet (Team nedenfor)" },
+      { ok: weeks.length > 0 && weeksMissing === 0, text: !weeks.length ? "Privilege-uker kan settes opp når prosjektet har datoer" : (weeksMissing ? weeksMissing + " av " + weeks.length + " privilege-uker mangler ansvarlig (Team → Program)" : "Alle privilege-uker har ansvarlig") }
+    ];
+    box.innerHTML = items.map(function(it){
+      return '<div style="display:flex; align-items:flex-start; gap:8px; font-size:13px;">' +
+        '<span style="flex:none; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; background:' + (it.ok ? 'var(--good)' : 'var(--warn)') + ';">' + (it.ok ? '✓' : '!') + '</span>' +
+        '<span>' + escapeHtml(it.text) + '</span></div>';
+    }).join("");
+  }
 
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
+    renderSetupStatus();
     var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
     byId("prosjektSubLabel").textContent = curProj ? (curProj.name+(curProj.isActive?' ★':'')+(curProj.start||curProj.end?' · '+fmtRange(curProj.start||curProj.end, curProj.end||curProj.start):'')) : "Ingen prosjekt valgt";
     var menighetHasCode = state.fagAccounts.some(function(a){ return a.fagKey === "kontakt" && a.projectId === currentProjectId(); });
