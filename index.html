@@ -2368,12 +2368,17 @@
     <h3>Hvem kan hjelpe denne dagen?</h3>
     <p class="sub" id="behovFillMeta" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
     <div class="field">
-      <label for="behovFillSelect">Velg person</label>
-      <select id="behovFillSelect"><option value="">— Ingen —</option></select>
+      <label for="behovFillSelect">Lokal frivillig</label>
+      <select id="behovFillSelect"></select>
     </div>
-    <div class="field">
-      <label for="behovFillNewName">Eller skriv et nytt navn</label>
-      <input type="text" id="behovFillNewName" maxlength="60" placeholder="Nytt navn" />
+    <div id="behovFillContact" hidden style="background:var(--surface-alt); border-radius:10px; padding:10px 12px; margin-bottom:10px;">
+      <div class="cols2">
+        <div class="field"><label for="behovFillName">Navn</label><input type="text" id="behovFillName" maxlength="60" autocomplete="off" /></div>
+        <div class="field"><label for="behovFillPhone">Telefon</label><input type="tel" id="behovFillPhone" maxlength="30" autocomplete="off" /></div>
+        <div class="field"><label for="behovFillCongregation">Menighet</label><input type="text" id="behovFillCongregation" maxlength="80" autocomplete="off" /></div>
+        <div class="field"><label for="behovFillAddress">Adresse</label><input type="text" id="behovFillAddress" maxlength="160" autocomplete="off" /></div>
+      </div>
+      <p class="sub" id="behovFillContactNote" style="font-size:12px; color:var(--muted); margin:2px 0 0;"></p>
     </div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="behovFillCancel">Avbryt</button>
@@ -8208,7 +8213,6 @@
       if(newName) refetchPeople();
     });
   }
-  function addPersonAndFillBehovDay(dayRowId, name){ fillBehovDay(dayRowId, null, name); }
 
   // ---------- Andre behov (egne rader uten fag, i samme rutenett) ----------
   function addCustomBehovSlot(label){
@@ -9546,26 +9550,64 @@
     });
   });
   var behovFillDialog = byId("behovFillDialog");
+  // «Behov for hjelp»: menigheten velger blant LOKALE frivillige (tag «Lokal») eller legger inn en ny
+  // med kontaktinfo. Nye og rettede lagres via save_local_person (sql/87) - som merker «Lokal» og
+  // setter Logi til «ordner selv» - og settes så på dagen med fill_behov_day.
+  function isLocalPerson(p){ return !!p && (p.tag || "").trim().toLowerCase() === "lokal"; }
+  function behovFillShowContact(){
+    var v = byId("behovFillSelect").value;
+    var box = byId("behovFillContact");
+    box.hidden = !v;
+    if(!v) return;
+    var p = v === "__new" ? null : state.people.find(function(x){ return x.id === v; });
+    var editable = v === "__new" || isLocalPerson(p);
+    byId("behovFillName").value = p ? p.name : "";
+    byId("behovFillPhone").value = p ? (p.phone || "") : "";
+    byId("behovFillCongregation").value = p ? (p.congregation || "") : "";
+    byId("behovFillAddress").value = p ? (p.address || "") : "";
+    ["behovFillName","behovFillPhone","behovFillCongregation","behovFillAddress"].forEach(function(id){ byId(id).disabled = !editable; });
+    byId("behovFillContactNote").textContent = v === "__new" ? "Legges inn som lokal frivillig – ordner losji selv, og vises i listen neste gang."
+      : (editable ? "Du kan rette kontaktinfo her." : "Denne personen er ikke merket «Lokal» – kontaktinfo kan bare endres av CG1.");
+    if(v === "__new") byId("behovFillName").focus();
+  }
   function openBehovFillDialog(dayRowId){
     var d = state.behovDays.find(function(x){ return x.id === dayRowId; });
     if(!d) return;
     var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
     behovFillDialog.dataset.targetId = dayRowId;
     byId("behovFillMeta").textContent = (slot ? (slot.fag ? FAG_LABELS[slot.fag] : slot.label) : "") + " · " + fmtRange(d.day, d.day);
-    byId("behovFillSelect").innerHTML = '<option value="">— Ingen —</option>' + peopleForCurrentProject().map(function(p){
-      return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>';
-    }).join("");
-    byId("behovFillNewName").value = "";
+    var locals = peopleForCurrentProject().filter(isLocalPerson).sort(function(a,b){ return a.name.localeCompare(b.name, "no"); });
+    var cur = d.personId ? state.people.find(function(p){ return p.id === d.personId; }) : null;
+    byId("behovFillSelect").innerHTML = '<option value="">— Ingen (tom dag) —</option>' +
+      locals.map(function(p){ return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+      (cur && !isLocalPerson(cur) ? '<option value="'+cur.id+'" selected>'+escapeHtml(cur.name)+' (ikke merket lokal)</option>' : '') +
+      '<option value="__new">+ Ny lokal frivillig …</option>';
+    if(!d.personId && !locals.length) byId("behovFillSelect").value = "__new";
+    behovFillShowContact();
     behovFillDialog.showModal();
   }
+  byId("behovFillSelect").addEventListener("change", behovFillShowContact);
   byId("behovFillForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var targetId = behovFillDialog.dataset.targetId;
-    var newName = byId("behovFillNewName").value.trim();
-    var personId = byId("behovFillSelect").value || null;
-    if(newName){ addPersonAndFillBehovDay(targetId, newName); }
-    else { fillBehovDay(targetId, personId); }
+    var v = byId("behovFillSelect").value;
+    if(!v){ fillBehovDay(targetId, null); behovFillDialog.close(); return; }
+    var p = v === "__new" ? null : state.people.find(function(x){ return x.id === v; });
+    var f = { name: byId("behovFillName").value.trim(), phone: byId("behovFillPhone").value.trim(), congregation: byId("behovFillCongregation").value.trim(), address: byId("behovFillAddress").value.trim() };
+    var changed = !p || (isLocalPerson(p) && (f.name !== p.name || f.phone !== (p.phone || "") || f.congregation !== (p.congregation || "") || f.address !== (p.address || "")));
+    if(!changed){ fillBehovDay(targetId, p.id); behovFillDialog.close(); return; }
+    if(!f.name){ showError("Skriv inn navn."); byId("behovFillName").focus(); return; }
     behovFillDialog.close();
+    sb.rpc("save_local_person", { p_project_id: currentProjectId(), p_person_id: p ? p.id : null, p_name: f.name, p_phone: f.phone || null, p_congregation: f.congregation || null, p_address: f.address || null }).then(function(res){
+      if(res.error){
+        showError(/save_local_person/.test(res.error.message || "") && /not find|does not exist|Could not/.test(res.error.message || "")
+          ? "Databasen mangler funksjonen for lokale frivillige. Kjør sql/87-lokal-person.sql i Supabase."
+          : "Kunne ikke lagre personen: " + res.error.message);
+        return;
+      }
+      refetchPeople(); refetchLogiInfo();
+      fillBehovDay(targetId, res.data);
+    });
   });
   byId("behovFillCancel").addEventListener("click", function(){ behovFillDialog.close(); });
   behovFillDialog.addEventListener("click", function(ev){ if(ev.target === behovFillDialog) behovFillDialog.close(); });

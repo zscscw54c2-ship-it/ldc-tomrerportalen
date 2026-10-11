@@ -200,3 +200,10 @@ Ektefellen vises som «Flex via …». Lagres per prosjekt i tabellen `team_logi
 Regel: den som er koblet til en person i teamet, ser Team-siden og har Flex – også fag. Erstatter
 «Vis Team-siden» og «Flex for» per fag og personvelgeren under Brukere og tilganger
 (`profiles.person_id` og `andelig_visibility` brukes ikke lenger av appen). Ingen navnegjetting.
+
+## Menighetens «Behov for hjelp»: lokale frivillige (sql/87)
+Når menigheten fyller en behov-dag, velger de bare blant frivillige merket **«Lokal»**, eller
+legger inn en ny med kontaktinfo (navn, telefon, menighet, adresse – ingen Logi). Nye merkes
+«Lokal» og får Logi «ordner selv» automatisk. Kontaktinfo kan rettes for alle som er merket
+«Lokal» i prosjektet. Lagres via `save_local_person` (security definer: menighet bare i eget
+prosjekt, bare lokale kan endres); `fill_behov_day` er uendret.
