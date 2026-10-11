@@ -4671,7 +4671,7 @@
       : "Ingen privilege-uke registrert for denne uken.";
 
     var realCurWeek = currentPrivilegeWeek();
-    var myPersonForAlert = myLinkedPerson();
+    var myPersonForAlert = myTeamPair() || myLinkedPerson(); // samme person i dette prosjektet
     var myMissing = (realCurWeek && myPersonForAlert && realCurWeek.responsiblePersonId === myPersonForAlert.id) ? pwStaffingMissingCount(realCurWeek) : 0;
     byId("pwStaffingAlert").hidden = myMissing === 0;
     if(myMissing > 0){
@@ -6042,7 +6042,7 @@
     if(tab === "andelig"){
       var curWeek = currentPrivilegeWeek();
       if(!curWeek) return { badge: 0, text: "Ingen aktiv uke" };
-      var myPerson = myLinkedPerson();
+      var myPerson = myTeamPair() || myLinkedPerson();
       if(myPerson && curWeek.responsiblePersonId === myPerson.id){
         var missing = pwStaffingMissingCount(curWeek);
         if(missing > 0) return { badge: missing, text: missing+" mangler bemanning" };
@@ -6666,7 +6666,19 @@
   // innloggede brukerens tilknyttede person er krysset av "med i teamet" på people.
   function myTeamPair(){
     var p = myLinkedPerson();
-    return (p && p.onTeam) ? p : null;
+    if(!p) return null;
+    var pid = currentProjectId();
+    if(p.projectId === pid) return p.onTeam ? p : null;
+    // Personer lagres per prosjekt, men koblingen (profiles.person_id) peker på én av dem. I et annet
+    // prosjekt: finn samme person i teamet der - likt navn, ellers likt etternavn hvis det er entydig
+    // (f.eks. «Jonathan Sakkestad» i Kalmar = «Sakkestad» i Bø).
+    var team = state.people.filter(function(x){ return x.projectId === pid && x.onTeam; });
+    var norm = function(s){ return (s || "").trim().toLowerCase(); };
+    var lastName = function(s){ return norm(s).split(/\s+/).pop(); };
+    var same = team.filter(function(x){ return norm(x.name) === norm(p.name); });
+    if(same.length === 1) return same[0];
+    var sameLast = team.filter(function(x){ return lastName(x.name) === lastName(p.name); });
+    return sameLast.length === 1 ? sameLast[0] : null;
   }
   function byggeleiderIdentityLabel(){
     var acc = myCg1Access();
