@@ -1525,7 +1525,6 @@
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
             <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
             <button type="button" class="btn small" id="mwWeekEditBtn" title="Detaljer for uken (settes opp under Administrasjon)">Info</button>
-            <button type="button" class="btn small primary" id="pwProgramBtn" title="Alle uker i prosjektet og hvem som har ansvaret">Program</button>
           </div>
           <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
         </div>
@@ -4925,7 +4924,7 @@
   var pwInfoDialog = byId("pwInfoDialog");
   function openPwInfo(id){
     var w = state.privilegeWeeks.find(function(x){ return x.id === id; });
-    if(!w){ openPwProgram(false); return; }
+    if(!w) return;
     byId("pwInfoTitle").textContent = "Uke " + isoWeekInfo(fromISODate(w.start)).week + " · " + (w.responsible || "Ingen ansvarlig");
     byId("pwInfoSub").textContent = fmtRange(w.start, w.end) + (w.label ? " · " + w.label : "");
     var rows = [["Ansvarlig", w.responsible], ["Familiestudie", w.familiestudie], ["Sikkerhetstale", w.sikkerhetstale], ["Bibellesning", w.bibellesning], ["Merknad", w.label], ["Notat", w.note]];
@@ -5005,7 +5004,6 @@
     var current = byId("pwProgramList").querySelector(".pwprog-row.current");
     if(current) current.scrollIntoView({ block: "center" });
   }
-  byId("pwProgramBtn").addEventListener("click", function(){ openPwProgram(false); });
   byId("adminPwProgramBtn").addEventListener("click", function(){ openPwProgram(true); });
   byId("pwProgramClose").addEventListener("click", function(){ pwProgramDialog.close(); });
   pwProgramDialog.addEventListener("click", function(ev){ if(ev.target === pwProgramDialog) pwProgramDialog.close(); });
