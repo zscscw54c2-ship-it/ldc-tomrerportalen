@@ -1913,6 +1913,25 @@
   <p class="foot-note">Endringer lagres delt og live for alle som er logget inn.</p>
 </div>
 
+<dialog id="codeDialog">
+  <form class="dlg-body" id="codeForm" method="dialog">
+    <h3 id="codeDlgTitle">Sett innloggingskode</h3>
+    <p class="sub" id="codeDlgSub" style="font-size:12.5px; color:var(--muted); margin:-4px 0 10px;"></p>
+    <div class="field">
+      <label for="codeDlgInput">Kode (minst 8 tegn)</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="codeDlgInput" minlength="8" maxlength="72" autocomplete="off" spellcheck="false" style="flex:1; min-width:180px; font-family:var(--mono, monospace);" />
+        <button type="button" class="btn small" id="codeDlgGenerate" title="Foreslå en lang kode som er lett å lese opp">Lag sterk kode</button>
+      </div>
+      <p class="empty-note" style="margin-top:4px;">Lange koder med ord og tall (f.eks. «bjork-47-stige») er både sikre og lette å lese opp på telefonen.</p>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="codeDlgCancel">Avbryt</button>
+      <button type="submit" class="btn primary">Lagre kode</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="projectDialog">
   <form class="dlg-body" id="projectForm" method="dialog">
     <h3 id="projDlgTitle">Nytt prosjekt</h3>
@@ -7078,7 +7097,9 @@
   }
   function refetchUserAccounts(){
     if(!isByggeleder()) return;
-    sb.from("user_accounts").select("*").then(function(res){
+    // id/rolle/person fra profiles (byggeleder kan lese alle). E-post trengs ikke her - den kommer
+    // fra cg1-user-admin. (Visningen user_accounts eksponerte auth.users og er fjernet, se sql/83.)
+    sb.from("profiles").select("id, role, person_id").then(function(res){
       if(res.error){ return; }
       state.userAccounts = res.data;
       scheduleRender();
@@ -7333,6 +7354,39 @@
       refetchCg1Users(); refetchCg1Access(); refetchUserAccounts();
     }, function(err){ showError(err.message); });
   });
+  // ---------- dialog for fag-/menighetskode (minst 8 tegn, med forslag til sterk kode) ----------
+  var MIN_CODE_LENGTH = 8;
+  var CODE_WORDS = ["bjork","stige","hammer","lerke","fjell","bolt","kran","eik","furu","sag","vinkel","planke","hylle","takrenne","grunnmur","stillas","vindu","dor","trapp","verktoy","bro","elv","fjord","havn","skog","sol","maane","stjerne","lys","stein","sand","kalk","murstein","takstein","list","panel","gips","skrue","spiker","drill"];
+  function randomInt(max){
+    var a = new Uint32Array(1);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return a[0] % max;
+  }
+  function generateStrongCode(){
+    var w1 = CODE_WORDS[randomInt(CODE_WORDS.length)], w2;
+    do { w2 = CODE_WORDS[randomInt(CODE_WORDS.length)]; } while(w2 === w1);
+    return w1 + "-" + (10 + randomInt(90)) + "-" + w2;
+  }
+  var codeDialog = byId("codeDialog"), codeDialogKey = null;
+  function openCodeDialog(fagKey, label){
+    codeDialogKey = fagKey;
+    byId("codeDlgTitle").textContent = "Innloggingskode – " + label;
+    byId("codeDlgSub").textContent = "Gjelder kun dette prosjektet. Brukerne velger prosjektet → «" + label + "» → denne koden på innloggingssiden.";
+    byId("codeDlgInput").value = generateStrongCode();
+    codeDialog.showModal();
+    byId("codeDlgInput").select();
+  }
+  byId("codeDlgGenerate").addEventListener("click", function(){ byId("codeDlgInput").value = generateStrongCode(); });
+  byId("codeDlgCancel").addEventListener("click", function(){ codeDialog.close(); });
+  codeDialog.addEventListener("click", function(ev){ if(ev.target === codeDialog) codeDialog.close(); });
+  byId("codeForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var code = byId("codeDlgInput").value.trim();
+    if(code.length < MIN_CODE_LENGTH){ showError("Koden må være minst " + MIN_CODE_LENGTH + " tegn."); return; }
+    codeDialog.close();
+    setFagCode(codeDialogKey, code);
+  });
+
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
     var curProj = state.projects.find(function(p){ return p.id === currentProjectId(); });
@@ -7380,11 +7434,7 @@
       btn.addEventListener("click", function(){
         var key = this.dataset.setfagcode;
         var fag = state.fags.find(function(f){ return f.key === key; });
-        var code = prompt("Sett innloggingskode for «"+(fag?fag.label:key)+"» i dette prosjektet (minst 6 tegn). Gjelder kun dette prosjektet, og kommer i tillegg til eventuelle individuelle kontoer:");
-        if(code === null) return;
-        code = code.trim();
-        if(code.length < 6){ showError("Koden må være minst 6 tegn."); return; }
-        setFagCode(key, code);
+        openCodeDialog(key, fag ? fag.label : key);
       });
     });
     byId("unifiedFagList").querySelectorAll("[data-delfag]").forEach(function(btn){
@@ -7465,13 +7515,7 @@
 
   }
   byId("adminTeamSearch").addEventListener("input", function(){ view.adminTeamSearch = this.value; renderProsjektTab(); });
-  byId("menighetCodeBtn").addEventListener("click", function(){
-    var code = prompt("Sett innloggingskode for Menighet i dette prosjektet (minst 6 tegn). Menigheten velger prosjektet → «Menighet» → denne koden på innloggingssiden:");
-    if(code === null) return;
-    code = code.trim();
-    if(code.length < 6){ showError("Koden må være minst 6 tegn."); return; }
-    setFagCode("kontakt", code);
-  });
+  byId("menighetCodeBtn").addEventListener("click", function(){ openCodeDialog("kontakt", "Menighet"); });
   byId("addFagForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var label = byId("newFagLabel").value.trim();

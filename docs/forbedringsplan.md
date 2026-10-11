@@ -12,7 +12,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
 | P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ✅ I drift (sql/81 kjørt 11. okt) |
 | P5 | Gjør filmappene private | (DB) + kode | ✅ I drift (kode publisert, sql/82 kjørt 11. okt) |
-| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ⏳ Neste |
+| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | 🔄 Kode ferdig – publiser, så deployes fag-account-admin (8 tegn) og kjøres sql/83 |
 | P7 | Rydd bort gamle rester | (DB) | ⏳ |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
 
@@ -87,9 +87,14 @@ i offentlige mapper – alle med lenken kan åpne dem.
 kode: bruk signerte lenker (tidsbegrensede) i stedet for offentlige.
 
 ## P6 – Raske sikkerhetsgrep
-1. **Du:** Supabase → Authentication → «Leaked password protection» → slå på.
-2. Kode: krev minst 8 tegn på fag-/menighetskoder (i dag 6), og vis et forslag til sterk kode.
-3. (DB) Erstatt `user_accounts`-visningen (flagget av Supabase) med en sikker funksjon.
+1. ~~**Du:** Supabase → Authentication → «Leaked password protection» → slå på.~~ **Hoppet over:**
+   krever Pro-abonnement (Rene Hus AS er på gratisplanen). Kompenseres med punkt 2.
+2. ✅ Kode: ny kodedialog (fag + Menighet) med minst 8 tegn og «Lag sterk kode» (ord-tall-ord,
+   f.eks. «bjork-47-stige»). fag-account-admin håndhever 8 tegn på serveren.
+3. (DB) Fjern `user_accounts`-visningen (flagget av Supabase): appen leser nå rolle/person rett fra
+   `profiles`, så visningen trengs ikke – `sql/83` kjøres etter publisering.
+4. Foreslått: «Vis kode»-knapp for fag-/menighetskoder (krever lagring av koden, kun lesbar for
+   admin) – venter på «ok vis kode».
 
 ## P7 – Rydd bort gamle rester (DB)
 - 7 gamle individuelle fag-kontoer (elektriker, landscape, maler, murer, tømrer ×2, ventilasjon, vvs)

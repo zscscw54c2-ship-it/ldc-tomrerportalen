@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
   const code = (body.code || "").trim();
   if (!projectId) return jsonResponse({ error: "Mangler projectId." }, 400);
   if (!fagKey) return jsonResponse({ error: "Mangler fagKey." }, 400);
-  if (code.length < 6) return jsonResponse({ error: "Koden må være minst 6 tegn." }, 400);
+  if (code.length < 8) return jsonResponse({ error: "Koden må være minst 8 tegn." }, 400);
 
   const { data: projectRow, error: projectErr } = await serviceClient
     .from("projects")
