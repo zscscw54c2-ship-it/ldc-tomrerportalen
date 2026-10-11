@@ -262,6 +262,9 @@
   .fagfolder-tile:active{transform:scale(.96);}
   .fagfolder-tile .fagfolder-name{font-size:15px; font-weight:800; line-height:1.2;}
   .fagfolder-tile .fagfolder-count{font-size:11.5px; font-weight:600; opacity:.85;}
+  .fagfolder-tile.current{box-shadow:0 0 0 3px var(--warn), 0 4px 12px rgba(0,0,0,.18);}
+  .fagfolder-tile.current .fagfolder-name{font-size:19px;}
+  .now-badge{background:var(--warn); color:#3b2a00; font-size:11px; font-weight:800; border-radius:999px; padding:2px 9px; letter-spacing:.02em;}
   .drawcard{background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:flex; flex-direction:column;}
   .drawcard a.thumb{aspect-ratio:1/1; background:var(--surface); display:flex; align-items:center; justify-content:center; overflow:hidden;}
   .drawcard a.thumb img{width:100%; height:100%; object-fit:cover; display:block;}
@@ -2572,9 +2575,11 @@
   }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
   function matchesFag(item){ return activeFag() === "alle" || item.fag === activeFag(); }
-  // Team-siden (og Flex): CG1 ser den alltid; alle andre bare når innloggingen er koblet til en
-  // person i teamet i dette prosjektet (Administrasjon → Team, tabellen team_logins).
-  function andeligVisibleForMe(){
+  // Team-siden, To-do og Flex: CG1 ser dem alltid; alle andre bare når innloggingen er koblet til en
+  // person i teamet i dette prosjektet (Administrasjon → Team, tabellen team_logins). Samme sjekk
+  // som can_see_team() i databasen (sql/88), som beskytter To-do-tabellen.
+  var TEAM_ONLY_TABS = ["andelig", "rom"];
+  function canSeeTeamPages(){
     if(isByggeleder()) return true;
     return !!myTeamPair();
   }
@@ -2661,6 +2666,7 @@
 
   // ---------- tabs ----------
   function switchTab(tab){
+    if(TEAM_ONLY_TABS.indexOf(tab) !== -1 && state.me && (isByggeleder() || view.teamLoginsLoaded) && !canSeeTeamPages()) tab = "kalender";
     view.tab = tab;
     document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.tab===tab ? "true":"false"); });
     document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
@@ -4167,6 +4173,7 @@
   }
   byId("drawingSearch").addEventListener("input", applyDrawingSearch);
   byId("drawingsEditBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
     var editing = byId("panel-tegninger").classList.toggle("editing");
     byId("drawingsEditBtn").textContent = editing ? "Ferdig" : "Rediger";
     byId("drawingsEditBtn").classList.toggle("primary", editing);
@@ -4188,6 +4195,47 @@
   // inne i et fag vises én mappe per uke (med antall bilder), og inne i en uke vises bildene
   // for den uken - med opplasting rett der, automatisk knyttet til riktig fag og uke.
   var dokuWeekSelectedFiles = null;
+  // «I dag» etter norsk tid (Europe/Oslo), uavhengig av tidssonen på enheten.
+  function osloTodayIso(){
+    try{ return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" }); }catch(e){ return toISODate(new Date()); }
+  }
+  // Samme opplastingsskjema på ukeoversikten («Ta bilde» for denne uken) og inne på en uke.
+  function dokuUploadFormHtml(){
+    return '<form class="inline-add" id="dokuWeekUploadForm" style="flex-wrap:wrap; margin-bottom:10px;">' +
+      '<label class="btn small" id="dokuWeekCameraTrigger" for="dokuWeekCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>' +
+      '<input type="file" id="dokuWeekCameraInput" accept="image/*" capture="environment" multiple style="display:none;" />' +
+      '<label class="btn small ghost" id="dokuWeekFileTrigger" for="dokuWeekFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>' +
+      '<input type="file" id="dokuWeekFileInput" accept="image/*" multiple style="display:none;" />' +
+      '<input type="text" id="dokuWeekCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />' +
+      '<span class="empty-note" id="dokuWeekFileStatus"></span>' +
+      '<button class="btn primary" type="submit" id="dokuWeekSubmitBtn" disabled>Last opp</button>' +
+      '</form>' +
+      '<p class="empty-note" id="dokuWeekUploadStatus"></p>';
+  }
+  function bindDokuUploadForm(weekIso){
+    dokuWeekSelectedFiles = null;
+    function updateDokuWeekSubmitState(){
+      byId("dokuWeekSubmitBtn").disabled = !(dokuWeekSelectedFiles && dokuWeekSelectedFiles.length);
+    }
+    function handleDokuWeekFileChange(){
+      if(this.files && this.files.length){
+        dokuWeekSelectedFiles = Array.prototype.slice.call(this.files);
+        byId("dokuWeekFileStatus").textContent = dokuWeekSelectedFiles.length + " bilde(r) valgt.";
+      }
+      updateDokuWeekSubmitState();
+    }
+    byId("dokuWeekCameraInput").addEventListener("change", handleDokuWeekFileChange);
+    byId("dokuWeekFileInput").addEventListener("change", handleDokuWeekFileChange);
+    byId("dokuWeekUploadForm").addEventListener("submit", function(ev){
+      ev.preventDefault();
+      if(!dokuWeekSelectedFiles || !dokuWeekSelectedFiles.length) return;
+      uploadDokuPhotos(dokuWeekSelectedFiles, byId("dokuWeekCaption").value, null, weekIso);
+      byId("dokuWeekCameraInput").value = ""; byId("dokuWeekFileInput").value = "";
+      byId("dokuWeekCaption").value = ""; byId("dokuWeekFileStatus").textContent = "";
+      dokuWeekSelectedFiles = null;
+      updateDokuWeekSubmitState();
+    });
+  }
   function renderDokumentasjonTab(){
     renderEditableStatics("panel-dokumentasjon", byId("panel-dokumentasjon").classList.contains("editing"));
     var box = byId("dokuGrid");
@@ -4212,17 +4260,27 @@
 
     if(!view.dokuWeek){
       var backBtn = '<button type="button" class="btn small ghost" data-dokubacktoall style="margin-bottom:12px;">← Alle fag</button>';
+      // Inneværende uke (ISO-uke, norsk tid): fremhevet i rutenettet, og «Ta bilde» lagrer på den.
+      var thisMondayIso = toISODate(mondayOf(fromISODate(osloTodayIso())));
+      var thisWeekInProject = mondays.some(function(m){ return toISODate(m) === thisMondayIso; });
+      var thisWeekNo = isoWeekInfo(fromISODate(thisMondayIso)).week;
+      var quickUpload = !mondays.length ? '' : (thisWeekInProject
+        ? '<div class="peoplecard" id="dokuThisWeekCard" style="margin-bottom:12px; padding:12px 14px;"><h3 style="font-size:15px; margin-bottom:8px;">Uke '+thisWeekNo+' <span class="now-badge">Denne uken</span></h3>'+dokuUploadFormHtml()+'</div>'
+        : '<p class="empty-note" style="margin-bottom:10px;">Denne uken (uke '+thisWeekNo+') er utenfor prosjektperioden – åpne en uke for å laste opp bilder.</p>');
       if(!mondays.length){
         box.innerHTML = backBtn + '<p class="empty-note">Prosjektet mangler start- og sluttdato. Sett dette under Rediger prosjekt.</p>';
       } else {
-        box.innerHTML = backBtn + '<div class="fagfolder-grid">' + mondays.map(function(m){
+        box.innerHTML = backBtn + quickUpload + '<div class="fagfolder-grid">' + mondays.map(function(m){
           var iso = toISODate(m);
+          var isNow = iso === thisMondayIso;
           var count = fagPhotos.filter(function(d){ return d.weekStart === iso; }).length;
-          return '<button type="button" class="fagfolder-tile" data-dokuweekfolder="'+iso+'" style="background:'+(FAG_COLORS[activeFag()]||"var(--muted)")+'">' +
+          return '<button type="button" class="fagfolder-tile'+(isNow?' current':'')+'" data-dokuweekfolder="'+iso+'"'+(isNow?' aria-current="date"':'')+' style="background:'+(FAG_COLORS[activeFag()]||"var(--muted)")+'">' +
+            (isNow ? '<span class="now-badge">Denne uken</span>' : '') +
             '<span class="fagfolder-name">Uke '+isoWeekInfo(m).week+'</span>' +
             '<span class="fagfolder-count">'+count+' bilde'+(count===1?'':'r')+'</span>' +
             '</button>';
         }).join("") + '</div>';
+        if(thisWeekInProject) bindDokuUploadForm(thisMondayIso);
       }
       box.querySelectorAll("[data-dokubacktoall]").forEach(function(b){
         b.addEventListener("click", function(){ view.byggeleiderFag = "alle"; view.dokuWeek = null; renderAll(); });
@@ -4235,17 +4293,7 @@
 
     var weekIso = view.dokuWeek;
     var weekPhotos = fagPhotos.filter(function(d){ return d.weekStart === weekIso; });
-    var uploadFormHtml =
-      '<form class="inline-add" id="dokuWeekUploadForm" style="flex-wrap:wrap; margin-bottom:10px;">' +
-      '<label class="btn small" id="dokuWeekCameraTrigger" for="dokuWeekCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>' +
-      '<input type="file" id="dokuWeekCameraInput" accept="image/*" capture="environment" multiple style="display:none;" />' +
-      '<label class="btn small ghost" id="dokuWeekFileTrigger" for="dokuWeekFileInput" style="margin:0; cursor:pointer;">Last opp bilde</label>' +
-      '<input type="file" id="dokuWeekFileInput" accept="image/*" multiple style="display:none;" />' +
-      '<input type="text" id="dokuWeekCaption" placeholder="Hva viser bildet? (valgfritt)" maxlength="160" style="max-width:260px;" />' +
-      '<span class="empty-note" id="dokuWeekFileStatus"></span>' +
-      '<button class="btn primary" type="submit" id="dokuWeekSubmitBtn" disabled>Last opp</button>' +
-      '</form>' +
-      '<p class="empty-note" id="dokuWeekUploadStatus"></p>';
+    var uploadFormHtml = dokuUploadFormHtml();
     box.innerHTML = '<button type="button" class="btn small ghost" data-dokubacktoweeks style="margin-bottom:12px;">← '+escapeHtml(FAG_LABELS[activeFag()]||activeFag())+' – ukeoversikt</button>' +
       '<h3 style="font-size:15px; margin-bottom:10px;">Uke '+isoWeekInfo(fromISODate(weekIso)).week+'</h3>' +
       uploadFormHtml +
@@ -4275,30 +4323,10 @@
       });
     });
 
-    dokuWeekSelectedFiles = null;
-    function updateDokuWeekSubmitState(){
-      byId("dokuWeekSubmitBtn").disabled = !(dokuWeekSelectedFiles && dokuWeekSelectedFiles.length);
-    }
-    function handleDokuWeekFileChange(){
-      if(this.files && this.files.length){
-        dokuWeekSelectedFiles = Array.prototype.slice.call(this.files);
-        byId("dokuWeekFileStatus").textContent = dokuWeekSelectedFiles.length + " bilde(r) valgt.";
-      }
-      updateDokuWeekSubmitState();
-    }
-    byId("dokuWeekCameraInput").addEventListener("change", handleDokuWeekFileChange);
-    byId("dokuWeekFileInput").addEventListener("change", handleDokuWeekFileChange);
-    byId("dokuWeekUploadForm").addEventListener("submit", function(ev){
-      ev.preventDefault();
-      if(!dokuWeekSelectedFiles || !dokuWeekSelectedFiles.length) return;
-      uploadDokuPhotos(dokuWeekSelectedFiles, byId("dokuWeekCaption").value, null, weekIso);
-      byId("dokuWeekCameraInput").value = ""; byId("dokuWeekFileInput").value = "";
-      byId("dokuWeekCaption").value = ""; byId("dokuWeekFileStatus").textContent = "";
-      dokuWeekSelectedFiles = null;
-      updateDokuWeekSubmitState();
-    });
+    bindDokuUploadForm(weekIso);
   }
   byId("dokuEditBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
     var editing = byId("panel-dokumentasjon").classList.toggle("editing");
     byId("dokuEditBtn").textContent = editing ? "Ferdig" : "Rediger";
     byId("dokuEditBtn").classList.toggle("primary", editing);
@@ -4820,6 +4848,7 @@
   }
 
   byId("andeligEditBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
     view.andeligEdit = !view.andeligEdit;
     byId("panel-andelig").classList.toggle("editing", view.andeligEdit);
     byId("andeligEditBtn").textContent = view.andeligEdit ? "Ferdig" : "Rediger";
@@ -6132,7 +6161,7 @@
   function renderMobileHome(){
     var grid = byId("mhGrid");
     grid.innerHTML = HOME_TILES.filter(function(t){
-      if(t.tab === "andelig") return andeligVisibleForMe();
+      if(TEAM_ONLY_TABS.indexOf(t.tab) !== -1) return canSeeTeamPages();
       if(t.tab === "cg1") return isByggeleder();
       if(t.tab === "tomote") return false;
       if(t.tab === "referat") return !isByggeleder();
@@ -6478,6 +6507,7 @@
   }
   BOARD_OFFICES.forEach(function(office){
     byId(office+"EditBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
       var editing = byId("panel-"+office).classList.toggle("editing");
       this.textContent = editing ? "Ferdig" : "Rediger";
       this.classList.toggle("primary", editing);
@@ -6528,8 +6558,28 @@
     document.documentElement.style.setProperty("--header-h", h + "px");
   }
   window.addEventListener("resize", updateStickyHeaderOffset);
+  // «Rediger»-knappene (tekster og innhold i redigeringsmodus) vises bare for admin. Databasen
+  // avviser uansett lagring fra andre (sql/88).
+  var ADMIN_EDIT_BUTTONS = [["drawingsEditBtn","panel-tegninger"], ["dokuEditBtn","panel-dokumentasjon"], ["andeligEditBtn","panel-andelig"],
+    ["acgoEditBtn","panel-acgo"], ["cgoEditBtn","panel-cgo"], ["kontor1EditBtn","panel-kontor1"], ["kontor2EditBtn","panel-kontor2"], ["cgoEditTextsBtn", null]];
+  function updateAdminEditButtons(){
+    var admin = isCg1Admin();
+    ADMIN_EDIT_BUTTONS.forEach(function(pair){
+      var btn = byId(pair[0]);
+      if(!btn) return;
+      btn.hidden = !admin;
+      if(admin) return;
+      // Ikke-admin skal aldri bli stående i redigeringsmodus.
+      if(pair[1] && byId(pair[1]).classList.contains("editing")){ byId(pair[1]).classList.remove("editing"); btn.textContent = "Rediger"; btn.classList.remove("primary"); }
+    });
+    if(!admin){
+      if(view.andeligEdit){ view.andeligEdit = false; byId("weeklyScriptureEditWrap").style.display = "none"; }
+      if(view.cgoEditTexts){ view.cgoEditTexts = false; byId("cgoEditTextsBtn").classList.remove("primary"); byId("cgoEditTextsNote").hidden = true; }
+    }
+  }
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
+    updateAdminEditButtons();
     updateAndeligTabVisibility();
     updateCg1TabVisibility();
     updateTomoteTabVisibility();
@@ -6559,11 +6609,13 @@
     updateStickyHeaderOffset();
   }
   function updateAndeligTabVisibility(){
-    var visible = andeligVisibleForMe();
-    var btn = document.querySelector('nav.tabs button[data-tab="andelig"]');
-    if(btn) btn.hidden = !visible;
-    // Ikke kast brukeren ut av Team før koblingene (team_logins) faktisk er hentet.
-    if(!visible && view.tab === "andelig" && view.teamLoginsLoaded) switchTab("kalender");
+    var visible = canSeeTeamPages();
+    TEAM_ONLY_TABS.forEach(function(tab){
+      var btn = document.querySelector('nav.tabs button[data-tab="'+tab+'"]');
+      if(btn) btn.hidden = !visible;
+    });
+    // Ikke kast brukeren ut før koblingene (team_logins) faktisk er hentet.
+    if(!visible && TEAM_ONLY_TABS.indexOf(view.tab) !== -1 && view.teamLoginsLoaded) switchTab("kalender");
   }
   // Samlet synlighet for CG1-hub-siden og alle fire underfanene (CGO/ACGO/Kontor 1/Kontor 2) -
   // samme tilgang som før (byggeleder), bare samlet under ett knappenavn i stedet for to.
@@ -8035,6 +8087,7 @@
     byId("newFagLabel").value = "";
   });
   byId("cgoEditTextsBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
     view.cgoEditTexts = !view.cgoEditTexts;
     byId("cgoEditTextsBtn").classList.toggle("primary", view.cgoEditTexts);
     byId("cgoEditTextsNote").hidden = !view.cgoEditTexts;

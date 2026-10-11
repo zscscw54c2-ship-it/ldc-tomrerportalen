@@ -207,3 +207,13 @@ legger inn en ny med kontaktinfo (navn, telefon, menighet, adresse – ingen Log
 «Lokal» og får Logi «ordner selv» automatisk. Kontaktinfo kan rettes for alle som er merket
 «Lokal» i prosjektet. Lagres via `save_local_person` (security definer: menighet bare i eget
 prosjekt, bare lokale kan endres); `fill_behov_day` er uendret.
+
+## P10 – Admin-redigering, To-do = Team-tilgang, «Ta bilde» på ukeoversikten (sql/88)
+1. **Rediger kun admin:** «Rediger»/«Rediger tekster» vises bare for aktiv CG1-admin. RLS (restriktive
+   regler «p10 admin …»): skriving i `app_text_overrides`, `spiritual_overview`, `weekly_scriptures`, og
+   endre/slette i `drawings` og `documentation_photos` (+ sletting av filene i storage) krever admin.
+   Opplasting er som før. CG1-tavlene låses ikke i databasen (avkrysning bruker samme tabeller).
+2. **To-do = Team:** felles `canSeeTeamPages()` i appen (faner, hjem-fliser, sperre ved direkte/lagret
+   fane) og `can_see_team(prosjekt)` i databasen; restriktiv regel «p10 team-tilgang» på `room_todos`.
+3. **Dokumentasjon:** ukeoversikten har «📷 Ta bilde» (samme skjema som inne på en uke) som lagrer på
+   inneværende uke, og den uken er fremhevet med «Denne uken». ISO-uke, norsk tid (Europe/Oslo).
