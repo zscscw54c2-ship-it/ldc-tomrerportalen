@@ -184,3 +184,11 @@ Alt er ren kode – ingen databaseendring.
 **Bruk i ekte data (Bø)** – funksjoner som nesten ikke brukes: Behov-for-hjelp (0 dager markert,
 noensinne), Leveranser (0), Logi (6 av 177 personer), To-do (3). Spørsmål: skal de forenkles,
 skjules, eller trengs det opplæring/en tydeligere vei inn?
+
+## Flex for fag-innlogginger ✅
+Administrasjon → Fag → **«Flex for»** (vises når faget har kode): kobler fag-innloggingen i prosjektet
+til et par i teamet (samme felt som CG1-brukernes personkobling, `profiles.person_id` på fag-kontoen –
+ingen tabellendring). Da slipper kontoen «Velg hvem du er», flex legges på riktig par, og Team-siden
+slås på for faget automatisk. «– ingen» gir den gamle velgeren tilbake. CG1-brukere koblet til en
+person i et annet prosjekt finner samme person i teamet (navn, ellers entydig etternavn).
+Fag-forespørsler viser «(Menighet)»/fagnavn i stedet for den tekniske e-posten.

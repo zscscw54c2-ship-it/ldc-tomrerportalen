@@ -2518,6 +2518,14 @@
   // prosjektet de ble logget inn for - de skal ikke kunne bytte prosjekt etterpå. Gjenkjennes på
   // den interne e-postadressen Edge Function-en lager (se fagAccountEmail).
   var FAG_ACCOUNT_EMAIL_DOMAIN = "@fagkonto.ldc-tomrerportalen.invalid";
+  // «Sendt av» for en forespørsel: de delte kontoene har en teknisk e-post (acct-<fag>-<prosjekt>@…)
+  // - vis «Menighet»/fagnavnet i stedet.
+  function requesterLabel(email){
+    if(!email || email.slice(-FAG_ACCOUNT_EMAIL_DOMAIN.length) !== FAG_ACCOUNT_EMAIL_DOMAIN) return email || "";
+    var m = /^acct-([a-z_]+)-/.exec(email);
+    var key = m ? m[1] : "";
+    return key === "kontakt" ? "Menighet" : (FAG_LABELS[key] || key || "Fag-innlogging");
+  }
   function isSharedFagAccount(){ return !!(state.me && state.me.email && state.me.email.slice(-FAG_ACCOUNT_EMAIL_DOMAIN.length) === FAG_ACCOUNT_EMAIL_DOMAIN); }
   function lockedProjectId(){ return isSharedFagAccount() && !isByggeleder() ? state.me.projectId : null; }
   // CG1-tilganger (sql/79, cg1_access): hvilke CG1-sider en byggeleder-bruker ser, og om hen er
@@ -7294,6 +7302,12 @@
       if(res.error){ showError(res.error.message.indexOf("person_id") !== -1 ? "Databasen mangler kolonnen person_id på profiles, eller mangler rettigheter til å endre den. Kjør sql/41-koble-innlogging-til-person.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); refetchUserAccounts(); return; }
     });
   }
+  // Kobler en fag-innlogging til et par i teamet, så Flex vet hvem som er logget inn (samme felt som
+  // CG1-brukernes personkobling). Team-siden slås på for faget, siden Flex ligger der.
+  function setFagFlexPerson(accountId, fagKey, personId){
+    setUserAccountPerson(accountId, personId);
+    if(personId && andeligVisibilityMapForCurrentProject()[fagKey] === false) setAndeligVisibility(fagKey, true);
+  }
   function rowToProjectFag(row){
     return { id: row.id, project_id: row.project_id, fag: row.fag, active: !!row.active, start: row.start_date || "", end: row.end_date || "" };
   }
@@ -7375,7 +7389,7 @@
         '<i class="dot" style="background:'+(FAG_COLORS[r.fag]||"var(--muted)")+'; width:8px; height:8px; border-radius:3px; display:inline-block; margin-right:6px;"></i>' +
         escapeHtml(FAG_LABELS[r.fag]||r.fag)+' · '+escapeHtml(personName(r.personId))+' · '+fmtRange(r.day,r.day)+
         ' — '+(r.desiredPresent ? "sett tilgjengelig" : "fjern tilgjengelighet")+
-        (r.requestedBy ? ' <span style="color:var(--muted); font-size:11px;">('+escapeHtml(r.requestedBy)+')</span>' : '') +
+        (r.requestedBy ? ' <span style="color:var(--muted); font-size:11px;">('+escapeHtml(requesterLabel(r.requestedBy))+')</span>' : '') +
         '</span><span style="display:flex; gap:6px;">' +
         '<button class="btn small primary" data-approvereq="'+r.id+'">Godkjenn</button>' +
         '<button class="btn small ghost" data-rejectreq="'+r.id+'">Avslå</button>' +
@@ -7802,6 +7816,7 @@
     renderCg1UserList(peopleSorted);
 
     var visMap = andeligVisibilityMapForCurrentProject();
+    var flexOpts = flexTeamOptions();
     byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f.key; });
       var active = pf ? pf.active : false;
@@ -7810,7 +7825,24 @@
       var isWholeProject = active && curProj && curProj.start && curProj.end && start === curProj.start && end === curProj.end;
       var visible = visMap[f.key] !== false;
       var usage = fagUsageCount(f.key);
-      var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key && a.projectId === currentProjectId(); });
+      var account = state.fagAccounts.find(function(a){ return a.fagKey === f.key && a.projectId === currentProjectId(); });
+      var hasAccount = !!account;
+      // Flex-kobling: hvilket par i teamet fag-innloggingen er (profiles.person_id på fag-kontoen).
+      var flexRow = "";
+      if(account){
+        var prof = state.userAccounts.find(function(u){ return u.id === account.authUserId; });
+        var curPerson = prof && prof.person_id;
+        var selOpt = curPerson ? flexOpts.find(function(o){ return flexCoupleIds(o.id).indexOf(curPerson) !== -1; }) : null;
+        flexRow = '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">' +
+          '<label style="font-size:12.5px; color:var(--muted);" for="fagflex-'+f.key+'">Flex for:</label>' +
+          '<select id="fagflex-'+f.key+'" data-fagflex="'+account.authUserId+'" data-fagflexkey="'+f.key+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface); max-width:260px;">' +
+          '<option value="">– ingen (spør «Velg hvem du er»)</option>' +
+          flexOpts.map(function(o){ return '<option value="'+o.id+'"'+(selOpt && selOpt.id === o.id ? ' selected' : '')+'>'+escapeHtml(o.label)+'</option>'; }).join("") +
+          (curPerson && !selOpt ? '<option value="'+curPerson+'" selected>(person utenfor teamet)</option>' : '') +
+          '</select>' +
+          (!flexOpts.length ? '<span style="font-size:12px; color:var(--muted);">Kryss av personer i teamet først.</span>' : '') +
+          '</div>';
+      }
       return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">' +
         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
@@ -7828,10 +7860,13 @@
         '<button type="button" class="btn small'+(isWholeProject?' primary':'')+'" data-fagwhole="'+f.key+'">Hele prosjektet</button>' +
         '<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">' +
         '<input type="checkbox" data-andeligvis="'+f.key+'" '+(visible?'checked':'')+' /> Vis Team-siden</label>' +
-        '</div></div>';
+        '</div>' + flexRow + '</div>';
     }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
     byId("unifiedFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
+    });
+    byId("unifiedFagList").querySelectorAll("[data-fagflex]").forEach(function(sel){
+      sel.addEventListener("change", function(){ setFagFlexPerson(this.dataset.fagflex, this.dataset.fagflexkey, this.value || null); });
     });
     byId("unifiedFagList").querySelectorAll("[data-showfagcode]").forEach(function(btn){
       btn.addEventListener("click", function(){
