@@ -15,7 +15,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ Publisert |
 | P7 | Rydd bort gamle rester | (DB) | 🔄 A: kontoer slettet, du kjører sql/85 · B: venter på bytte til fagkode |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ✅ |
-| P9 | Runde 2: flyten per rolle (fag, menighet, CG1) | Kode | ⏳ Velg punkter |
+| P9 | Runde 2: flyten per rolle (fag, menighet, CG1) | Kode | ✅ Publisert (alle punkter) |
 
 ---
 
@@ -142,7 +142,16 @@ Hver sletting listes opp med konsekvens før «ok».
    over ett minutt. Lesing prøves inntil 4 ganger; lagring sendes aldri dobbelt, men venter (inntil
    2 min) hvis telefonen vet at den er frakoblet. «Failed to fetch» vises som en norsk melding.
 
-## P9 – Runde 2: flyten per rolle
+## P9 – Runde 2: flyten per rolle ✅
+**Gjort (alle punkter, 11. okt):** dagrad (Ma 5, Ti 6 …, i dag uthevet) i Behov/Frivillige/Logi;
+Behov åpner på denne uken (også for CG1) og menigheten ser bare fag med plasser; kalenderen på mobil
+scroller over navnelistene – kort trykk velger, hold inne (350 ms) for å dra, ny hjelpetekst;
+kortnavn bruker fullt etternavn når forbokstaven kolliderer, og navnespalten er bredere på mobil;
+Oppgaver åpner på «Ikke ferdig»; søk i Tegninger (fra 8 filer); prosjektnavnet vises som tekst når
+det bare er ett prosjekt; Team-flisen viser ukens ansvarlige; «Legg til under Team»; «N satt opp» i
+kalenderen; «Mangler» får plass i smale celler. Punkt 10 (rollenavn) var en feil i testdataene –
+ekte CG1-brukere har visningsnavn; bare reserveløsningen er rettet (første CG1-side i stedet for «ACGO»).
+
 Gjennomgått 11. okt med skjermbilder på mobil (390 px) og PC for tømrer, elektriker, menighet, CGO og
 ACGO, med syntetiske data i samme volum som Bø (177 personer, ~1200 oppmøtedager, 72 oppgaver).
 Alt er ren kode – ingen databaseendring.

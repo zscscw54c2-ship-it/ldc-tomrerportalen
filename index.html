@@ -107,6 +107,10 @@
   .project-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:6px 10px; font:inherit; color:var(--accent); cursor:pointer; }
   .project-pill:hover{ background:var(--surface); }
   .project-pill::before{ content:"📍"; font-size:12px; }
+  /* Bare ett prosjekt å velge (f.eks. fag-/menighetskonto låst til prosjektet): vis som tekst, ikke knapp. */
+  .project-pill.single{ background:transparent; border-color:transparent; padding-left:0; padding-right:0; cursor:default; }
+  .project-pill.single:hover{ background:transparent; }
+  .mh-project-banner.single{ cursor:default; }
   .icon-btn{
     display:inline-flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:50%; border:1px solid var(--border-strong);
@@ -244,6 +248,7 @@
     display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:9px 4px;
   }
   .shoprow:last-child{border-bottom:none;}
+  .shoprow[hidden]{display:none;}
   .shoprow.bought .sname{text-decoration:line-through; color:var(--muted);}
   .shoprow .sname{font-weight:600; font-size:13.5px; flex:1;}
   .shoprow .sqty{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",monospace;}
@@ -499,6 +504,11 @@
   .g-months div, .g-weeks div{position:absolute; top:0; height:100%; display:flex; align-items:center; padding-left:5px; border-left:1px solid var(--border); white-space:nowrap; overflow:hidden;}
   .g-months div{font-weight:700; text-transform:capitalize; font-size:11.5px;}
   .g-weeks div{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted); border-top:1px solid var(--border);}
+  .g-days{position:relative; height:28px;}
+  .g-days div{position:absolute; top:0; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11.5px; font-weight:600; line-height:1.1; border-left:1px solid var(--border); border-top:1px solid var(--border); font-variant-numeric:tabular-nums;}
+  .g-days div span{font-size:9.5px; font-weight:500; color:var(--muted); text-transform:uppercase;}
+  .g-days div.today{color:var(--accent); font-weight:800;}
+  .g-days div.today span{color:var(--accent);}
   .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
   /* Logi-rutenettet: kategori (Ektepar/Familie/osv.) er den øverste overskriften, med hver enkelt
@@ -632,7 +642,8 @@
   .att-week .dcol{display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10px; color:var(--muted);}
 
   /* dra og slipp */
-  .pchip{display:block; font-size:11.5px; background:#fff; border:1px solid var(--warn); border-radius:7px; padding:4px 8px; margin-top:4px; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; position:relative; padding-left:18px;}
+  .pchip{display:block; font-size:11.5px; background:#fff; border:1px solid var(--warn); border-radius:7px; padding:4px 8px; margin-top:4px; cursor:grab; touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; position:relative; padding-left:18px;}
+  .pchip.drag-armed{ box-shadow:0 0 0 2px var(--accent); background:var(--accent-soft); }
   .pchip::before{content:"⋮⋮"; position:absolute; left:6px; top:50%; transform:translateY(-50%); font-size:9px; letter-spacing:-2px; color:var(--warn-ink); opacity:.7;}
   .pchip:hover{border-color:var(--warn-ink);}
   .pchip.sel{background:var(--accent); border-color:var(--accent); color:#fff;}
@@ -740,6 +751,7 @@
   .behov-cell.out-of-range:not(.needed):not(.filled){ cursor:not-allowed; }
   .behov-cell .who{ font-size:11.5px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; color:var(--good-ink); font-weight:700; }
   .behov-cell .needlabel{ font-size:11px; font-weight:700; color:var(--warn-ink); }
+  @media (max-width:640px){ .behov-cell .needlabel{ font-size:8.5px; letter-spacing:-.2px; } }
   .behov-fag-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 10px; }
   .behov-config .chip{ display:inline-flex; align-items:center; gap:7px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:5px 6px 5px 10px; font-size:12.5px; font-weight:600; }
   .behov-config{ display:flex; flex-wrap:wrap; gap:8px; }
@@ -757,7 +769,8 @@
      se buildShortNameMap(), i stedet for hele navnet, så mer av selve rutenettet får plass. */
   .name-short{ display:none; }
   @media (max-width:640px){
-    .frivillige-grid .gantt{ --nw:96px; }
+    .frivillige-grid .gantt{ --nw:118px; }
+    .frivillige-grid .gantt .g-name{ font-size:12px; padding:0 6px; gap:4px; }
     .name-full{ display:none; }
     .name-short{ display:inline; }
   }
@@ -941,7 +954,7 @@
             <span><i class="dot good"></i> Dekket</span>
           </div>
         </div>
-        <div class="gantt-wrap behov-grid"><div class="gantt" id="kontaktBehovGrid"></div></div>
+        <div class="gantt-wrap behov-grid" id="kontaktBehovScroll"><div class="gantt" id="kontaktBehovGrid"></div></div>
       </div>
     </div>
 
@@ -1207,6 +1220,7 @@
         <button class="btn primary" type="submit">Last opp</button>
       </form>
       <p class="empty-note" id="drawingUploadStatus" style="margin-top:6px;"></p>
+      <input type="search" id="drawingSearch" placeholder="Søk i tegningene …" autocomplete="off" hidden style="width:100%; margin-top:14px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:14px; background:var(--surface);" />
       <div id="drawGrid" style="margin-top:14px;"></div>
     </div>
   </section>
@@ -1293,7 +1307,7 @@
           </div>
         </div>
         <p class="sub" data-etkey="personer_behov_sub" style="font-size:12.5px; color:var(--muted); margin:0; padding:0 14px 10px;">Klikk på en markert dag for å endre. Menighetskontakten fyller inn navn på dagene som trengs.</p>
-        <div class="gantt-wrap behov-grid"><div class="gantt" id="behovGrid"></div></div>
+        <div class="gantt-wrap behov-grid" id="behovScroll"><div class="gantt" id="behovGrid"></div></div>
       </div>
     </div>
 
@@ -2473,7 +2487,7 @@
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "alle", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -2748,7 +2762,7 @@
       var status = dayStatus(els.length, ppl.size);
       html += '<div class="wkday'+(iso===todayIso?' today':'')+'">' +
         '<div class="wkday-head"><span class="dn">'+DAY_NAMES[i]+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-        (els.length ? '<span class="staff"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+        (els.length ? '<span class="staff" title="Personer satt opp på oppgaver denne dagen"><i class="dot '+status+'"></i>'+ppl.size+' satt opp</span>' : '') +
         '</div><div class="wkday-body">';
       if(els.length === 0){
         html += '<div class="none">Ingenting planlagt</div>';
@@ -2770,7 +2784,7 @@
         var missing = presentWithoutTaskForFag(iso, fag);
         html += '<div class="present">'+present.size+' til stede' +
           '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-            (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
+            (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Trykk på et navn og så på oppgaven – eller hold inne og dra</span></b>' +
               missing.map(function(id){
                 var sel = view.sel && view.sel.zone === "tomote" && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
                 return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
@@ -2893,6 +2907,18 @@
         map[p.id] = lastInitial ? (first + " " + lastInitial) : first;
       });
     });
+    // Like forbokstaver (Eva Larsen / Eva Lie / Eva Lund → «Eva L» tre ganger) kan ikke skilles -
+    // bruk da hele etternavnet for dem.
+    var byShort = {};
+    people.forEach(function(p){ (byShort[map[p.id]] = byShort[map[p.id]] || []).push(p); });
+    Object.keys(byShort).forEach(function(k){
+      var group = byShort[k];
+      if(group.length < 2) return;
+      group.forEach(function(p){
+        var parts = (p.name || "").trim().split(/\s+/);
+        if(parts.length > 1) map[p.id] = parts[0] + " " + parts[parts.length - 1];
+      });
+    });
     return map;
   }
   function dayStatus(elCount, peopleCount){
@@ -2939,7 +2965,7 @@
     var isPast = !opts.neverCollapse && iso < todayIso && opts.collapsePast;
     var html = '<div class="wkday'+(iso===todayIso?' today':'')+(isPast?' past':'')+'">' +
       '<div class="wkday-head"><span class="dn">'+weekdayName(d)+'</span><span class="dd">'+d.getDate()+'. '+NB_MONTHS_SHORT[d.getMonth()]+'</span>' +
-      (els.length ? '<span class="staff" title="Personer satt opp / oppgaver"><i class="dot '+status+'"></i>'+ppl.size+' pers.</span>' : '') +
+      (els.length ? '<span class="staff" title="Personer satt opp på oppgaver denne dagen"><i class="dot '+status+'"></i>'+ppl.size+' satt opp</span>' : '') +
       '</div><div class="wkday-body">';
     if(els.length === 0){
       html += '<div class="none">Ingenting planlagt</div>';
@@ -2965,7 +2991,7 @@
       var missing = presentWithoutTask(iso);
       html += '<div class="present">'+present.size+' til stede' +
         '<div class="miss" data-drop-unassign="'+iso+'"'+(missing.length?'':' style="background:var(--good-soft); border-color:var(--good); color:var(--good-ink)"')+'>' +
-          (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Dra navnet opp på en oppgave</span></b>' +
+          (missing.length ? '<b>Ledige – mangler oppgave ('+missing.length+')<span class="hint">Trykk på et navn og så på oppgaven – eller hold inne og dra</span></b>' +
             missing.map(function(id){
               var sel = view.sel && view.sel.pid===id && view.sel.iso===iso && !view.sel.from;
               return '<div class="pchip'+(sel?' sel':'')+'" data-drag-person="'+id+'" data-iso="'+iso+'" data-from="">'+escapeHtml(personName(id))+'</div>';
@@ -3070,8 +3096,16 @@
     container.addEventListener("pointerdown", function(ev){
       var chip = ev.target.closest("[data-drag-person]");
       if(!chip || (ev.pointerType === "mouse" && ev.button !== 0)) return;
-      ev.preventDefault();
       drag = { pid: chip.dataset.dragPerson, iso: chip.dataset.iso, from: chip.dataset.from || "", zone: zone, x0: ev.clientX, y0: ev.clientY, started: false, ghost: null, hover: null };
+      if(ev.pointerType === "touch"){
+        // På mobil må siden kunne scrolles over navnelistene: et sveip er scrolling, et kort trykk
+        // velger personen, og først når man holder inne (uten å bevege fingeren) kan man dra.
+        var d0 = drag;
+        d0.touch = true; d0.chip = chip;
+        d0.armTimer = setTimeout(function(){ if(drag === d0){ d0.armed = true; chip.classList.add("drag-armed"); } }, 350);
+      } else {
+        ev.preventDefault();
+      }
     });
     container.addEventListener("click", function(ev){
       if(view.suppressClick){ ev.stopPropagation(); ev.preventDefault(); return; }
@@ -3088,6 +3122,11 @@
   }
   document.addEventListener("pointermove", function(ev){
     if(!drag) return;
+    if(drag.touch && !drag.armed){
+      // fingeren flyttet seg før den ble holdt inne = scrolling, ikke dra
+      if(Math.abs(ev.clientX - drag.x0) + Math.abs(ev.clientY - drag.y0) > 8){ clearTimeout(drag.armTimer); drag = null; }
+      return;
+    }
     if(!drag.started){
       if(Math.abs(ev.clientX - drag.x0) + Math.abs(ev.clientY - drag.y0) < 6) return;
       drag.started = true;
@@ -3108,9 +3147,13 @@
     // rull siden når man drar nær kanten (nyttig på mobil)
     if(ev.clientY < 60) window.scrollBy(0, -12); else if(ev.clientY > window.innerHeight - 90) window.scrollBy(0, 12);
   }, { passive:false });
+  // Når et navn holdes inne for å dras, må nettleseren ikke begynne å scrolle siden i stedet.
+  document.addEventListener("touchmove", function(ev){ if(drag && drag.armed) ev.preventDefault(); }, { passive:false });
   function endDrag(ev, cancelled){
     if(!drag) return;
     var d = drag; drag = null;
+    if(d.armTimer) clearTimeout(d.armTimer);
+    if(d.chip) d.chip.classList.remove("drag-armed");
     if(d.started){
       if(d.ghost) d.ghost.remove();
       document.body.classList.remove("dragging");
@@ -3225,6 +3268,17 @@
     var dow = ((offset % 7) + 7) % 7; // 0=man .. 6=søn
     if(dow > 4) dow = 4; // en dato som skulle havnet i helgen vises på fredagen
     return week*5 + dow;
+  }
+  // Dagrad (Ma 5, Ti 6 …) under uke-raden i rutenettene, så det er tydelig hvilken kolonne som er
+  // hvilken dag (ellers kan Totalt-tallene rett under leses som datoer).
+  var GRID_DAY_SHORT = ["Ma","Ti","On","To","Fr"];
+  function gridDayLabels(range, dw, startIdx){
+    var out = "", todayIso = toISODate(new Date());
+    for(var i = startIdx; i < range.workdays; i++){
+      var d = workdayDate(range, i);
+      out += '<div'+(toISODate(d) === todayIso ? ' class="today"' : '')+' style="left:'+((i-startIdx)*dw)+'px; width:'+dw+'px"><span>'+GRID_DAY_SHORT[i % 5]+'</span>'+d.getDate()+'</div>';
+    }
+    return '<div class="g-days">'+out+'</div>';
   }
   function workdayDate(range, idx){
     var week = Math.floor(idx/5), dow = idx%5;
@@ -3738,7 +3792,8 @@
     byId("mobileHomeProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
     byId("mobileHomeProjectBtn").querySelector(".chevron").hidden = state.projects.length < 2;
     byId("projectSwitchBtn").title = state.projects.length < 2 ? "" : "Bytt prosjekt";
-    byId("projectSwitchBtn").style.cursor = state.projects.length < 2 ? "default" : "";
+    byId("projectSwitchBtn").classList.toggle("single", state.projects.length < 2);
+    byId("mobileHomeProjectBtn").classList.toggle("single", state.projects.length < 2);
   }
   byId("fagSwitchBtn").addEventListener("click", function(){
     var itemsHtml = activeProjectFags().map(function(f){
@@ -3846,6 +3901,8 @@
 
   // ---------- elements tab ----------
   var FILTERS = [
+    // Standard: det som gjenstår - ferdige oppgaver ligger under «Ferdig»/«Alle».
+    {key:"aktive", label:"Ikke ferdig", test:function(e){ return e.status!=="ferdig"; }},
     {key:"alle", label:"Alle", test:function(){ return true; }},
     {key:"mangler", label:"Mangler", test:function(e){ return e.status==="mangler"; }},
     {key:"pabegynt", label:"Påbegynt", test:function(e){ return e.status==="pabegynt"; }},
@@ -4039,11 +4096,12 @@
       return;
     }
     var list = drawingsForCurrentProject();
+    byId("drawingSearch").hidden = list.length < 8;
     if(list.length === 0){
       box.innerHTML = '<p class="empty-note">Ingen tegninger lastet opp ennå.</p>';
       return;
     }
-    box.innerHTML = list.map(function(d){
+    box.innerHTML = '<p class="empty-note" id="drawingSearchEmpty" hidden>Ingen tegninger passer søket.</p>' + list.map(function(d){
       var url = sb ? drawingPublicUrl(d.path) : "#";
       return '<div class="shoprow" data-drawing="'+d.id+'">' +
         '<a data-fileurl href="'+escapeHtml(url)+'" target="_blank" rel="noopener" class="sname" style="text-decoration:none; color:inherit;">'+escapeHtml(d.name)+'</a>' +
@@ -4062,7 +4120,21 @@
         if(d && confirm("Slette denne tegningen?")) deleteDrawing(d);
       });
     });
+    applyDrawingSearch();
   }
+  // Søk filtrerer radene som allerede er tegnet (beholder fokus i søkefeltet mens man skriver).
+  function applyDrawingSearch(){
+    var input = byId("drawingSearch");
+    var q = input.hidden ? "" : input.value.trim().toLowerCase();
+    var shown = 0;
+    byId("drawGrid").querySelectorAll("[data-drawing]").forEach(function(row){
+      var hit = !q || row.querySelector(".sname").textContent.toLowerCase().indexOf(q) !== -1;
+      row.hidden = !hit; if(hit) shown++;
+    });
+    var empty = byId("drawingSearchEmpty");
+    if(empty) empty.hidden = shown > 0;
+  }
+  byId("drawingSearch").addEventListener("input", applyDrawingSearch);
   byId("drawingsEditBtn").addEventListener("click", function(){
     var editing = byId("panel-tegninger").classList.toggle("editing");
     byId("drawingsEditBtn").textContent = editing ? "Ferdig" : "Rediger";
@@ -4309,6 +4381,7 @@
       byId("behovLabel").textContent = cur ? cur.name : "";
       renderBehovSlotConfig(cur);
       byId("behovGrid").innerHTML = buildBehovGridHtml(cur, "admin");
+      scrollGridToCurrentWeek("behovScroll", cur);
       wireBehovGridEvents("behovGrid", "admin");
       return;
     }
@@ -5974,8 +6047,8 @@
         var missing = pwStaffingMissingCount(curWeek);
         if(missing > 0) return { badge: missing, text: missing+" mangler bemanning" };
       }
-      var duties = dutiesForCurrentProject();
-      return { badge: 0, text: duties.length+" ansvarspunkter" };
+      // Vis hvem som har privilege-uken nå - det er det de fleste ser etter på Team-siden.
+      return { badge: 0, text: "Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+": "+(curWeek.responsible || "ingen ansvarlig ennå") };
     }
     if(tab === "cg1"){
       return { badge: 0, text: "CGO, ACGO, Kontor 1 og 2" };
@@ -6601,7 +6674,9 @@
     var p = myLinkedPerson();
     if(p && p.name === "Sakkestad") return "CGO";
     if(p && p.name === "Ridderberg") return "ACGO";
-    return FAG_LABELS.byggeleder;
+    // Uten visningsnavn: bruk den første CG1-siden brukeren har (ikke alltid «ACGO»).
+    var firstPage = acc && acc.pages && CG1_PAGES.find(function(pg){ return acc.pages.indexOf(pg.key) !== -1; });
+    return firstPage ? firstPage.label : FAG_LABELS.byggeleder;
   }
   // Flex gjelder ektepar som én enhet: en forespørsel fra den ene er også den andres (vises med
   // etternavn, se flexDisplayName). Returnerer personen + ektefellen hvis begge er i teamet.
@@ -8127,7 +8202,7 @@
       weeks += '<div style="left:'+(wi*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
     }
     var html = '<div class="gantt" style="'+css+'">';
-    html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Fag</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+    html += '<div class="g-row g-head" style="height:68px"><div class="g-name">Fag</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div>'+gridDayLabels(range, dw, 0)+'</div></div>';
 
     var slots = behovSlotsForProject(project.id);
     var projectFagRows = {};
@@ -8140,6 +8215,13 @@
       return html + '<p class="empty-note" style="margin-top:10px;">Ingen fag er markert som aktive i dette prosjektet ennå'+(mode==="admin"?" – sett dette på ACGO-siden.":".")+'</p>';
     }
 
+    // Menigheten ser bare fag som faktisk har plasser - tomme fag-rader er bare støy for dem.
+    if(mode !== "admin"){
+      fagsToShow = fagsToShow.filter(function(f){ return slots.some(function(s){ return s.fag === f; }); });
+      if(!fagsToShow.length && !customSlots.length){
+        return html + '</div><p class="empty-note" style="margin-top:10px;">Ingen fag har bedt om hjelp ennå. Dager som trenger folk dukker opp her.</p>';
+      }
+    }
     fagsToShow.forEach(function(fag){
       var fagSlots = slots.filter(function(s){ return s.fag === fag; }).sort(function(a,b){ return a.slotIndex - b.slotIndex; });
       var pf = projectFagRows[fag];
@@ -8374,7 +8456,7 @@
       weeks += '<div style="left:'+((wi-startIdx)*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
     }
     var html = '<div class="gantt" style="'+css+'">';
-    html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+    html += '<div class="g-row g-head" style="height:68px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div>'+gridDayLabels(range, dw, startIdx)+'</div></div>';
 
     var byPerson = {};
     state.attendance.filter(function(a){ return a.project_id === project.id; }).forEach(function(a){
@@ -8517,7 +8599,7 @@
       weeks += '<div style="left:'+((wi-startIdx)*dw)+'px; width:'+(5*dw)+'px">Uke '+isoWeekInfo(wStart).week+'</div>';
     }
     var html = '<div class="gantt" style="'+css+'">';
-    html += '<div class="g-row g-head" style="height:40px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div></div></div>';
+    html += '<div class="g-row g-head" style="height:68px"><div class="g-name">Person</div><div class="g-track"><div class="g-months">'+months+'</div><div class="g-weeks">'+weeks+'</div>'+gridDayLabels(range, dw, startIdx)+'</div></div>';
 
     var pid = project.id;
     var presentDays = {};
@@ -8850,6 +8932,7 @@
   function scrollGridToCurrentWeek(containerId, project){
     var wrap = byId(containerId);
     if(!wrap || wrap.dataset.scrolled || !project || !project.start || !project.end) return;
+    if(!wrap.offsetParent) return; // skjult (annen fane) - ruller når den vises
     var range = behovProjectRange(project);
     var mondayIso = toISODate(mondayOf(new Date()));
     var ti = workdayIndex(range, mondayIso);
@@ -9192,12 +9275,12 @@
     var mote = overviewForCurrentProject("mote");
     byId("dashMoteList").innerHTML = mote.length ? mote.map(function(o){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span></div>';
-    }).join("") : '<p class="empty-note">Ingen møter lagt til ennå. Legg til under Åndelig.</p>';
+    }).join("") : '<p class="empty-note">Ingen møter lagt til ennå. Legg til under Team.</p>';
 
     var prog = overviewForCurrentProject("program");
     byId("dashProgramList").innerHTML = prog.length ? prog.map(function(o){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'</div>';
-    }).join("") : '<p class="empty-note">Ingen rader lagt til ennå. Legg til under Åndelig.</p>';
+    }).join("") : '<p class="empty-note">Ingen rader lagt til ennå. Legg til under Team.</p>';
 
     var pid = currentProjectId();
     var openFlex = state.flexRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; })
@@ -9385,6 +9468,7 @@
     }
     byId("kontaktBehovLabel").textContent = cur ? cur.name : "";
     byId("kontaktBehovGrid").innerHTML = buildBehovGridHtml(cur, "kontakt");
+    scrollGridToCurrentWeek("kontaktBehovScroll", cur);
     wireBehovGridEvents("kontaktBehovGrid", "kontakt");
   }
   document.querySelectorAll("#kontaktSectionToggle [data-kontaktsection]").forEach(function(b){
