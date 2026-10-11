@@ -7680,58 +7680,27 @@
       });
     }
   }
-  function fillBehovDay(dayRowId, personId){
+  // Fyller inn en behov-dag via fill_behov_day (sql/80): setter personen på dagen, legger evt. til
+  // en ny person, registrerer oppmøte og - for "andre behov" - legger personen på kalender-
+  // oppgaven for dagen, alt i én operasjon på serveren. Menigheten har ikke selv lov til å skrive
+  // oppmøte eller legge til personer, så dette MÅ gå via funksjonen (som sjekker at kontoen hører
+  // til prosjektet).
+  function fillBehovDay(dayRowId, personId, newName){
     if(!sb) return;
-    var d = state.behovDays.find(function(x){ return x.id === dayRowId; });
-    if(!d) return;
-    var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
-    sb.from("behov_day").update({ person_id: personId || null }).eq("id", dayRowId).then(function(res){
-      if(res.error){ showError("Kunne ikke lagre: "+res.error.message); return; }
-      refetchBehovDays();
-      if(personId && slot && slot.fag){
-        sb.from("attendance").upsert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: slot.fag }, { onConflict: "project_id,person_id,day" }).then(function(res){
-          if(res.error) showError("Kunne ikke registrere oppmøte: "+res.error.message);
-        });
-      } else if(personId && slot && !slot.fag){
-        sb.from("attendance").upsert({ project_id: slot.project_id, person_id: personId, day: d.day, fag: "behov_menighet" }, { onConflict: "project_id,person_id,day" }).then(function(res){
-          if(res.error) showError("Kunne ikke registrere oppmøte: "+res.error.message);
-        });
-        ensureBehovMenighetTask(slot.project_id, slot.label, d.day, personId);
+    sb.rpc("fill_behov_day", { p_day_id: dayRowId, p_person_id: personId || null, p_new_name: newName || null }).then(function(res){
+      if(res.error){
+        showError(/fill_behov_day/.test(res.error.message || "") && /not find|does not exist|Could not/.test(res.error.message || "")
+          ? "Databasen mangler funksjonen for behov-utfylling. Kjør sql/80-fill-behov-day.sql i Supabase."
+          : "Kunne ikke lagre: "+res.error.message);
+        return;
       }
-    });
-  }
-  // Lager (eller gjenbruker) en oppgave i kalenderen for et behov utenfor de faste fagene,
-  // så det som fylles inn under "Behov fra menigheten" også dukker opp som en oppgave på riktig dato.
-  function ensureBehovMenighetTask(projectId, label, day, personId){
-    if(!sb) return;
-    var existing = state.elements.find(function(e){ return e.project_id === projectId && e.fag === "behov_menighet" && e.start === day && e.end === day && e.name === label; });
-    if(existing){
-      var next = Object.assign({}, existing.assignments);
-      var ids = (next[day] || []).slice();
-      if(ids.indexOf(personId) === -1) ids.push(personId);
-      next[day] = ids;
-      sb.from("elements").update({ assignments: next }).eq("id", existing.id).then(function(res){
-        if(res.error){ showError("Kunne ikke oppdatere oppgaven i kalenderen: "+res.error.message); return; }
-        refetchElements();
-      });
-      return;
-    }
-    var assignments = {}; assignments[day] = [personId];
-    sb.from("elements").insert({ project_id: projectId, section: "utvendig", name: label.slice(0,120), start: day, end: day, status: "mangler", fag: "behov_menighet", assignments: assignments, done: false }).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("elements") !== -1 ? "Databasen mangler støtte for behov-fra-menigheten-faget. Kjør sql/29-behov-menighet-virtuelt-fag.sql i Supabase." : "Kunne ikke opprette oppgave i kalenderen: "+res.error.message); return; }
+      refetchBehovDays();
+      refetchAttendance();
       refetchElements();
+      if(newName) refetchPeople();
     });
   }
-  function addPersonAndFillBehovDay(dayRowId, name){
-    if(!sb) return;
-    var pid = currentProjectId();
-    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("people").insert({ name: name.slice(0,60), project_id: pid }).select().single().then(function(res){
-      if(res.error){ showError("Kunne ikke legge til personen: "+res.error.message); return; }
-      fillBehovDay(dayRowId, res.data.id);
-      refetchPeople();
-    });
-  }
+  function addPersonAndFillBehovDay(dayRowId, name){ fillBehovDay(dayRowId, null, name); }
 
   // ---------- Andre behov (egne rader uten fag, i samme rutenett) ----------
   function addCustomBehovSlot(label){

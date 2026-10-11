@@ -7,10 +7,10 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 
 | # | Punkt | Type | Status |
 |---|---|---|---|
-| P1 | Hent all oppmøtedata (1000-radersgrensen) | Kode | ✅ Ferdig – venter på publisering |
-| P2 | Menighetens Behov-utfylling virker ikke helt | Kode + (DB) | ⏳ Neste |
-| P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ⏳ |
-| P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ⏳ |
+| P1 | Hent all oppmøtedata (1000-radersgrensen) | Kode | ✅ Publisert |
+| P2 | Menighetens Behov-utfylling virker ikke helt | Kode + (DB) | ✅ Ferdig (DB kjørt) – venter på publisering |
+| P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
+| P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ⏳ Neste |
 | P5 | Gjør filmappene private | (DB) + kode | ⏳ |
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ⏳ |
 | P7 | Rydd bort gamle rester | (DB) | ⏳ |
@@ -25,12 +25,16 @@ ca. 650 oppmøtedager manglet tilfeldig i Frivillige, Behov, Mat og Team.
 med. Brukt på alle 23 tabeller som kan vokse (oppmøte, personer, oppgaver, logi, behov, tegninger,
 dokumentasjon, handleliste, flex, TO-møte osv.).
 
-## P2 – Menighetens Behov-utfylling (neste)
+## P2 – Menighetens Behov-utfylling ✅
 **Problem:** Når menigheten fyller inn et navn under «Behov for hjelp», lagres navnet, men
 - oppmøtet registreres ikke (tilgangsreglene lar bare faget/byggeleder skrive oppmøte), og
 - «Eller skriv et nytt navn» feiler helt (menigheten får ikke legge til personer).
 
-**Plan:**
+**Gjort:** `sql/80-fill-behov-day.sql` er kjørt, og appen bruker funksjonen. Testet i databasen
+(i transaksjoner som ble rullet tilbake): ny person, dag satt, oppmøte og oppgave OK; menighet fra
+annet prosjekt og person fra annet prosjekt avvises; ingen dobbel oppføring.
+
+**Plan (opprinnelig):**
 1. (DB) Ny funksjon `fill_behov_day(day_id, person_id | new_name)` (security definer) som gjør hele
    utfyllingen på vegne av menigheten: setter navnet, legger til ny person om nødvendig,
    registrerer oppmøte og oppretter oppgave for «andre behov» – men bare for prosjektet kontoen er
@@ -38,9 +42,9 @@ dokumentasjon, handleliste, flex, TO-møte osv.).
 2. Kode: menighetsvisningen kaller funksjonen i stedet for å skrive direkte.
 3. Test med Playwright; ingen endring for byggeleder.
 
-## P3 – Slett 3 ødelagte flex-forespørsler
-Allerede godkjent. Skrivingen tidsavbrøt fire ganger. Prøves på nytt (eller kjøres i Supabase SQL
-Editor: `delete from flex_requests where person_id is null;`).
+## P3 – Slett 3 ødelagte flex-forespørsler ✅
+Slettet 11. okt. (Vanlige skrive-spørringer tidsavbrøt fra verktøyet; det virket inne i en
+`do $$ … $$`-blokk.)
 
 ## P4 – Lås delte kontoer til prosjektet i databasen (viktigst for personvern)
 **Problem:** Låsen til ett prosjekt finnes bare i skjermbildet. I databasen kan alle innloggede
