@@ -701,9 +701,8 @@
   .panel.editing [data-viewonly]{ display:none !important; }
 
   /* ---------- innlogging ---------- */
-  #loginScreen, #inviteScreen{ display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
-  body:not(.authed):not(.invite-mode) #loginScreen{ display:flex; }
-  body.invite-mode #inviteScreen{ display:flex; }
+  #loginScreen{ display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+  body:not(.authed) #loginScreen{ display:flex; }
   body:not(.authed) .wrap{ display:none; }
   .login-card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:28px; width:100%; max-width:340px; }
   .login-card h1{ font-size:19px; margin-bottom:4px; }
@@ -897,21 +896,6 @@
     </form>
     <p class="err" id="loginError"></p>
     <button type="button" class="btn ghost small" id="loginToggleMode" style="margin-top:10px; width:100%;">Logg inn med e-post i stedet</button>
-  </div>
-</div>
-
-<div id="inviteScreen" hidden>
-  <div class="login-card">
-    <h1><span class="ldc">LDC</span> CG1</h1>
-    <p class="sub" id="inviteIntro">Laster invitasjon …</p>
-    <form id="inviteForm" hidden>
-      <input type="email" id="inviteEmail" placeholder="E-post" required autocomplete="username" />
-      <input type="password" id="invitePassword" placeholder="Velg et passord (minst 6 tegn)" required minlength="6" autocomplete="new-password" />
-      <input type="password" id="invitePassword2" placeholder="Gjenta passord" required minlength="6" autocomplete="new-password" />
-      <button type="submit" class="btn primary">Opprett konto</button>
-    </form>
-    <p class="err" id="inviteError"></p>
-    <p class="sub" id="inviteDone" hidden>Sjekk e-posten din og bekreft kontoen, logg deretter inn på vanlig måte.</p>
   </div>
 </div>
 
@@ -9719,11 +9703,6 @@
     if(logiDialog.open) openLogiDialog(personId);
   });
 
-  // ---------- invitasjonslenker til menigheten ----------
-  // project_invites brukes ikke lenger til å invitere menigheten (se verify_project_code /
-  // kontakt-prosjektvelgeren) - RPC-ene knyttet til tabellen (claim_project_invite,
-  // get_invite_project_name) lever videre kun for engangsoppretting av den delte
-  // menighetskontoen, se inviteScreen-flyten.
   // ---------- Prosjektoppstart-sjekkliste (CGOs "Mal til nytt prosjekt") ----------
   var STARTUP_TEMPLATE = [
     { key:"precon", title:"Precon", groups:[
@@ -11310,9 +11289,6 @@
   }
   var didAutoOpenDashboard = false;
   var hadSavedTabAtLogin = true;
-  var INVITE_TOKEN_KEY = "ldc_pending_invite";
-  var pendingInviteToken = null;
-  try{ pendingInviteToken = sessionStorage.getItem(INVITE_TOKEN_KEY); }catch(e){}
   function handleSession(session){
     if(!session){
       document.body.classList.remove("authed");
@@ -11327,26 +11303,12 @@
         return;
       }
       if(res.error || !res.data){
-        if(pendingInviteToken){
-          sb.rpc("claim_project_invite", { invite_token: pendingInviteToken }).then(function(claimRes){
-            if(claimRes.error){
-              byId("loginError").textContent = "Klarte ikke å bruke invitasjonslenken: "+claimRes.error.message;
-              sb.auth.signOut({ scope: "local" });
-              return;
-            }
-            try{ sessionStorage.removeItem(INVITE_TOKEN_KEY); }catch(e2){}
-            pendingInviteToken = null;
-            handleSession(session);
-          });
-          return;
-        }
         byId("loginError").textContent = "Denne kontoen mangler en rolle. Kontakt byggeleder.";
         sb.auth.signOut({ scope: "local" });
         return;
       }
       state.me = { id: session.user.id, email: session.user.email, role: res.data.role, personId: res.data.person_id || null, projectId: res.data.project_id || null };
       document.body.classList.add("authed");
-      document.body.classList.remove("invite-mode");
       document.body.classList.toggle("kontakt-mode", state.me.role === "kontakt");
       if(!didAutoOpenDashboard){
         didAutoOpenDashboard = true;
@@ -11438,40 +11400,6 @@
     });
   });
 
-  // ---------- invitasjonslenke: menigheten setter selv e-post/passord ----------
-  var inviteTokenFromUrl = null;
-  try{ inviteTokenFromUrl = new URLSearchParams(window.location.search).get("invite"); }catch(e){}
-  if(inviteTokenFromUrl){
-    document.body.classList.add("invite-mode");
-    byId("inviteScreen").hidden = false;
-    try{ sessionStorage.setItem(INVITE_TOKEN_KEY, inviteTokenFromUrl); }catch(e){}
-    pendingInviteToken = inviteTokenFromUrl;
-    if(sb){
-      sb.rpc("get_invite_project_name", { invite_token: inviteTokenFromUrl }).then(function(res){
-        if(res.error || !res.data){
-          byId("inviteIntro").textContent = "Denne invitasjonslenken er ugyldig eller allerede brukt. Be om en ny lenke.";
-          return;
-        }
-        byId("inviteIntro").textContent = "Du er invitert til prosjektet «"+res.data+"». Velg e-post og passord for å få tilgang.";
-        byId("inviteForm").hidden = false;
-      });
-    }
-  }
-  byId("inviteForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    if(!sb) return;
-    var email = byId("inviteEmail").value.trim();
-    var password = byId("invitePassword").value;
-    var password2 = byId("invitePassword2").value;
-    byId("inviteError").textContent = "";
-    if(password !== password2){ byId("inviteError").textContent = "Passordene er ikke like."; return; }
-    sb.auth.signUp({ email: email, password: password }).then(function(res){
-      if(res.error){ byId("inviteError").textContent = res.error.message.indexOf("already registered") !== -1 ? "Denne e-posten er allerede registrert. Logg inn i stedet." : "Kunne ikke opprette konto: "+res.error.message; return; }
-      if(res.data && res.data.session){ return; } // handleSession fyres av onAuthStateChange og fullfører med claim_project_invite
-      byId("inviteForm").hidden = true;
-      byId("inviteDone").hidden = false;
-    });
-  });
   byId("logoutBtn").addEventListener("click", function(){
     if(!sb) return;
     // scope:"local" - se forklaring ved kontaktLogoutBtn over: uten den logger Supabase som

@@ -12,8 +12,8 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
 | P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ✅ I drift (sql/81 kjørt 11. okt) |
 | P5 | Gjør filmappene private | (DB) + kode | ✅ I drift (kode publisert, sql/82 kjørt 11. okt) |
-| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ I drift («Vis kode» venter på publisering) |
-| P7 | Rydd bort gamle rester | (DB) | ⏳ Neste |
+| P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ Publisert |
+| P7 | Rydd bort gamle rester | (DB) | 🔄 A: kontoer slettet, du kjører sql/85 · B: venter på bytte til fagkode |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
 
 ---
@@ -97,7 +97,17 @@ kode: bruk signerte lenker (tidsbegrensede) i stedet for offentlige.
    `fag_account_codes` (sql/84), som bare aktiv CG1-admin kan lese. Koder satt før dette vises som
    «Ukjent – sett ny kode». CG1-passord lagres aldri.
 
-## P7 – Rydd bort gamle rester (DB)
+## P7 – Rydd bort gamle rester
+**A – gjort 11. okt:** 6 ubrukte/erstattede kontoer slettet (landscape, maler, murer, ventilasjon,
+vvs @cg1.org + gammel delt menighetskonto). search_path satt på to funksjoner. Invitasjonsflyten
+fjernet fra appen. **Gjenstår:** `sql/85-opprydding.sql` (alle «drop»-setningene – de henger fra
+verktøyet, så de kjøres i Supabase SQL Editor).
+
+**B – aktive gamle kontoer:** `elektriker@cg1.org`, `tomrer@cg1.org` og en tømrer-konto (icloud)
+skal bytte til fagkode. Når de har byttet, slettes kontoene (Administrasjon har ikke disse – det
+gjøres i databasen). Elektriker mangler fagkode i begge prosjekter.
+
+### Opprinnelig liste
 - 7 gamle individuelle fag-kontoer (elektriker, landscape, maler, murer, tømrer ×2, ventilasjon, vvs)
 - gammel delt menighetskonto (`@cg1.org`)
 - `projects.access_code` + funksjonen `verify_project_code`
