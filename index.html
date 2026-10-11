@@ -4749,10 +4749,13 @@
       byId("mwSlots").innerHTML = "";
       return;
     }
-    var todayIso = toISODate(new Date());
-    if(!view.mwWeekId || !weeks.some(function(w){ return w.id === view.mwWeekId; })){
-      var currentWeek = weeks.find(function(w){ return w.start <= todayIso && todayIso <= w.end; });
-      view.mwWeekId = currentWeek ? currentWeek.id : weeks[0].id;
+    // Uken man er i (i helgen: kommende uke), ellers neste uke, ellers den siste - ikke den første.
+    // Valget følger datoen til brukeren selv velger en annen uke i listen.
+    if(!view.mwWeekManual || !weeks.some(function(w){ return w.id === view.mwWeekId; })){
+      var todayIso = toISODate(new Date());
+      var currentWeek = currentPrivilegeWeek() || weeks.find(function(w){ return w.start > todayIso; }) || weeks[weeks.length - 1];
+      view.mwWeekId = currentWeek.id;
+      view.mwWeekManual = false;
     }
     sel.innerHTML = weeks.map(function(w){
       var info = isoWeekInfo(fromISODate(w.start));
@@ -4898,7 +4901,7 @@
     addOverviewItem("mote", name, timeInput.value.trim(), ansvarligInput.value.trim());
     nameInput.value = ""; timeInput.value = ""; ansvarligInput.value = "";
   });
-  byId("mwWeekSelect").addEventListener("change", function(){ view.mwWeekId = this.value; renderSpiritualTab(); });
+  byId("mwWeekSelect").addEventListener("change", function(){ view.mwWeekId = this.value; view.mwWeekManual = true; renderSpiritualTab(); });
   byId("mwWeekEditBtn").addEventListener("click", function(){
     if(!view.mwWeekId){ openPwProgram(); return; }
     openPwDialog(view.mwWeekId);
@@ -6937,8 +6940,12 @@
     for(var slot = 0; slot <= 6; slot++){ if(!bySlot[slot]) missing++; }
     return missing;
   }
+  // Privilege-uken «nå». Ukene går man–fre, så i helgen gjelder den kommende uken (ellers ville
+  // lørdag/søndag ikke treffe noen uke).
   function currentPrivilegeWeek(refDate){
-    var refIso = toISODate(refDate || new Date());
+    var d = refDate || new Date();
+    if(!refDate && (d.getDay() === 6 || d.getDay() === 0)) d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + (d.getDay() === 6 ? 2 : 1));
+    var refIso = toISODate(d);
     return privilegeWeeksForCurrentProject().find(function(w){ return w.start <= refIso && refIso <= w.end; }) || null;
   }
   function rowToPwDutyStatus(row){
