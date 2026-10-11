@@ -194,8 +194,9 @@ person i et annet prosjekt finner samme person i teamet (navn, ellers entydig et
 Fag-forespørsler viser «(Menighet)»/fagnavn i stedet for den tekniske e-posten.
 
 ## Team og Flex på ett sted (sql/86)
-Administrasjon → Team → **«Innlogginger i teamet»**: hver innlogging (CGO, ACGO, Kontor 1/2 og
-prosjektets fag-koder) kobles til en person i teamet, per prosjekt (tabellen `team_logins`).
+Administrasjon → Team: **én liste** – hver person i teamet har innloggingene sine på samme linje
+(«+ innlogging»: CGO, ACGO, Kontor 1/2 og alle aktive fag; fag uten kode får kodevinduet først).
+Ektefellen vises som «Flex via …». Lagres per prosjekt i tabellen `team_logins`.
 Regel: den som er koblet til en person i teamet, ser Team-siden og har Flex – også fag. Erstatter
 «Vis Team-siden» og «Flex for» per fag og personvelgeren under Brukere og tilganger
 (`profiles.person_id` og `andelig_visibility` brukes ikke lenger av appen). Ingen navnegjetting.

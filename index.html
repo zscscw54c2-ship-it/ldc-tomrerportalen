@@ -1650,13 +1650,10 @@
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet. Gjelder dette prosjektet.</p>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet, og gi hver person innloggingen de bruker (CGO, ACGO, Kontor eller et fag). De som har en innlogging, ser Team-siden og har Flex – ektefellen regnes med. Gjelder dette prosjektet.</p>
       <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
       <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
       <div id="adminTeamSearchResults"></div>
-      <h3 style="font-size:14px; margin:14px 0 2px;">Innlogginger i teamet</h3>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Hvem i teamet hver innlogging tilhører i dette prosjektet. De som er koblet her, ser Team-siden og har Flex. Et ektepar som deler en fag-kode, kobles til én av dem – Flex regner ektefellen med.</p>
-      <div id="teamLoginList" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
@@ -7195,6 +7192,11 @@
     sb.from("fag_accounts").select("*").then(function(res){
       if(res.error) return;
       state.fagAccounts = res.data.map(rowToFagAccount);
+      var pend = view.pendingTeamLink;
+      if(pend){
+        var acc = state.fagAccounts.find(function(a){ return a.projectId === pend.projectId && a.fagKey === pend.fagKey; });
+        if(acc && pend.projectId === currentProjectId()){ view.pendingTeamLink = null; setTeamLogin(acc.authUserId, pend.personId); }
+      }
       scheduleRender();
     });
   }
@@ -7540,6 +7542,7 @@
   }
   var codeDialog = byId("codeDialog"), codeDialogKey = null, codeDialogLabel = "";
   function openCodeDialog(fagKey, label){
+    view.pendingTeamLink = null;
     codeDialogKey = fagKey;
     codeDialogLabel = label;
     byId("codeDlgTitle").textContent = "Innloggingskode – " + label;
@@ -7549,8 +7552,8 @@
     byId("codeDlgInput").select();
   }
   byId("codeDlgGenerate").addEventListener("click", function(){ byId("codeDlgInput").value = generateStrongCode(); });
-  byId("codeDlgCancel").addEventListener("click", function(){ codeDialog.close(); });
-  codeDialog.addEventListener("click", function(ev){ if(ev.target === codeDialog) codeDialog.close(); });
+  byId("codeDlgCancel").addEventListener("click", function(){ view.pendingTeamLink = null; codeDialog.close(); });
+  codeDialog.addEventListener("click", function(ev){ if(ev.target === codeDialog){ view.pendingTeamLink = null; codeDialog.close(); } });
   byId("codeForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var code = byId("codeDlgInput").value.trim();
@@ -7885,8 +7888,30 @@
       });
     });
 
+    var loginChoices = teamLoginChoices();
     function adminTeamRowHtml(p){
-      return '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
+      var check = '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0; min-width:200px;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
+      if(!p.onTeam) return check;
+      var mine = loginChoices.filter(function(c){ return c.personId === p.id; });
+      var chips = mine.map(function(c){
+        return '<span class="badge group" style="display:inline-flex; align-items:center; gap:4px; font-size:12px;">'+escapeHtml(c.label) +
+          '<button type="button" data-teamloginrm="'+c.accountId+'" title="Fjern '+escapeHtml(c.label)+'" aria-label="Fjern '+escapeHtml(c.label)+'" style="border:none; background:none; cursor:pointer; color:inherit; font-size:13px; line-height:1; padding:0 2px;">×</button></span>';
+      }).join(" ");
+      var via = "";
+      if(!mine.length){
+        var spouse = flexCoupleIds(p.id).filter(function(id){ return id !== p.id; }).map(function(id){ return state.people.find(function(x){ return x.id === id; }); })
+          .find(function(sp){ return sp && sp.onTeam && loginChoices.some(function(c){ return c.personId === sp.id; }); });
+        if(spouse) via = '<span style="font-size:12px; color:var(--muted);">Flex via '+escapeHtml(spouse.name)+'</span>';
+      }
+      var opts = loginChoices.filter(function(c){ return c.personId !== p.id; }).map(function(c){
+        var other = c.personId ? state.people.find(function(x){ return x.id === c.personId; }) : null;
+        var note = other ? ' (koblet til '+other.name+')' : (c.kind === "fag" && !c.accountId ? ' (ingen kode ennå)' : '');
+        return '<option value="'+c.key+'">'+escapeHtml(c.label + note)+'</option>';
+      }).join("");
+      return '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding:2px 0;">' + check + chips + via +
+        '<span style="flex:1;"></span>' +
+        '<select data-teamloginadd="'+p.id+'" aria-label="Legg til innlogging for '+escapeHtml(p.name)+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12.5px; background:var(--surface); width:170px;">' +
+        '<option value="">+ innlogging</option>' + opts + '</select></div>';
     }
     function wireAdminTeamCheckboxes(container){
       container.querySelectorAll("[data-adminteamcheck]").forEach(function(cb){
@@ -7896,6 +7921,19 @@
           var wasOnTeam = person ? !!person.onTeam : false;
           updatePerson(id, { on_team: this.checked });
           if(this.checked && !wasOnTeam) markAvailableWholeProject(id, null);
+          // Ute av teamet = ingen innlogging i teamet (ingen Team-side/Flex).
+          if(!this.checked) state.teamLogins.filter(function(r){ return r.projectId === currentProjectId() && r.personId === id; }).forEach(function(r){ setTeamLogin(r.accountId, null); });
+        });
+      });
+      container.querySelectorAll("[data-teamloginrm]").forEach(function(b){
+        b.addEventListener("click", function(){ setTeamLogin(this.dataset.teamloginrm, null); });
+      });
+      container.querySelectorAll("[data-teamloginadd]").forEach(function(sel){
+        sel.addEventListener("change", function(){
+          var key = this.value, personId = this.dataset.teamloginadd;
+          if(!key) return;
+          this.value = "";
+          addTeamLogin(personId, key);
         });
       });
     }
@@ -7906,36 +7944,39 @@
     var teamMatches = teamQuery ? peopleSorted.filter(function(p){ return !p.onTeam && p.name.toLowerCase().indexOf(teamQuery) !== -1; }) : [];
     byId("adminTeamSearchResults").innerHTML = !teamQuery ? "" : (teamMatches.length ? teamMatches.map(adminTeamRowHtml).join("") : '<p class="empty-note">Ingen treff.</p>');
     wireAdminTeamCheckboxes(byId("adminTeamSearchResults"));
-    renderTeamLoginList(teamSelected);
 
   }
-  // Innlogginger (CG1-brukere + prosjektets fag-koder) → person i teamet, per prosjekt.
-  function renderTeamLoginList(team){
-    var box = byId("teamLoginList");
+  // Alle innlogginger som kan gis til noen i teamet i dette prosjektet: aktive CG1-brukere og alle
+  // aktive fag (også de uten kode ennå - da settes koden først, se addTeamLogin).
+  function teamLoginChoices(){
     var pid = currentProjectId();
-    var logins = state.cg1Users.filter(function(u){ return u.active; }).map(function(u){ return { id: u.userId, label: u.displayName || u.email, kind: "CG1" }; })
-      .sort(function(a,b){ return a.label.localeCompare(b.label, "no"); })
-      .concat(state.fagAccounts.filter(function(a){ return a.projectId === pid && a.fagKey !== "kontakt"; })
-        .map(function(a){ return { id: a.authUserId, label: FAG_LABELS[a.fagKey] || a.fagKey, kind: "Fag-kode" }; })
-        .sort(function(a,b){ return a.label.localeCompare(b.label, "no"); }));
-    if(!logins.length){ box.innerHTML = '<p class="empty-note">'+(state.cg1Users.length ? 'Ingen innlogginger ennå – sett en fag-kode under Fag.' : 'Laster innlogginger …')+'</p>'; return; }
-    box.innerHTML = logins.map(function(l){
-      var row = teamLoginForAccount(l.id, pid);
-      var cur = row ? row.personId : "";
-      var curOnTeam = !cur || team.some(function(p){ return p.id === cur; });
-      var curPerson = cur ? state.people.find(function(p){ return p.id === cur; }) : null;
-      return '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
-        '<b style="min-width:110px; font-size:13px;">'+escapeHtml(l.label)+'</b>' +
-        '<span style="font-size:11px; color:var(--muted); min-width:56px;">'+l.kind+'</span>' +
-        '<select data-teamlogin="'+l.id+'" aria-label="Person for '+escapeHtml(l.label)+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface); min-width:180px; max-width:260px;">' +
-        '<option value="">– ikke i teamet</option>' +
-        team.map(function(p){ return '<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-        (!curOnTeam ? '<option value="'+cur+'" selected>'+escapeHtml(curPerson ? curPerson.name : "Ukjent")+' (ikke krysset av i teamet)</option>' : '') +
-        '</select></div>';
-    }).join("");
-    box.querySelectorAll("[data-teamlogin]").forEach(function(sel){
-      sel.addEventListener("change", function(){ setTeamLogin(this.dataset.teamlogin, this.value || null); });
+    var cg1 = state.cg1Users.filter(function(u){ return u.active; }).map(function(u){ return { key: "cg1:"+u.userId, kind: "cg1", label: u.displayName || u.email, accountId: u.userId }; })
+      .sort(function(a,b){ return a.label.localeCompare(b.label, "no"); });
+    var fags = activeProjectFags().map(function(f){
+      var acc = state.fagAccounts.find(function(a){ return a.projectId === pid && a.fagKey === f; });
+      return { key: "fag:"+f, kind: "fag", fagKey: f, label: FAG_LABELS[f] || f, accountId: acc ? acc.authUserId : null };
     });
+    return cg1.concat(fags).map(function(c){
+      var row = c.accountId ? teamLoginForAccount(c.accountId, pid) : null;
+      c.personId = row ? row.personId : null;
+      return c;
+    });
+  }
+  function addTeamLogin(personId, key){
+    var c = teamLoginChoices().find(function(x){ return x.key === key; });
+    var person = state.people.find(function(x){ return x.id === personId; });
+    if(!c || !person) return;
+    if(c.kind === "fag" && !c.accountId){
+      // Faget har ingen kode i prosjektet ennå: sett koden, og koble når kontoen finnes.
+      openCodeDialog(c.fagKey, c.label);
+      view.pendingTeamLink = { projectId: currentProjectId(), fagKey: c.fagKey, personId: personId };
+      return;
+    }
+    if(c.personId && c.personId !== personId){
+      var other = state.people.find(function(x){ return x.id === c.personId; });
+      if(!confirm(c.label+" er koblet til "+(other ? other.name : "en annen")+". Flytte til "+person.name+"?")) { renderAll(); return; }
+    }
+    setTeamLogin(c.accountId, personId);
   }
   byId("adminTeamSearch").addEventListener("input", function(){ view.adminTeamSearch = this.value; renderProsjektTab(); });
   byId("menighetCodeBtn").addEventListener("click", function(){ openCodeDialog("kontakt", "Menighet"); });
