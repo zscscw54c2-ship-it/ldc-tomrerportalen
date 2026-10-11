@@ -8,10 +8,10 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | # | Punkt | Type | Status |
 |---|---|---|---|
 | P1 | Hent all oppmøtedata (1000-radersgrensen) | Kode | ✅ Publisert |
-| P2 | Menighetens Behov-utfylling virker ikke helt | Kode + (DB) | ✅ Ferdig (DB kjørt) – venter på publisering |
+| P2 | Menighetens Behov-utfylling virker ikke helt | Kode + (DB) | ✅ Publisert |
 | P3 | Slett 3 ødelagte flex-forespørsler | (DB), godkjent | ✅ Ferdig (3 slettet, 6 gyldige igjen) |
-| P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ⏳ Neste |
-| P5 | Gjør filmappene private | (DB) + kode | ⏳ |
+| P4 | Lås delte fag-/menighetskontoer til prosjektet i databasen | (DB), stor | ✅ I drift (sql/81 kjørt 11. okt) |
+| P5 | Gjør filmappene private | (DB) + kode | ⏳ Neste |
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ⏳ |
 | P7 | Rydd bort gamle rester | (DB) | ⏳ |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
@@ -46,7 +46,23 @@ annet prosjekt og person fra annet prosjekt avvises; ingen dobbel oppføring.
 Slettet 11. okt. (Vanlige skrive-spørringer tidsavbrøt fra verktøyet; det virket inne i en
 `do $$ … $$`-blokk.)
 
-## P4 – Lås delte kontoer til prosjektet i databasen (viktigst for personvern)
+## P4 – Lås delte kontoer til prosjektet i databasen ✅
+**Gjort (11. okt):** `sql/81-prosjektlas.sql` – funksjonen `can_see_project()` + én restriktiv regel
+«p4 prosjektlås» på 43 tabeller (eksisterende regler urørt). Angre: `sql/81-angre-prosjektlas.sql`.
+
+Kontrollert mot ekte data (som hver rolle, i lesemodus):
+| | prosjekter | personer | oppmøte |
+|---|---|---|---|
+| CGO (byggeleder) | 2 | 217 | 1648 (uendret) |
+| Tømrer Bø | 1 | 177 | 1212 (før: 2 / 217 / 1648) |
+| Tømrer Kalmar | 1 | 40 | 436 (før: 2 / 217 / 1648) |
+| Menighet (Kalmar) | 1 | 40 | 436 (før: 2 / 217 / 1648) |
+| Gammel individuell fag-konto | 2 | 217 | 1648 (uendret til P7) |
+| Ikke innlogget | – | – | oppgaver: 0 (før: kunne leses!) |
+
+Skriving testet: tømrer Bø kan registrere oppmøte i Bø, avvises i Kalmar.
+
+### Opprinnelig plan
 **Problem:** Låsen til ett prosjekt finnes bare i skjermbildet. I databasen kan alle innloggede
 lese alle 217 personer (telefon, adresse) på tvers av prosjekter; menigheten også allergier.
 **Plan:**
