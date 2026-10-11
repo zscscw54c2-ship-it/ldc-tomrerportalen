@@ -15,6 +15,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ Publisert |
 | P7 | Rydd bort gamle rester | (DB) | 🔄 A: kontoer slettet, du kjører sql/85 · B: venter på bytte til fagkode |
 | P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ✅ |
+| P9 | Runde 2: flyten per rolle (fag, menighet, CG1) | Kode | ⏳ Velg punkter |
 
 ---
 
@@ -140,3 +141,37 @@ Hver sletting listes opp med konsekvens før «ok».
    er uten nett; data hentes på nytt når nettet er tilbake og når siden har ligget i bakgrunnen
    over ett minutt. Lesing prøves inntil 4 ganger; lagring sendes aldri dobbelt, men venter (inntil
    2 min) hvis telefonen vet at den er frakoblet. «Failed to fetch» vises som en norsk melding.
+
+## P9 – Runde 2: flyten per rolle
+Gjennomgått 11. okt med skjermbilder på mobil (390 px) og PC for tømrer, elektriker, menighet, CGO og
+ACGO, med syntetiske data i samme volum som Bø (177 personer, ~1200 oppmøtedager, 72 oppgaver).
+Alt er ren kode – ingen databaseendring.
+
+**Fag (tømrer, elektriker) – mest på mobil**
+1. **Kalender: siden lar seg ikke scrolle over «Ledige»-listen.** Navnelappene er satt til
+   `touch-action: none` (for dra-og-slipp) og dekker hele bredden – med 20–30 ledige blir et stort
+   felt «dødt» for scrolling. Trykk-for-å-velge finnes allerede, så dra kan kreve langt trykk.
+   Hjelpeteksten sier bare «Dra navnet opp på en oppgave» – bør si «Trykk på et navn, så på oppgaven».
+2. **Frivillige-/Logi-rutenettet mangler dagrad.** Overskriften viser måned og uke, men ikke «Ma 5,
+   Ti 6 …». Rett under står «Totalt»-tallene (9, 10, 11 …) i fet blå skrift – de ser ut som datoer.
+   Gjelder fag, menighet (Logi) og CG1.
+3. **Logi på mobil: navn kuttes** («Anne…» fire ganger) – umulig å skille personer.
+4. **Oppgaver åpner på «Alle»** – 44 kort, 30 av dem ferdige. Bør åpne på «Ikke ferdig» (eller
+   legge ferdige sammenfoldet nederst).
+5. **Tegninger: ingen søk.** 21–42 filer med revisjoner i én lang liste.
+6. **Prosjektknappen «Bø ★» ser klikkbar ut** for kontoer som er låst til prosjektet.
+7. **Hjem-flisen «Team – 0 ansvarspunkter»** for fag – uklart hva den er for.
+
+**Menighet**
+8. **Behov åpner på prosjektstart** (uke 36), ikke denne uken – på mobil må man sveipe 5–6 uker
+   til siden for å finne dagene som er markert. Fag uten plasser vises også (tomme rader).
+9. Mat-siden fungerer godt (antall + allergier per dag, utskrift).
+
+**CG1 (CGO/ACGO/Kontor)**
+10. **Rollenavnet øverst viser «ACGO» for alle CG1-brukere**, også CGO og Kontor.
+11. **Dashbord: «Legg til under Åndelig»** – fanen heter nå «Team».
+12. **Kalender: «3 pers.» i dagoverskriften vs. «25 til stede»** – uklart. «3 satt opp» er tydeligere.
+
+**Bruk i ekte data (Bø)** – funksjoner som nesten ikke brukes: Behov-for-hjelp (0 dager markert,
+noensinne), Leveranser (0), Logi (6 av 177 personer), To-do (3). Spørsmål: skal de forenkles,
+skjules, eller trengs det opplæring/en tydeligere vei inn?
