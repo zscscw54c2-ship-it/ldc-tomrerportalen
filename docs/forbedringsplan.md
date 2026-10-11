@@ -122,8 +122,9 @@ Hver sletting listes opp med konsekvens før «ok».
 1. **Oppsettstatus for prosjekt** i Administrasjon: hva mangler (koder, menighetskode, team,
    privilege-uker, datoer).
 2. **«Kopier innloggingsinfo»** når en kode settes: ferdig melding med lenke + prosjekt + fag + kode.
-3. **Utskrift/eksport:** Mat-liste per dag (antall + allergier), oppmøteliste per dag (inn/ut-
-   sjekk), telefonliste.
+3. ✅ **Utskrift (PDF):** «Utskrifter» i Administrasjon – oppmøteliste for en dag (med Inn/Ut-
+   kolonner), matliste for uken (antall + allergier per dag), telefonliste (teamet først).
+   Menighetens Mat-side har «Skriv ut matliste for uken».
 4. **Arkiver avsluttet prosjekt:** slett/anonymiser persondata (særlig allergier) etter X måneder. (DB)
 5. **Eksporter prosjekt (Excel)** før sletting / som sikkerhetskopi.
 6. **Frakoblet-varsel** og automatisk nytt forsøk ved dårlig dekning.

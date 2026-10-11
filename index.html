@@ -960,7 +960,10 @@
     </div>
 
     <div id="kontaktMatWrap" hidden>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:14px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, dag for dag.</p>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+        <p class="sub" style="font-size:13px; color:var(--muted); margin:0; flex:1; min-width:200px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, dag for dag.</p>
+        <button type="button" class="btn small" id="kontaktPrintMatBtn">Skriv ut matliste for uken</button>
+      </div>
       <div id="kontaktMatChart"></div>
       <div id="kontaktMatList"></div>
     </div>
@@ -1585,6 +1588,16 @@
       <h2 style="font-size:16px; margin-bottom:2px;">Oppsett for prosjektet</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Det som må være på plass før oppstart. Grønt er klart, gult mangler.</p>
       <div id="setupStatusList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">Utskrifter</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lager en PDF du kan skrive ut eller sende. Dato brukes for oppmøtelisten (dagen) og matlisten (uken datoen ligger i).</p>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <input type="date" id="printDate" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />
+        <button type="button" class="btn small" id="printAttendanceBtn">Oppmøteliste (dag)</button>
+        <button type="button" class="btn small" id="printMatBtn">Matliste (uke)</button>
+        <button type="button" class="btn small" id="printPhoneBtn">Telefonliste</button>
+      </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Prosjektinnstillinger</h2>
@@ -7466,6 +7479,69 @@
         '<span>' + escapeHtml(it.text) + '</span></div>';
     }).join("");
   }
+
+  // ---------- utskrifter (PDF): oppmøteliste, matliste, telefonliste ----------
+  function newListPdf(title, subtitle){
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if(!jsPDFCtor){ showError("PDF-biblioteket lastet ikke inn. Last siden på nytt og prøv igjen."); return null; }
+    var doc = new jsPDFCtor({ unit: "pt", format: "a4" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(30,42,58);
+    doc.text(title, 40, 54);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(90,100,115);
+    doc.text(subtitle, 40, 72);
+    return doc;
+  }
+  function listTable(doc, head, body, startY){
+    doc.autoTable({ head: [head], body: body, startY: startY || 88, theme: "grid",
+      headStyles: { fillColor: [47,127,217], textColor: 255, fontSize: 10 },
+      styles: { fontSize: 10, cellPadding: 5, textColor: [30,42,58], overflow: "linebreak" },
+      margin: { left: 40, right: 40 } });
+  }
+  function pdfFileName(kind, cur, extra){
+    return (kind + "-" + (cur ? cur.name : "prosjekt") + (extra ? "-" + extra : "")).replace(/[^a-zA-Z0-9æøåÆØÅ_-]+/g, "_") + ".pdf";
+  }
+  function printAttendanceList(iso){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur || !iso){ showError("Velg en dato først."); return; }
+    var rows = state.attendance.filter(function(a){ return a.project_id === cur.id && a.day === iso; }).map(function(a){
+      var p = state.people.find(function(x){ return x.id === a.person_id; });
+      return p ? { name: p.name, fag: FAG_LABELS[a.fag] || a.fag, phone: p.phone || "", menighet: p.congregation || "" } : null;
+    }).filter(Boolean).sort(function(a,b){ return a.fag.localeCompare(b.fag, "no") || a.name.localeCompare(b.name, "no"); });
+    var doc = newListPdf("Oppmøteliste – " + cur.name, fmtRange(iso, iso) + " · " + rows.length + " personer");
+    if(!doc) return;
+    listTable(doc, ["Navn", "Fag", "Telefon", "Menighet", "Inn", "Ut"], rows.map(function(r){ return [r.name, r.fag, r.phone, r.menighet, "", ""]; }));
+    doc.save(pdfFileName("Oppmote", cur, iso));
+  }
+  function printMatList(iso){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur || !iso){ showError("Velg en dato først."); return; }
+    var days = weekDays(mondayOf(fromISODate(iso)));
+    var body = days.map(function(d, i){
+      var dIso = toISODate(d);
+      var sum = dayStaffingSummary(dIso);
+      return [DAY_FULL[i].charAt(0).toUpperCase() + DAY_FULL[i].slice(1) + " " + fmtRange(dIso, dIso), String(sum.total),
+        sum.allergies.length ? sum.allergies.map(function(a){ return a.name + ": " + a.text; }).join("\n") : "–"];
+    });
+    var wk = isoWeekInfo(days[0]).week;
+    var doc = newListPdf("Matliste – " + cur.name, "Uke " + wk + " · " + fmtRange(toISODate(days[0]), toISODate(days[4])));
+    if(!doc) return;
+    listTable(doc, ["Dag", "Antall", "Allergier / diett"], body);
+    doc.save(pdfFileName("Matliste", cur, "uke" + wk));
+  }
+  function printPhoneList(){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur){ showError("Velg et prosjekt først."); return; }
+    var people = peopleForCurrentProject().slice().sort(function(a,b){ return (b.onTeam?1:0) - (a.onTeam?1:0) || a.name.localeCompare(b.name, "no"); });
+    var doc = newListPdf("Telefonliste – " + cur.name, people.length + " personer · teamet først");
+    if(!doc) return;
+    listTable(doc, ["Navn", "Telefon", "Menighet", "Team"], people.map(function(p){ return [p.name, p.phone || "–", p.congregation || "", p.onTeam ? "Ja" : ""]; }));
+    doc.save(pdfFileName("Telefonliste", cur));
+  }
+  byId("printDate").value = toISODate(new Date());
+  byId("printAttendanceBtn").addEventListener("click", function(){ printAttendanceList(byId("printDate").value); });
+  byId("printMatBtn").addEventListener("click", function(){ printMatList(byId("printDate").value); });
+  byId("printPhoneBtn").addEventListener("click", printPhoneList);
+  byId("kontaktPrintMatBtn").addEventListener("click", function(){ printMatList(toISODate(new Date())); });
 
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
