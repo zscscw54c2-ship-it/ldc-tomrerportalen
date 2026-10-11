@@ -14,7 +14,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P5 | Gjør filmappene private | (DB) + kode | ✅ I drift (kode publisert, sql/82 kjørt 11. okt) |
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ Publisert |
 | P7 | Rydd bort gamle rester | (DB) | 🔄 A: kontoer slettet, du kjører sql/85 · B: venter på bytte til fagkode |
-| P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ⏳ |
+| P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | 🔄 1–3, 5–6 ferdig; 4 venter på «ok» |
 
 ---
 
@@ -119,12 +119,18 @@ gjøres i databasen). Elektriker mangler fagkode i begge prosjekter.
 Hver sletting listes opp med konsekvens før «ok».
 
 ## P8 – Forbedringer
-1. **Oppsettstatus for prosjekt** i Administrasjon: hva mangler (koder, menighetskode, team,
+1. ✅ **Oppsettstatus for prosjekt** i Administrasjon: hva mangler (koder, menighetskode, team,
    privilege-uker, datoer).
-2. **«Kopier innloggingsinfo»** når en kode settes: ferdig melding med lenke + prosjekt + fag + kode.
+2. ✅ **«Kopier innloggingsinfo»** når en kode settes: ferdig melding med lenke + prosjekt + fag + kode.
 3. ✅ **Utskrift (PDF):** «Utskrifter» i Administrasjon – oppmøteliste for en dag (med Inn/Ut-
    kolonner), matliste for uken (antall + allergier per dag), telefonliste (teamet først).
    Menighetens Mat-side har «Skriv ut matliste for uken».
 4. **Arkiver avsluttet prosjekt:** slett/anonymiser persondata (særlig allergier) etter X måneder. (DB)
-5. **Eksporter prosjekt (Excel)** før sletting / som sikkerhetskopi.
-6. **Frakoblet-varsel** og automatisk nytt forsøk ved dårlig dekning.
+5. ✅ **Eksporter prosjekt (Excel)** før sletting / som sikkerhetskopi: «Utskrifter og eksport» i
+   Administrasjon. Henter rett fra databasen, ett ark per tabell (alle kolonner) + arket «Oversikt»
+   med antall rader og eventuelle tabeller som ikke kunne hentes. Innloggingskoder, kontoer og
+   CG1-tavlene er ikke med.
+6. ✅ **Frakoblet-varsel** og automatisk nytt forsøk ved dårlig dekning: gult banner når telefonen
+   er uten nett; data hentes på nytt når nettet er tilbake og når siden har ligget i bakgrunnen
+   over ett minutt. Lesing prøves inntil 4 ganger; lagring sendes aldri dobbelt, men venter (inntil
+   2 min) hvis telefonen vet at den er frakoblet. «Failed to fetch» vises som en norsk melding.

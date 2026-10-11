@@ -148,6 +148,8 @@
   }
   .status-banner.err{background:var(--bad-soft); color:var(--bad-ink); cursor:pointer; border-color:transparent;}
   .status-banner.ok{display:none;}
+  .status-banner.offline{background:var(--warn-soft); color:var(--warn-ink); border-color:transparent; font-weight:600;}
+  .status-banner[hidden]{display:none;}
 
   section.panel{display:none; margin-top:20px;}
   section.panel.active{display:block;}
@@ -1008,6 +1010,7 @@
       <button class="icon-btn" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
       <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
     </div>
+    <div id="offlineBanner" class="status-banner offline" role="status" hidden></div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
 
@@ -1590,13 +1593,17 @@
       <div id="setupStatusList" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Utskrifter</h2>
+      <h2 style="font-size:16px; margin-bottom:2px;">Utskrifter og eksport</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lager en PDF du kan skrive ut eller sende. Dato brukes for oppmøtelisten (dagen) og matlisten (uken datoen ligger i).</p>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <input type="date" id="printDate" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />
         <button type="button" class="btn small" id="printAttendanceBtn">Oppmøteliste (dag)</button>
         <button type="button" class="btn small" id="printMatBtn">Matliste (uke)</button>
         <button type="button" class="btn small" id="printPhoneBtn">Telefonliste</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+        <button type="button" class="btn small" id="exportProjectBtn">Eksporter prosjekt (Excel)</button>
+        <span id="exportProjectStatus" style="font-size:12.5px; color:var(--muted);">Alt som er lagret i prosjektet, ett ark per tabell – som sikkerhetskopi eller før prosjektet slettes.</span>
       </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
@@ -2417,9 +2424,35 @@
   // Økten lagres alltid i localStorage (overlever at fanen/nettleseren lukkes) - supabase-js sin
   // egen standardoppførsel når ingen egen "storage" er satt, så innlogging holder seg til man
   // aktivt logger ut.
+  // Dårlig dekning på byggeplassen: lesing (GET) prøves automatisk på nytt ved nettverksfeil.
+  // Skriving sendes aldri på nytt automatisk (kunne lagret dobbelt hvis første forsøk faktisk kom
+  // fram), men venter til nettet er tilbake hvis telefonen VET at den er frakoblet - da har
+  // forespørselen aldri gått ut.
+  var NET_RETRY_DELAYS = [1000, 3000, 8000];
+  var OFFLINE_WAIT_MS = 120000;
+  function waitForOnline(maxMs){
+    return new Promise(function(resolve){
+      if(navigator.onLine !== false){ resolve(true); return; }
+      var timer = setTimeout(function(){ window.removeEventListener("online", on); resolve(false); }, maxMs);
+      function on(){ clearTimeout(timer); window.removeEventListener("online", on); resolve(true); }
+      window.addEventListener("online", on);
+    });
+  }
+  function resilientFetch(input, init){
+    var method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
+    var canRetry = method === "GET" || method === "HEAD";
+    function attempt(i){
+      return waitForOnline(OFFLINE_WAIT_MS).then(function(){ return fetch(input, init); }).catch(function(err){
+        if(!canRetry || i >= NET_RETRY_DELAYS.length || (init && init.signal && init.signal.aborted)) throw err;
+        return new Promise(function(r){ setTimeout(r, NET_RETRY_DELAYS[i]); }).then(function(){ return attempt(i + 1); });
+      });
+    }
+    return attempt(0);
+  }
+
   var sb = null;
   if(window.supabase && SUPABASE_URL.indexOf("REPLACE_WITH") !== 0){
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
   var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: []};
@@ -7543,6 +7576,83 @@
   byId("printPhoneBtn").addEventListener("click", printPhoneList);
   byId("kontaktPrintMatBtn").addEventListener("click", function(){ printMatList(toISODate(new Date())); });
 
+  // ---------- eksport av hele prosjektet (Excel) ----------
+  // Henter rett fra databasen (ikke fra det som er lastet i siden), ett ark per tabell, med alle
+  // kolonner - så filen er en fullstendig sikkerhetskopi av prosjektet. Innloggingskoder
+  // (fag_account_codes), kontoer og CG1-tavlene (på tvers av prosjekter) er bevisst ikke med.
+  var EXPORT_TABLES = ["people", "attendance", "logi_info", "logi_groups", "team_pairs", "people_fag_order", "elements", "tasks",
+    "room_todos", "deliveries", "shopping_items", "drawings", "documentation_photos", "behov_slot", "fag_requests", "flex_requests",
+    "project_fags", "project_startup", "privilege_weeks", "spiritual_duties", "spiritual_overview", "andelig_visibility",
+    "weekly_scriptures", "team_meetings", "to_meetings", "to_topics", "to_agenda_items", "to_followups", "to_safety_log",
+    "site_codes", "open_accounts"];
+  var EXPORT_CHILD_TABLES = [
+    { table: "behov_day", parent: "behov_slot", column: "slot_id" },
+    { table: "morning_worship", parent: "privilege_weeks", column: "privilege_week_id" },
+    { table: "privilege_week_duty_status", parent: "privilege_weeks", column: "privilege_week_id" },
+    { table: "to_meeting_attendance", parent: "to_meetings", column: "meeting_id" },
+    { table: "to_meeting_topic_notes", parent: "to_meetings", column: "meeting_id" },
+    { table: "to_meeting_fag_status", parent: "to_meetings", column: "meeting_id" }];
+  var EXPORT_NO_ID = { andelig_visibility: true };
+  function exportCell(v){
+    if(v === null || v === undefined) return "";
+    if(typeof v === "object") return JSON.stringify(v);
+    return v;
+  }
+  function exportFetch(table, filterCol, values){
+    var make = function(){
+      var q = sb.from(table).select("*");
+      q = Array.isArray(values) ? q.in(filterCol, values) : q.eq(filterCol, values);
+      return EXPORT_NO_ID[table] ? q : q.order("id");
+    };
+    if(Array.isArray(values) && !values.length) return Promise.resolve({ data: [], error: null });
+    return selectAllRows(make);
+  }
+  function exportProject(){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur){ showError("Velg et prosjekt først."); return; }
+    if(typeof XLSX === "undefined"){ showError("Excel-biblioteket lastet ikke inn. Last siden på nytt og prøv igjen."); return; }
+    var btn = byId("exportProjectBtn"), status = byId("exportProjectStatus");
+    btn.disabled = true; status.textContent = "Henter data …";
+    var results = {};
+    var fetchAll = function(list, fn){ return Promise.all(list.map(function(t){ return fn(t).then(function(res){ results[t.table || t] = res; }); })); };
+    fetchAll(["projects"], function(){ return exportFetch("projects", "id", cur.id); })
+      .then(function(){ return fetchAll(EXPORT_TABLES, function(t){ return exportFetch(t, "project_id", cur.id); }); })
+      .then(function(){ return fetchAll(EXPORT_CHILD_TABLES, function(c){
+        var parent = results[c.parent];
+        var ids = parent && parent.data ? parent.data.map(function(r){ return r.id; }) : [];
+        // Mange id-er i én .in() gir for lang adresse - del opp i biter.
+        var chunks = []; for(var i = 0; i < ids.length; i += 150) chunks.push(ids.slice(i, i + 150));
+        return Promise.all(chunks.map(function(ch){ return exportFetch(c.table, c.column, ch); })).then(function(parts){
+          var err = parts.find(function(p){ return p.error; });
+          return err ? err : { data: parts.reduce(function(a, p){ return a.concat(p.data); }, []), error: null };
+        });
+      }); })
+      .then(function(){
+        var wb = XLSX.utils.book_new();
+        var order = ["projects"].concat(EXPORT_TABLES, EXPORT_CHILD_TABLES.map(function(c){ return c.table; }));
+        var overview = [["Prosjekt", cur.name], ["Eksportert", new Date().toLocaleString("no-NO")], [], ["Tabell", "Rader", "Merknad"]];
+        var total = 0, failed = [];
+        order.forEach(function(t){
+          var res = results[t];
+          if(!res || res.error){ failed.push(t); overview.push([t, "", "Kunne ikke hentes: " + (res && res.error ? res.error.message : "ukjent feil")]); return; }
+          var rows = res.data || [];
+          total += rows.length;
+          overview.push([t, rows.length, ""]);
+          var cols = [];
+          rows.forEach(function(r){ Object.keys(r).forEach(function(k){ if(cols.indexOf(k) === -1) cols.push(k); }); });
+          var aoa = [cols.length ? cols : ["(tom)"]].concat(rows.map(function(r){ return cols.map(function(k){ return exportCell(r[k]); }); }));
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), t.slice(0, 31));
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(overview), "Oversikt");
+        wb.SheetNames.unshift(wb.SheetNames.pop()); // Oversikt først
+        XLSX.writeFile(wb, ("Eksport-" + cur.name + "-" + toISODate(new Date())).replace(/[^a-zA-Z0-9æøåÆØÅ_-]+/g, "_") + ".xlsx");
+        status.textContent = "Lastet ned: " + total + " rader fra " + (order.length - failed.length) + " tabeller." + (failed.length ? " Ikke med: " + failed.join(", ") + " (se arket Oversikt)." : "");
+      })
+      .catch(function(err){ showError("Eksporten feilet: " + (err && err.message ? err.message : err)); status.textContent = ""; })
+      .then(function(){ btn.disabled = false; });
+  }
+  byId("exportProjectBtn").addEventListener("click", exportProject);
+
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
     renderSetupStatus();
@@ -11271,6 +11381,8 @@
 
   var errTimer = null;
   function showError(msg){
+    // Nettleserens tekniske nettverksfeil ("TypeError: Failed to fetch" o.l.) sier ingenting for brukeren.
+    msg = String(msg).replace(/(TypeError:\s*)?(Failed to fetch|NetworkError when attempting to fetch resource\.?|Load failed|fetch failed|Network request failed)/gi, "fikk ikke kontakt med serveren – sjekk dekningen og prøv igjen");
     var b = byId("statusBanner");
     b.textContent = msg + " (trykk for å lukke)";
     b.className = "status-banner err";
@@ -11284,6 +11396,34 @@
     b.textContent = msg;
     b.className = "status-banner";
   }
+
+  // ---------- frakoblet / tilbake på nett ----------
+  var onlineBannerTimer = null;
+  function setOfflineBanner(text){
+    var b = byId("offlineBanner");
+    clearTimeout(onlineBannerTimer);
+    if(!text){ b.hidden = true; return; }
+    b.textContent = text; b.hidden = false;
+  }
+  function handleOffline(){
+    setOfflineBanner("Ingen nettforbindelse. Det du lagrer nå, sendes når dekningen er tilbake (innen 2 minutter) – ellers får du beskjed. Ikke lukk siden.");
+  }
+  function handleOnline(){
+    setOfflineBanner("Tilbake på nett – oppdaterer …");
+    if(dataLayerStarted) refetchAllData();   // sanntidsoppdateringer kan ha gått tapt mens vi var frakoblet
+    onlineBannerTimer = setTimeout(function(){ byId("offlineBanner").hidden = true; }, 3000);
+  }
+  window.addEventListener("offline", handleOffline);
+  window.addEventListener("online", handleOnline);
+  if(navigator.onLine === false) handleOffline();
+  // Telefonen legger fanen i dvale (og sanntidskoblingen dør) når skjermen er av - hent på nytt
+  // når siden har vært skjult en stund og vises igjen.
+  var hiddenSince = null;
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ hiddenSince = Date.now(); return; }
+    if(hiddenSince && Date.now() - hiddenSince > 60000 && dataLayerStarted && navigator.onLine !== false) refetchAllData();
+    hiddenSince = null;
+  });
 
   // ---------- innlogging ----------
   var dataLayerStarted = false;
