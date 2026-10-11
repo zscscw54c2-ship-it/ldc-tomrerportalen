@@ -14,7 +14,7 @@ Merket **(DB)** = endrer databasen → forklares og venter på «ok» før noe k
 | P5 | Gjør filmappene private | (DB) + kode | ✅ I drift (kode publisert, sql/82 kjørt 11. okt) |
 | P6 | Raske sikkerhetsgrep | Bruker + kode + (DB) | ✅ Publisert |
 | P7 | Rydd bort gamle rester | (DB) | 🔄 A: kontoer slettet, du kjører sql/85 · B: venter på bytte til fagkode |
-| P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | 🔄 1–3, 5–6 ferdig; 4 venter på «ok» |
+| P8 | Forbedringer (oppsettstatus, innloggingsinfo, utskrift, arkivering, eksport, frakoblet) | Kode, noe (DB) | ✅ |
 
 ---
 
@@ -125,7 +125,13 @@ Hver sletting listes opp med konsekvens før «ok».
 3. ✅ **Utskrift (PDF):** «Utskrifter» i Administrasjon – oppmøteliste for en dag (med Inn/Ut-
    kolonner), matliste for uken (antall + allergier per dag), telefonliste (teamet først).
    Menighetens Mat-side har «Skriv ut matliste for uken».
-4. **Arkiver avsluttet prosjekt:** slett/anonymiser persondata (særlig allergier) etter X måneder. (DB)
+4. ✅ **Slett avsluttet prosjekt** (planen er at prosjektet slettes helt etter close out):
+   «Slett prosjekt» skjer nå på serveren (fag-account-admin v6, action «deleteProject», bare aktiv
+   CG1-admin): prosjektets fag-/menighetskontoer slettes i Auth (ellers ville de blitt stående uten
+   prosjekt og sett ALLE prosjekter), alle filer i de fire filmappene slettes, og så prosjektet –
+   databasen sletter resten (personer, oppmøte, allergier …) via cascade. Dialogen viser hva som
+   slettes, har «Eksporter først», og krever at prosjektnavnet skrives (sjekkes også på serveren).
+   Oppsettkortet minner om eksport og sletting når close out er passert. Ingen tabellendring.
 5. ✅ **Eksporter prosjekt (Excel)** før sletting / som sikkerhetskopi: «Utskrifter og eksport» i
    Administrasjon. Henter rett fra databasen, ett ark per tabell (alle kolonner) + arket «Oversikt»
    med antall rader og eventuelle tabeller som ikke kunne hentes. Innloggingskoder, kontoer og

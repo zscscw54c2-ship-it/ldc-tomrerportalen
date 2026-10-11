@@ -1936,6 +1936,23 @@
   </div>
 </dialog>
 
+<dialog id="deleteProjectDialog">
+  <div class="dlg-body">
+    <h3 id="delProjTitle">Slett prosjekt</h3>
+    <p class="sub" style="font-size:12.5px; color:var(--muted); margin:-4px 0 10px;">Alt i prosjektet slettes for godt, og kan ikke hentes tilbake:</p>
+    <ul id="delProjSummary" style="font-size:13px; margin:0 0 10px 18px; line-height:1.6;"></ul>
+    <p style="font-size:12.5px; margin-bottom:10px;">Eksporter prosjektet til Excel først hvis dere vil ha en kopi.</p>
+    <button type="button" class="btn small" id="delProjExport" style="margin-bottom:12px;">Eksporter først (Excel)</button>
+    <label for="delProjConfirm" style="display:block; font-size:12.5px; margin-bottom:4px;">Skriv prosjektnavnet <b id="delProjName"></b> for å bekrefte:</label>
+    <input type="text" id="delProjConfirm" autocomplete="off" style="width:100%; border:1px solid var(--border); border-radius:7px; padding:7px 9px; font-size:14px; background:var(--surface);" />
+    <p id="delProjStatus" style="font-size:12.5px; color:var(--muted); margin-top:8px;"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="delProjCancel">Avbryt</button>
+      <button type="button" class="btn danger" id="delProjSubmit" disabled>Slett prosjektet</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="codeDialog">
   <form class="dlg-body" id="codeForm" method="dialog">
     <h3 id="codeDlgTitle">Sett innloggingskode</h3>
@@ -3750,17 +3767,42 @@
     }).join("");
     openDropdownMenu(this, itemsHtml, function(value){ selectProject(value); });
   });
+  // P8.4: sletting av et avsluttet prosjekt. Skjer på serveren (fag-account-admin, action
+  // "deleteProject"): prosjektets delte innloggingskontoer, alle filer og selve prosjektet - resten
+  // (personer, oppmøte, allergier ...) slettes av databasen. Admin må skrive prosjektnavnet.
+  var deleteProjectDialog = byId("deleteProjectDialog");
   byId("acgoProjectDelete").addEventListener("click", function(){
     var pid = state.currentProjectId;
     var p = state.projects.find(function(x){ return x.id === pid; });
     if(!p){ showError("Ingen prosjekt er valgt."); return; }
-    var nEl = state.elements.filter(function(e){ return e.project_id === pid; }).length;
-    var nAtt = state.attendance.filter(function(a){ return a.project_id === pid; }).length;
-    var nShop = state.shopItems.filter(function(x){ return x.project_id === pid; }).length;
-    var nDraw = state.drawings.filter(function(x){ return x.project_id === pid; }).length;
-    var msg = 'Slette prosjektet «'+p.name+'» for godt?\n\nDette sletter også:\n· '+nEl+' oppgave(r)\n· '+nAtt+' oppmøtedag(er)\n· '+nShop+' vare(r) i handlelisten\n· '+nDraw+' tegning(er)\n\nPersonene i personlisten beholdes.\n\nDette kan ikke angres.';
-    if(!confirm(msg)) return;
-    deleteProject(pid);
+    var count = function(list){ return list.filter(function(x){ return x.project_id === pid || x.projectId === pid; }).length; };
+    var nAcc = state.fagAccounts.filter(function(a){ return a.projectId === pid; }).length;
+    var items = [
+      count(state.people) + " person(er) med telefon, adresse og allergier",
+      count(state.attendance) + " oppmøtedag(er)",
+      count(state.elements) + " oppgave(r)",
+      (count(state.drawings) + count(state.dokuPhotos)) + " tegning(er) og bilde(r), referater og handleliste",
+      nAcc + " innloggingskode(r) for fag og menighet – kodene slutter å virke",
+      "TO-møter, behov, flex, privilege-uker og alt annet i prosjektet"
+    ];
+    byId("delProjTitle").textContent = "Slett prosjektet «" + p.name + "»";
+    byId("delProjSummary").innerHTML = items.map(function(t){ return "<li>" + escapeHtml(t) + "</li>"; }).join("");
+    byId("delProjName").textContent = p.name;
+    byId("delProjConfirm").value = "";
+    byId("delProjStatus").textContent = "";
+    byId("delProjSubmit").disabled = true;
+    deleteProjectDialog.dataset.pid = pid;
+    deleteProjectDialog.showModal();
+  });
+  byId("delProjConfirm").addEventListener("input", function(){
+    var p = state.projects.find(function(x){ return x.id === deleteProjectDialog.dataset.pid; });
+    byId("delProjSubmit").disabled = !p || this.value.trim() !== p.name;
+  });
+  byId("delProjCancel").addEventListener("click", function(){ deleteProjectDialog.close(); });
+  byId("delProjExport").addEventListener("click", function(){ exportProject(byId("delProjExport"), byId("delProjStatus")); });
+  byId("delProjSubmit").addEventListener("click", function(){
+    var pid = deleteProjectDialog.dataset.pid;
+    deleteProject(pid, byId("delProjConfirm").value.trim());
   });
   byId("acgoProjectSetActive").addEventListener("click", function(){
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
@@ -7506,6 +7548,11 @@
       { ok: team.length > 0, text: team.length ? team.length + " i teamet" : "Ingen er krysset av i teamet (Team nedenfor)" },
       { ok: weeks.length > 0 && weeksMissing === 0, text: !weeks.length ? "Privilege-uker kan settes opp når prosjektet har datoer" : (weeksMissing ? weeksMissing + " av " + weeks.length + " privilege-uker mangler ansvarlig (Team → Program)" : "Alle privilege-uker har ansvarlig") }
     ];
+    // Etter close out skal prosjektet eksporteres og slettes (persondata skal ikke bli liggende).
+    var closeIso = cur.closeOut || cur.end;
+    if(closeIso && closeIso < toISODate(new Date())){
+      items.unshift({ ok: false, text: "Close out var " + fmtRange(closeIso, closeIso) + " – eksporter prosjektet (Utskrifter og eksport) og slett det (Prosjektinnstillinger → Slett prosjekt)" });
+    }
     box.innerHTML = items.map(function(it){
       return '<div style="display:flex; align-items:flex-start; gap:8px; font-size:13px;">' +
         '<span style="flex:none; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; background:' + (it.ok ? 'var(--good)' : 'var(--warn)') + ';">' + (it.ok ? '✓' : '!') + '</span>' +
@@ -7607,15 +7654,15 @@
     if(Array.isArray(values) && !values.length) return Promise.resolve({ data: [], error: null });
     return selectAllRows(make);
   }
-  function exportProject(){
+  function exportProject(btn, status){
     var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
     if(!cur){ showError("Velg et prosjekt først."); return; }
     if(typeof XLSX === "undefined"){ showError("Excel-biblioteket lastet ikke inn. Last siden på nytt og prøv igjen."); return; }
-    var btn = byId("exportProjectBtn"), status = byId("exportProjectStatus");
+    btn = btn || byId("exportProjectBtn"); status = status || byId("exportProjectStatus");
     btn.disabled = true; status.textContent = "Henter data …";
     var results = {};
     var fetchAll = function(list, fn){ return Promise.all(list.map(function(t){ return fn(t).then(function(res){ results[t.table || t] = res; }); })); };
-    fetchAll(["projects"], function(){ return exportFetch("projects", "id", cur.id); })
+    return fetchAll(["projects"], function(){ return exportFetch("projects", "id", cur.id); })
       .then(function(){ return fetchAll(EXPORT_TABLES, function(t){ return exportFetch(t, "project_id", cur.id); }); })
       .then(function(){ return fetchAll(EXPORT_CHILD_TABLES, function(c){
         var parent = results[c.parent];
@@ -7651,7 +7698,7 @@
       .catch(function(err){ showError("Eksporten feilet: " + (err && err.message ? err.message : err)); status.textContent = ""; })
       .then(function(){ btn.disabled = false; });
   }
-  byId("exportProjectBtn").addEventListener("click", exportProject);
+  byId("exportProjectBtn").addEventListener("click", function(){ exportProject(); });
 
   function renderProsjektTab(){
     if(!isCg1Admin()) return;
@@ -10396,21 +10443,23 @@
         refetchProjects();
       });
   }
-  function deleteProject(id){
+  function deleteProject(id, confirmName){
     if(!sb) return;
-    var paths = state.drawings.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
-    var dokuPaths = state.dokuPhotos.filter(function(d){ return d.project_id === id; }).map(function(d){ return d.path; });
-    var clean = paths.length ? sb.storage.from("tegninger").remove(paths) : Promise.resolve();
-    var cleanDoku = dokuPaths.length ? sb.storage.from("dokumentasjon").remove(dokuPaths) : Promise.resolve();
-    Promise.all([clean, cleanDoku]).then(function(){
-      return sb.from("projects").delete().eq("id", id);
-    }).then(function(res){
-      if(res && res.error){ showError("Kunne ikke slette prosjektet: "+res.error.message); return; }
+    var btn = byId("delProjSubmit"), status = byId("delProjStatus");
+    btn.disabled = true; status.textContent = "Sletter …";
+    sb.functions.invoke("fag-account-admin", { body: { action: "deleteProject", projectId: id, confirmName: confirmName } }).then(function(res){
+      if(res.error){
+        var ctx = res.error.context;
+        var fail = function(msg){ status.textContent = msg; btn.disabled = false; };
+        if(ctx && typeof ctx.json === "function") ctx.json().then(function(body){ fail((body && body.error) || "Kunne ikke slette prosjektet."); }, function(){ fail("Kunne ikke slette prosjektet: " + res.error.message); });
+        else fail("Kunne ikke slette prosjektet: " + res.error.message);
+        return;
+      }
+      deleteProjectDialog.close();
+      showInfo("Prosjektet er slettet (" + (res.data.accountsDeleted || 0) + " innloggingskontoer og " + (res.data.filesDeleted || 0) + " filer).");
       try{ if(localStorage.getItem("ldc_current_project") === id) localStorage.removeItem("ldc_current_project"); }catch(e){}
       state.currentProjectId = null;
-      refetchProjects(); refetchElements(); refetchShopItems(); refetchDrawings(); refetchAttendance();
-      refetchDuties(); refetchOverview(); refetchPrivilegeWeeks(); refetchMorningWorship();
-      refetchPwDutyStatus(); refetchToAgenda(); refetchRoomTodos(); refetchDokuPhotos();
+      refetchAllData();
     });
   }
   function setActiveProject(id){

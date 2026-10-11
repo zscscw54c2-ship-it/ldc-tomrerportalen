@@ -2,10 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Setter eller oppretter den delte innloggingskoden for et fag (eller "Menighet") I ET GITT
-// PROSJEKT. Kalles fra Administrasjon-siden av en innlogget CG1-admin - aldri direkte fra noen
-// annen rolle. Service-rollen (SUPABASE_SERVICE_ROLE_KEY) er tilgjengelig som miljøvariabel
-// automatisk i alle Edge Functions, og brukes HER - ALDRI i nettleserkoden - til å
-// opprette/endre den delte Supabase Auth-kontoen.
+// PROSJEKT. Med { action: "deleteProject" } slettes i stedet hele prosjektet (se deleteProject).
+// Kalles fra Administrasjon-siden av en innlogget CG1-admin - aldri direkte fra noen annen rolle.
+// Service-rollen (SUPABASE_SERVICE_ROLE_KEY) er tilgjengelig som miljøvariabel automatisk i
+// alle Edge Functions, og brukes HER - ALDRI i nettleserkoden - til å opprette/endre/slette de
+// delte Supabase Auth-kontoene.
 //
 // Kontoen er nøkkelen (project_id, fag_key) - samme fag kan derfor ha forskjellig kode i to
 // prosjekter som går samtidig. "kontakt" er et gyldig fag_key (Menighet), selv om det ikke er en
@@ -36,6 +37,82 @@ async function rememberCode(client: any, projectId: string, fagKey: string, code
     .from("fag_account_codes")
     .upsert({ project_id: projectId, fag_key: fagKey, code, updated_at: new Date().toISOString() }, { onConflict: "project_id,fag_key" });
   return !error;
+}
+
+const FILE_BUCKETS = ["tegninger", "dokumentasjon", "referater", "handleliste"];
+
+// Alle filstier under en mappe (prosjekt-id) i en filmappe, også i undermapper.
+// deno-lint-ignore no-explicit-any
+async function listAllFiles(client: any, bucket: string, prefix: string): Promise<string[]> {
+  const out: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await client.storage.from(bucket).list(prefix, { limit: 1000, offset });
+    if (error) throw new Error(bucket + ": " + error.message);
+    const items = data || [];
+    for (const it of items) {
+      const p = prefix + "/" + it.name;
+      if (it.id === null) out.push(...await listAllFiles(client, bucket, p)); // undermappe
+      else out.push(p);
+    }
+    if (items.length < 1000) return out;
+  }
+}
+
+// P8.4: Slett et avsluttet prosjekt helt. Rekkefølgen er viktig:
+//   1) Prosjektets delte fag-/menighetskontoer slettes i Auth. Ellers blir profilen stående uten
+//      prosjekt (profiles.project_id settes til null), og "uten prosjekt" betyr i can_see_project()
+//      en gammel konto som ser ALLE prosjekter - den gamle koden ville da gitt tilgang overalt.
+//   2) Alle filer under prosjekt-mappen i de fire filmappene slettes.
+//   3) Prosjektet slettes; databasen sletter resten (personer, oppmøte, allergier ...) via
+//      "on delete cascade".
+// Stopper ved første feil, før prosjektet slettes, så ingenting blir liggende halvveis uten at
+// admin får beskjed (et nytt forsøk fortsetter der det stoppet).
+// deno-lint-ignore no-explicit-any
+async function deleteProject(serviceClient: any, projectId: string, confirmName: string): Promise<Response> {
+  const { data: project, error: projectErr } = await serviceClient
+    .from("projects").select("id, name").eq("id", projectId).maybeSingle();
+  if (projectErr || !project) return jsonResponse({ error: "Fant ikke prosjektet." }, 404);
+  if ((confirmName || "").trim() !== project.name) {
+    return jsonResponse({ error: "Prosjektnavnet stemmer ikke - prosjektet er ikke slettet." }, 400);
+  }
+
+  const { data: accounts, error: accErr } = await serviceClient
+    .from("fag_accounts").select("auth_user_id").eq("project_id", projectId);
+  const { data: lockedProfiles, error: profErr } = await serviceClient
+    .from("profiles").select("id, role").eq("project_id", projectId);
+  if (accErr || profErr) {
+    return jsonResponse({ error: "Kunne ikke slå opp kontoene: " + (accErr || profErr).message }, 500);
+  }
+  const userIds = new Set<string>();
+  (accounts || []).forEach((a: { auth_user_id: string }) => userIds.add(a.auth_user_id));
+  // Bare delte kontoer (aldri en CG1-bruker, selv om den skulle ha prosjekt satt).
+  (lockedProfiles || []).forEach((p: { id: string; role: string }) => { if (p.role !== "byggeleder") userIds.add(p.id); });
+  for (const id of userIds) {
+    const { error } = await serviceClient.auth.admin.deleteUser(id);
+    if (error && !/not.?found/i.test(error.message)) {
+      return jsonResponse({ error: "Kunne ikke slette en innloggingskonto: " + error.message + ". Prosjektet er ikke slettet." }, 500);
+    }
+  }
+
+  let filesDeleted = 0;
+  try {
+    for (const bucket of FILE_BUCKETS) {
+      const paths = await listAllFiles(serviceClient, bucket, projectId);
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await serviceClient.storage.from(bucket).remove(paths.slice(i, i + 100));
+        if (error) throw new Error(bucket + ": " + error.message);
+      }
+      filesDeleted += paths.length;
+    }
+  } catch (e) {
+    return jsonResponse({ error: "Kunne ikke slette filene (" + (e as Error).message + "). Kontoene er slettet, prosjektet er ikke slettet - prøv igjen." }, 500);
+  }
+
+  const { error: delErr } = await serviceClient.from("projects").delete().eq("id", projectId);
+  if (delErr) {
+    return jsonResponse({ error: "Kontoer og filer er slettet, men selve prosjektet kunne ikke slettes: " + delErr.message }, 500);
+  }
+  return jsonResponse({ ok: true, deleted: true, accountsDeleted: userIds.size, filesDeleted }, 200);
 }
 
 function jsonResponse(body: unknown, status: number): Response {
@@ -86,15 +163,19 @@ Deno.serve(async (req: Request) => {
     .eq("user_id", userRes.user.id)
     .maybeSingle();
   if (!callerAccess || !callerAccess.is_admin || !callerAccess.active) {
-    return jsonResponse({ error: "Kun admin kan sette innloggingskoder." }, 403);
+    return jsonResponse({ error: "Kun admin kan gjøre dette." }, 403);
   }
 
   // 3) Valider input.
-  let body: { projectId?: string; fagKey?: string; code?: string };
+  let body: { action?: string; projectId?: string; fagKey?: string; code?: string; confirmName?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Ugyldig forespørsel." }, 400);
+  }
+  if (body.action === "deleteProject") {
+    if (!(body.projectId || "").trim()) return jsonResponse({ error: "Mangler projectId." }, 400);
+    return await deleteProject(serviceClient, body.projectId!.trim(), body.confirmName || "");
   }
   const projectId = (body.projectId || "").trim();
   const fagKey = (body.fagKey || "").trim();
