@@ -1654,10 +1654,13 @@
       <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
       <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
       <div id="adminTeamSearchResults"></div>
+      <h3 style="font-size:14px; margin:14px 0 2px;">Innlogginger i teamet</h3>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Hvem i teamet hver innlogging tilhører i dette prosjektet. De som er koblet her, ser Team-siden og har Flex. Et ektepar som deler en fag-kode, kobles til én av dem – Flex regner ektefellen med.</p>
+      <div id="teamLoginList" style="display:flex; flex-direction:column; gap:6px;"></div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alt som har med et fag å gjøre, på ett sted. Farge og innloggingskode gjelder alle prosjekter - resten (aktiv, datoer, Team-siden) gjelder kun dette prosjektet.</p>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alt som har med et fag å gjøre, på ett sted. Farge gjelder alle prosjekter - resten (aktiv, datoer, kode) gjelder kun dette prosjektet. Hvem som ser Team-siden og har Flex, settes under Team.</p>
       <div id="unifiedFagList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
       <form class="inline-add" id="addFagForm">
         <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
@@ -2486,7 +2489,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: []};
+  var state = { people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -2550,10 +2553,11 @@
   }
   function activeFag(){ return isByggeleder() ? view.byggeleiderFag : myRole(); }
   function matchesFag(item){ return activeFag() === "alle" || item.fag === activeFag(); }
+  // Team-siden (og Flex): CG1 ser den alltid; alle andre bare når innloggingen er koblet til en
+  // person i teamet i dette prosjektet (Administrasjon → Team, tabellen team_logins).
   function andeligVisibleForMe(){
     if(isByggeleder()) return true;
-    var v = andeligVisibilityMapForCurrentProject()[myRole()];
-    return v !== false;
+    return !!myTeamPair();
   }
   function fagBadgeHtml(fag){
     if(activeFag() !== "alle" || !fag) return "";
@@ -4679,7 +4683,7 @@
       : "Ingen privilege-uke registrert for denne uken.";
 
     var realCurWeek = currentPrivilegeWeek();
-    var myPersonForAlert = myTeamPair() || myLinkedPerson(); // samme person i dette prosjektet
+    var myPersonForAlert = myLinkedPerson();
     var myMissing = (realCurWeek && myPersonForAlert && realCurWeek.responsiblePersonId === myPersonForAlert.id) ? pwStaffingMissingCount(realCurWeek) : 0;
     byId("pwStaffingAlert").hidden = myMissing === 0;
     if(myMissing > 0){
@@ -6050,7 +6054,7 @@
     if(tab === "andelig"){
       var curWeek = currentPrivilegeWeek();
       if(!curWeek) return { badge: 0, text: "Ingen aktiv uke" };
-      var myPerson = myTeamPair() || myLinkedPerson();
+      var myPerson = myLinkedPerson();
       if(myPerson && curWeek.responsiblePersonId === myPerson.id){
         var missing = pwStaffingMissingCount(curWeek);
         if(missing > 0) return { badge: missing, text: missing+" mangler bemanning" };
@@ -6518,7 +6522,8 @@
     var visible = andeligVisibleForMe();
     var btn = document.querySelector('nav.tabs button[data-tab="andelig"]');
     if(btn) btn.hidden = !visible;
-    if(!visible && view.tab === "andelig") switchTab("kalender");
+    // Ikke kast brukeren ut av Team før koblingene (team_logins) faktisk er hentet.
+    if(!visible && view.tab === "andelig" && view.teamLoginsLoaded) switchTab("kalender");
   }
   // Samlet synlighet for CG1-hub-siden og alle fire underfanene (CGO/ACGO/Kontor 1/Kontor 2) -
   // samme tilgang som før (byggeleder), bare samlet under ett knappenavn i stedet for to.
@@ -6666,27 +6671,22 @@
   function rowToFlexRequest(row){
     return { id: row.id, project_id: row.project_id, personId: row.person_id, weekStart: row.week_start, day: row.day, period: row.period, status: row.status, requestedBy: row.requested_by || "", createdAt: row.created_at, resolvedAt: row.resolved_at };
   }
-  function myLinkedPerson(){
-    if(!state.me || !state.me.personId) return null;
-    return state.people.find(function(p){ return p.id === state.me.personId; }) || null;
+  // Personen den innloggede brukeren er i prosjektet som er valgt - satt under Administrasjon → Team
+  // («Innlogginger i teamet», tabellen team_logins). Gjelder både CG1-brukere og fag-koder.
+  function rowToTeamLogin(row){ return { id: row.id, projectId: row.project_id, personId: row.person_id, accountId: row.account_id }; }
+  function teamLoginForAccount(accountId, pid){
+    pid = pid || currentProjectId();
+    return state.teamLogins.find(function(r){ return r.projectId === pid && r.accountId === accountId; }) || null;
   }
-  // Beholder navnet myTeamPair() for minst mulig diff, men den sjekker nå rett og slett om den
-  // innloggede brukerens tilknyttede person er krysset av "med i teamet" på people.
+  function myLinkedPerson(){
+    if(!state.me) return null;
+    var row = teamLoginForAccount(state.me.id);
+    return row ? (state.people.find(function(p){ return p.id === row.personId; }) || null) : null;
+  }
+  // Koblet person som også er krysset av i teamet - den som har Team-siden og Flex.
   function myTeamPair(){
     var p = myLinkedPerson();
-    if(!p) return null;
-    var pid = currentProjectId();
-    if(p.projectId === pid) return p.onTeam ? p : null;
-    // Personer lagres per prosjekt, men koblingen (profiles.person_id) peker på én av dem. I et annet
-    // prosjekt: finn samme person i teamet der - likt navn, ellers likt etternavn hvis det er entydig
-    // (f.eks. «Jonathan Sakkestad» i Kalmar = «Sakkestad» i Bø).
-    var team = state.people.filter(function(x){ return x.projectId === pid && x.onTeam; });
-    var norm = function(s){ return (s || "").trim().toLowerCase(); };
-    var lastName = function(s){ return norm(s).split(/\s+/).pop(); };
-    var same = team.filter(function(x){ return norm(x.name) === norm(p.name); });
-    if(same.length === 1) return same[0];
-    var sameLast = team.filter(function(x){ return lastName(x.name) === lastName(p.name); });
-    return sameLast.length === 1 ? sameLast[0] : null;
+    return (p && p.onTeam) ? p : null;
   }
   function byggeleiderIdentityLabel(){
     var acc = myCg1Access();
@@ -7075,28 +7075,29 @@
       scheduleRender();
     });
   }
-  function refetchAndeligVisibility(){
-    sb.from("andelig_visibility").select("*").then(function(res){
-      if(res.error){ return; }
-      state.andeligVisibility = res.data;
+  function refetchTeamLogins(){
+    sb.from("team_logins").select("*").then(function(res){
+      view.teamLoginsLoaded = true;
+      if(res.error){ scheduleRender(); return; } // tabellen finnes kanskje ikke ennå (sql/86)
+      state.teamLogins = res.data.map(rowToTeamLogin);
       scheduleRender();
     });
   }
-  function andeligVisibilityMapForCurrentProject(){
-    var pid = currentProjectId();
-    var map = {};
-    state.andeligVisibility.filter(function(r){ return r.project_id === pid; }).forEach(function(r){ map[r.fag] = !!r.visible; });
-    return map;
-  }
-  function setAndeligVisibility(fag, visible){
+  // Kobler en innlogging (CG1-bruker eller fag-kode) til en person i teamet i prosjektet som er valgt.
+  function setTeamLogin(accountId, personId){
     if(!sb) return;
     var pid = currentProjectId();
-    if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
-    var row = state.andeligVisibility.find(function(r){ return r.project_id === pid && r.fag === fag; });
-    if(row) row.visible = visible; else state.andeligVisibility.push({ project_id: pid, fag: fag, visible: visible });
+    if(!pid){ showError("Velg et prosjekt først."); return; }
+    var existing = teamLoginForAccount(accountId, pid);
+    state.teamLogins = state.teamLogins.filter(function(r){ return r !== existing; });
+    if(personId) state.teamLogins.push({ id: existing ? existing.id : null, projectId: pid, personId: personId, accountId: accountId });
     renderAll();
-    sb.from("andelig_visibility").upsert({ project_id: pid, fag: fag, visible: visible }, { onConflict: "project_id,fag" }).then(function(res){
-      if(res.error){ showError("Kunne ikke oppdatere synlighet: "+res.error.message); refetchAndeligVisibility(); return; }
+    var q = personId
+      ? sb.from("team_logins").upsert({ project_id: pid, account_id: accountId, person_id: personId }, { onConflict: "project_id,account_id" })
+      : sb.from("team_logins").delete().eq("project_id", pid).eq("account_id", accountId);
+    q.then(function(res){
+      if(res.error){ showError(/team_logins/.test(res.error.message || "") ? "Databasen mangler tabellen for team-innlogginger. Kjør sql/86-team-innlogging.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); }
+      refetchTeamLogins();
     });
   }
 
@@ -7293,21 +7294,6 @@
       scheduleRender();
     });
   }
-  function setUserAccountPerson(accountId, personId){
-    if(!sb) return;
-    var acc = state.userAccounts.find(function(u){ return u.id === accountId; });
-    if(acc) acc.person_id = personId;
-    renderAll();
-    sb.from("profiles").update({ person_id: personId }).eq("id", accountId).then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("person_id") !== -1 ? "Databasen mangler kolonnen person_id på profiles, eller mangler rettigheter til å endre den. Kjør sql/41-koble-innlogging-til-person.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); refetchUserAccounts(); return; }
-    });
-  }
-  // Kobler en fag-innlogging til et par i teamet, så Flex vet hvem som er logget inn (samme felt som
-  // CG1-brukernes personkobling). Team-siden slås på for faget, siden Flex ligger der.
-  function setFagFlexPerson(accountId, fagKey, personId){
-    setUserAccountPerson(accountId, personId);
-    if(personId && andeligVisibilityMapForCurrentProject()[fagKey] === false) setAndeligVisibility(fagKey, true);
-  }
   function rowToProjectFag(row){
     return { id: row.id, project_id: row.project_id, fag: row.fag, active: !!row.active, start: row.start_date || "", end: row.end_date || "" };
   }
@@ -7464,12 +7450,6 @@
       });
       box.innerHTML = usersSorted.map(function(u){
         var isMe = state.me && u.userId === state.me.id;
-        var prof = profileById[u.userId];
-        var personId = prof ? prof.person_id : null;
-        var personSelect = '<select data-useraccountperson="'+u.userId+'" title="Hvilken person i personlisten denne innloggingen tilhører (brukes bl.a. for Team/Flex)" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:170px;">' +
-          '<option value="">Ingen person</option>' +
-          peopleSorted.map(function(p){ return '<option value="'+p.id+'"'+(personId===p.id?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-          '</select>';
         var last = u.lastSignInAt ? "Sist innlogget "+fmtRange(u.lastSignInAt.slice(0,10), u.lastSignInAt.slice(0,10)) : "Aldri innlogget";
         return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;'+(u.active?'':' opacity:.6;')+'">' +
           '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">' +
@@ -7481,7 +7461,6 @@
           '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px;">' +
           cg1PageCheckboxesHtml("data-cg1page", u.userId, u.pages) +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; margin-left:6px;"><input type="checkbox" data-cg1admin="'+u.userId+'"'+(u.isAdmin?' checked':'')+' /> Admin</label>' +
-          personSelect +
           '<span style="flex:1;"></span>' +
           '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
           (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
@@ -7506,9 +7485,7 @@
         cg1UserAction({ action:"update", userId:id, isAdmin:this.checked }, this.checked ? "Admin-tilgang gitt ✓" : "Admin-tilgang fjernet ✓");
       });
     });
-    box.querySelectorAll("[data-useraccountperson]").forEach(function(sel){
-      sel.addEventListener("change", function(){ setUserAccountPerson(this.dataset.useraccountperson, this.value || null); });
-    });
+
     box.querySelectorAll("[data-cg1password]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var u = state.cg1Users.find(function(x){ return x.userId === btn.dataset.cg1password; });
@@ -7730,7 +7707,7 @@
   // (fag_account_codes), kontoer og CG1-tavlene (på tvers av prosjekter) er bevisst ikke med.
   var EXPORT_TABLES = ["people", "attendance", "logi_info", "logi_groups", "team_pairs", "people_fag_order", "elements", "tasks",
     "room_todos", "deliveries", "shopping_items", "drawings", "documentation_photos", "behov_slot", "fag_requests", "flex_requests",
-    "project_fags", "project_startup", "privilege_weeks", "spiritual_duties", "spiritual_overview", "andelig_visibility",
+    "project_fags", "project_startup", "privilege_weeks", "spiritual_duties", "spiritual_overview", "team_logins",
     "weekly_scriptures", "team_meetings", "to_meetings", "to_topics", "to_agenda_items", "to_followups", "to_safety_log",
     "site_codes", "open_accounts"];
   var EXPORT_CHILD_TABLES = [
@@ -7740,7 +7717,7 @@
     { table: "to_meeting_attendance", parent: "to_meetings", column: "meeting_id" },
     { table: "to_meeting_topic_notes", parent: "to_meetings", column: "meeting_id" },
     { table: "to_meeting_fag_status", parent: "to_meetings", column: "meeting_id" }];
-  var EXPORT_NO_ID = { andelig_visibility: true };
+  var EXPORT_NO_ID = {};
   function exportCell(v){
     if(v === null || v === undefined) return "";
     if(typeof v === "object") return JSON.stringify(v);
@@ -7815,34 +7792,14 @@
     var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
     renderCg1UserList(peopleSorted);
 
-    var visMap = andeligVisibilityMapForCurrentProject();
-    var flexOpts = flexTeamOptions();
     byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f.key; });
       var active = pf ? pf.active : false;
       var start = pf ? pf.start : "";
       var end = pf ? pf.end : "";
       var isWholeProject = active && curProj && curProj.start && curProj.end && start === curProj.start && end === curProj.end;
-      var visible = visMap[f.key] !== false;
       var usage = fagUsageCount(f.key);
-      var account = state.fagAccounts.find(function(a){ return a.fagKey === f.key && a.projectId === currentProjectId(); });
-      var hasAccount = !!account;
-      // Flex-kobling: hvilket par i teamet fag-innloggingen er (profiles.person_id på fag-kontoen).
-      var flexRow = "";
-      if(account){
-        var prof = state.userAccounts.find(function(u){ return u.id === account.authUserId; });
-        var curPerson = prof && prof.person_id;
-        var selOpt = curPerson ? flexOpts.find(function(o){ return flexCoupleIds(o.id).indexOf(curPerson) !== -1; }) : null;
-        flexRow = '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">' +
-          '<label style="font-size:12.5px; color:var(--muted);" for="fagflex-'+f.key+'">Flex for:</label>' +
-          '<select id="fagflex-'+f.key+'" data-fagflex="'+account.authUserId+'" data-fagflexkey="'+f.key+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface); max-width:260px;">' +
-          '<option value="">– ingen (spør «Velg hvem du er»)</option>' +
-          flexOpts.map(function(o){ return '<option value="'+o.id+'"'+(selOpt && selOpt.id === o.id ? ' selected' : '')+'>'+escapeHtml(o.label)+'</option>'; }).join("") +
-          (curPerson && !selOpt ? '<option value="'+curPerson+'" selected>(person utenfor teamet)</option>' : '') +
-          '</select>' +
-          (!flexOpts.length ? '<span style="font-size:12px; color:var(--muted);">Kryss av personer i teamet først.</span>' : '') +
-          '</div>';
-      }
+      var hasAccount = state.fagAccounts.some(function(a){ return a.fagKey === f.key && a.projectId === currentProjectId(); });
       return '<div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">' +
         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">' +
         '<input type="color" data-fagcolor="'+f.key+'" value="'+escapeHtml(f.color)+'" title="Farge" style="width:28px; height:28px; padding:0; border:none; background:none; cursor:pointer;" />' +
@@ -7858,15 +7815,10 @@
         '<input type="date" data-fagstart="'+f.key+'" value="'+start+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
         '<input type="date" data-fagend="'+f.key+'" value="'+end+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />' +
         '<button type="button" class="btn small'+(isWholeProject?' primary':'')+'" data-fagwhole="'+f.key+'">Hele prosjektet</button>' +
-        '<label style="display:flex; align-items:center; gap:6px; cursor:pointer;">' +
-        '<input type="checkbox" data-andeligvis="'+f.key+'" '+(visible?'checked':'')+' /> Vis Team-siden</label>' +
-        '</div>' + flexRow + '</div>';
+        '</div></div>';
     }).join("") : '<p class="empty-note">Ingen fag opprettet ennå.</p>';
     byId("unifiedFagList").querySelectorAll("[data-fagcolor]").forEach(function(inp){
       inp.addEventListener("change", function(){ updateFagColor(this.dataset.fagcolor, this.value); });
-    });
-    byId("unifiedFagList").querySelectorAll("[data-fagflex]").forEach(function(sel){
-      sel.addEventListener("change", function(){ setFagFlexPerson(this.dataset.fagflex, this.dataset.fagflexkey, this.value || null); });
     });
     byId("unifiedFagList").querySelectorAll("[data-showfagcode]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -7932,9 +7884,6 @@
         upsertProjectFag(fag, { active: true, start_date: cur.start, end_date: cur.end });
       });
     });
-    byId("unifiedFagList").querySelectorAll("[data-andeligvis]").forEach(function(cb){
-      cb.addEventListener("change", function(){ setAndeligVisibility(this.dataset.andeligvis, this.checked); });
-    });
 
     function adminTeamRowHtml(p){
       return '<label class="checkrow" style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" data-adminteamcheck="'+p.id+'"'+(p.onTeam?' checked':'')+' /> '+escapeHtml(p.name)+'</label>';
@@ -7957,7 +7906,36 @@
     var teamMatches = teamQuery ? peopleSorted.filter(function(p){ return !p.onTeam && p.name.toLowerCase().indexOf(teamQuery) !== -1; }) : [];
     byId("adminTeamSearchResults").innerHTML = !teamQuery ? "" : (teamMatches.length ? teamMatches.map(adminTeamRowHtml).join("") : '<p class="empty-note">Ingen treff.</p>');
     wireAdminTeamCheckboxes(byId("adminTeamSearchResults"));
+    renderTeamLoginList(teamSelected);
 
+  }
+  // Innlogginger (CG1-brukere + prosjektets fag-koder) → person i teamet, per prosjekt.
+  function renderTeamLoginList(team){
+    var box = byId("teamLoginList");
+    var pid = currentProjectId();
+    var logins = state.cg1Users.filter(function(u){ return u.active; }).map(function(u){ return { id: u.userId, label: u.displayName || u.email, kind: "CG1" }; })
+      .sort(function(a,b){ return a.label.localeCompare(b.label, "no"); })
+      .concat(state.fagAccounts.filter(function(a){ return a.projectId === pid && a.fagKey !== "kontakt"; })
+        .map(function(a){ return { id: a.authUserId, label: FAG_LABELS[a.fagKey] || a.fagKey, kind: "Fag-kode" }; })
+        .sort(function(a,b){ return a.label.localeCompare(b.label, "no"); }));
+    if(!logins.length){ box.innerHTML = '<p class="empty-note">'+(state.cg1Users.length ? 'Ingen innlogginger ennå – sett en fag-kode under Fag.' : 'Laster innlogginger …')+'</p>'; return; }
+    box.innerHTML = logins.map(function(l){
+      var row = teamLoginForAccount(l.id, pid);
+      var cur = row ? row.personId : "";
+      var curOnTeam = !cur || team.some(function(p){ return p.id === cur; });
+      var curPerson = cur ? state.people.find(function(p){ return p.id === cur; }) : null;
+      return '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+        '<b style="min-width:110px; font-size:13px;">'+escapeHtml(l.label)+'</b>' +
+        '<span style="font-size:11px; color:var(--muted); min-width:56px;">'+l.kind+'</span>' +
+        '<select data-teamlogin="'+l.id+'" aria-label="Person for '+escapeHtml(l.label)+'" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface); min-width:180px; max-width:260px;">' +
+        '<option value="">– ikke i teamet</option>' +
+        team.map(function(p){ return '<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+        (!curOnTeam ? '<option value="'+cur+'" selected>'+escapeHtml(curPerson ? curPerson.name : "Ukjent")+' (ikke krysset av i teamet)</option>' : '') +
+        '</select></div>';
+    }).join("");
+    box.querySelectorAll("[data-teamlogin]").forEach(function(sel){
+      sel.addEventListener("change", function(){ setTeamLogin(this.dataset.teamlogin, this.value || null); });
+    });
   }
   byId("adminTeamSearch").addEventListener("input", function(){ view.adminTeamSearch = this.value; renderProsjektTab(); });
   byId("menighetCodeBtn").addEventListener("click", function(){ openCodeDialog("kontakt", "Menighet"); });
@@ -11622,7 +11600,7 @@
     refetchToAgenda();
     refetchRoomTodos();
     refetchDokuPhotos();
-    refetchAndeligVisibility();
+    refetchTeamLogins();
     refetchProjectFags();
     refetchUserAccounts();
     refetchFags();
@@ -11677,7 +11655,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "to_agenda_items" }, refetchToAgenda)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_todos" }, refetchRoomTodos)
       .on("postgres_changes", { event: "*", schema: "public", table: "documentation_photos" }, refetchDokuPhotos)
-      .on("postgres_changes", { event: "*", schema: "public", table: "andelig_visibility" }, refetchAndeligVisibility)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_logins" }, refetchTeamLogins)
       .on("postgres_changes", { event: "*", schema: "public", table: "project_fags" }, refetchProjectFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fags" }, refetchFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_accounts" }, refetchFagAccounts)

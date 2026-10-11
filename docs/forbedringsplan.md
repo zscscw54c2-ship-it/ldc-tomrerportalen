@@ -192,3 +192,10 @@ ingen tabellendring). Da slipper kontoen «Velg hvem du er», flex legges på ri
 slås på for faget automatisk. «– ingen» gir den gamle velgeren tilbake. CG1-brukere koblet til en
 person i et annet prosjekt finner samme person i teamet (navn, ellers entydig etternavn).
 Fag-forespørsler viser «(Menighet)»/fagnavn i stedet for den tekniske e-posten.
+
+## Team og Flex på ett sted (sql/86)
+Administrasjon → Team → **«Innlogginger i teamet»**: hver innlogging (CGO, ACGO, Kontor 1/2 og
+prosjektets fag-koder) kobles til en person i teamet, per prosjekt (tabellen `team_logins`).
+Regel: den som er koblet til en person i teamet, ser Team-siden og har Flex – også fag. Erstatter
+«Vis Team-siden» og «Flex for» per fag og personvelgeren under Brukere og tilganger
+(`profiles.person_id` og `andelig_visibility` brukes ikke lenger av appen). Ingen navnegjetting.
