@@ -743,6 +743,71 @@
   .login-card .btn{ margin-top:4px; }
   .login-card .err{ color:var(--bad-ink); font-size:12.5px; margin-top:10px; }
 
+  /* ---------- sidehode, kort og dashbord (Forslag 3) ---------- */
+  .page-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:4px 0 20px; }
+  .page-head h1{ font-size:26px; font-weight:700; }
+  .page-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-lg{ border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:8px; padding:9px 16px; font-size:14px; font-weight:500; cursor:pointer; font-family:inherit; }
+  .btn-lg:hover{ background:var(--surface-alt); }
+  .btn-lg.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .btn-lg.primary:hover{ filter:brightness(1.06); }
+  .dcard{ background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+  .dcard-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 20px 12px; }
+  .dcard-head h2{ font-size:17px; font-weight:600; }
+  .dcard-head a{ font-size:14px; text-decoration:none; }
+  .dcard-meta{ font-size:13px; color:var(--muted); }
+  .dash-stripe{ display:grid; grid-template-columns:minmax(220px,1.3fr) repeat(3,1fr); gap:20px; padding:20px; margin-bottom:20px; }
+  .dash-kpis{ display:contents; }
+  .dash-pct{ font-size:34px; font-weight:700; }
+  .dash-pct-lbl{ font-size:14px; color:var(--muted); }
+  .dash-bar{ display:flex; height:8px; border-radius:4px; overflow:hidden; background:var(--row); margin:10px 0 8px; }
+  .dash-bar i{ display:block; height:100%; }
+  .dash-legend{ display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+  .dash-legend b{ font-weight:600; }
+  .dash-legend .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+  .dash-kpi{ border:none; border-left:1px solid var(--row); padding:0 0 0 20px; background:none; text-align:left; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; justify-content:center; gap:2px; }
+  .dash-kpi:hover .dash-kpi-num{ text-decoration:underline; }
+  .dash-kpi-num{ font-size:30px; font-weight:700; line-height:1.1; }
+  .dash-kpi-lbl{ font-size:13px; color:var(--muted); }
+  .dash-kpi.zero .dash-kpi-num{ color:var(--faint); }
+  .dash-cols{ display:grid; grid-template-columns:1.6fr 1fr; gap:20px; align-items:start; }
+  .dash-side{ display:flex; flex-direction:column; gap:20px; }
+  .follow-row{ display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center; padding:12px 20px; border-top:1px solid var(--row); }
+  .follow-name{ font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .follow-date{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); margin-top:2px; }
+  .week-row{ display:grid; grid-template-columns:76px 1fr auto; gap:10px; align-items:center; padding:10px 20px; border-top:1px solid var(--row); font-size:14px; }
+  .week-time{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); }
+  .week-name{ font-weight:500; }
+  .dash-shop-row{ display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; padding:9px 20px; border-top:1px solid var(--row); font-size:14px; }
+  .dash-shop-row input{ accent-color:var(--good); width:16px; height:16px; }
+  .dash-shop-qty{ font-size:12px; color:var(--muted); }
+  .dcard-foot{ padding:10px 20px 14px; border-top:1px solid var(--row); }
+  .dcard-foot a{ font-size:14px; text-decoration:none; }
+  .dcard .empty-note{ padding:4px 20px 16px; margin:0; }
+  .pill{ display:inline-block; border-radius:6px; padding:2px 8px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .pill.bad{ background:var(--bad-soft); color:var(--bad-ink); }
+  .pill.warn{ background:var(--warn-soft); color:var(--warn-ink); }
+  .pill.mote{ background:#e3edf7; color:#1d4f7e; }
+  .pill.program{ background:#efeaf6; color:#5b4386; }
+  /* Fagetiketter: dempede toner (rød/gul/grønn er forbeholdt status). */
+  .fagtag{ display:inline-block; border-radius:6px; padding:2px 8px; font-size:12px; font-weight:600; white-space:nowrap; background:#eceef1; color:#4b5563; }
+  .btn-row{ border:1px solid var(--border-strong); background:var(--surface); border-radius:8px; padding:6px 12px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; color:var(--text); }
+  .btn-row:hover{ background:var(--surface-alt); }
+  @media (max-width:900px){
+    .dash-stripe{ grid-template-columns:1fr 1fr 1fr; }
+    .dash-progress{ grid-column:1 / -1; }
+    .dash-kpi:first-child{ border-left:none; padding-left:0; }
+    .dash-cols{ grid-template-columns:1fr; }
+  }
+  @media (max-width:640px){
+    .page-head h1{ font-size:22px; }
+    .dash-stripe{ gap:12px; padding:14px; }
+    .dash-kpi{ padding-left:12px; }
+    .dash-kpi-num{ font-size:24px; }
+    .follow-row, .week-row, .dash-shop-row{ padding-inline:14px; }
+    .follow-row{ grid-template-columns:1fr auto; }
+    .follow-row .btn-row{ grid-column:2; }
+  }
   .fag-badge{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:#fff; border-radius:99px; padding:2px 8px; flex:none; }
 
   /* ---------- kontakt (menighetskontakt) – egen forenklet side ---------- */
@@ -1068,40 +1133,40 @@
   </div>
 
   <section id="panel-dashbord" class="panel">
-    <div id="dashProgressWrap" style="margin-bottom:14px;">
-      <div style="display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); margin-bottom:4px;">
-        <span>Prosjektfremdrift</span><span id="dashProgressPct"></span>
-      </div>
-      <div style="position:relative; height:6px; background:var(--surface-alt); border-radius:4px; overflow:hidden;">
-        <div id="dashProgressFill" style="position:absolute; left:0; top:0; height:100%; width:0; background:var(--accent); border-radius:4px;"></div>
-        <div id="dashProgressLine" style="position:absolute; top:0; bottom:0; left:0; border-left:2px dashed var(--text);"></div>
-      </div>
-    </div>
-    <div class="kpi-row" id="dashKpiRow" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;"></div>
-
-    <div class="peoplecard" style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-      <button type="button" class="btn primary" id="dashCreateMeetingBtn"></button>
+    <div class="page-head">
+      <h1>Dashbord</h1>
+      <div class="page-actions"><button type="button" class="btn-lg primary" id="dashCreateMeetingBtn"></button></div>
     </div>
 
-    <div class="cols2" style="margin-top:16px;">
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Møter</h2>
-        <div id="dashMoteList"></div>
+    <!-- Fremdrift + tre klikkbare nøkkeltall -->
+    <div class="dcard dash-stripe">
+      <div class="dash-progress">
+        <div><span class="dash-pct" id="dashPct"></span> <span class="dash-pct-lbl" id="dashPctLbl"></span></div>
+        <div class="dash-bar" id="dashBar"></div>
+        <div class="dash-legend" id="dashLegend"></div>
       </div>
-      <div class="peoplecard">
-        <h2 style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
-        <div id="dashProgramList"></div>
-      </div>
+      <div id="dashKpiRow" class="dash-kpis"></div>
     </div>
 
-    <div class="peoplecard" id="dashFlexWrap" style="margin-top:16px;" hidden>
-      <h2 style="font-size:16px; margin-bottom:8px;">Åpne flex-forespørsler</h2>
-      <div id="dashFlexList"></div>
-    </div>
-
-    <div class="peoplecard" style="margin-top:16px;">
-      <h2 style="font-size:16px; margin-bottom:8px;">Handleliste – mangler å kjøpe</h2>
-      <div id="dashShopList"></div>
+    <div class="dash-cols">
+      <div class="dcard">
+        <div class="dcard-head"><h2>Trenger oppfølging</h2><a href="#" data-dashnav="elementer">Alle oppgaver →</a></div>
+        <div id="dashFollowList"></div>
+      </div>
+      <div class="dash-side">
+        <div class="dcard">
+          <div class="dcard-head"><h2>Denne uka</h2></div>
+          <div id="dashWeekList"></div>
+        </div>
+        <div class="dcard" id="dashFlexWrap" hidden>
+          <div class="dcard-head"><h2>Åpne flex-forespørsler</h2><a href="#" data-dashnav="andelig">Team →</a></div>
+          <div id="dashFlexList"></div>
+        </div>
+        <div class="dcard">
+          <div class="dcard-head"><h2>Handleliste</h2><span class="dcard-meta" id="dashShopMeta"></span></div>
+          <div id="dashShopList"></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -9422,120 +9487,121 @@
   }
   byId("referatMeetingSelect").addEventListener("change", function(){ view.referatMeetingId = this.value; renderTomoteRead(); });
 
-  function dashKpiHtml(opts){
-    return '<div class="kpi'+(opts.cls?' '+opts.cls:'')+'"'+(opts.nav?' data-dashnav="'+opts.nav+'" role="button" tabindex="0"':'')+'>' +
-      '<div class="num">'+opts.num+'</div>' +
-      '<div class="lbl">'+opts.lbl+'</div>' +
-      (opts.bar || '') +
-      '</div>';
+  // Dempede fagetiketter (bakgrunn / tekst) - rødt/gult/grønt er forbeholdt status.
+  var FAG_TAG_TONES = {
+    tomrer:["#e3edf7","#1d4f7e"], elektriker:["#f6e7e3","#8c3a2c"], vvs:["#e0f2ef","#1f6b5e"], ovrig:["#eeebe7","#5a4a3a"],
+    maler:["#f3eedf","#6e5a22"], landscape:["#e6f0e1","#3d6b2e"], murer:["#efe7df","#6b4f35"], ventilasjon:["#e6eaf7","#3b4f8c"],
+    blikkenslager:["#f3e9df","#7a4a22"], stillas:["#eee8f6","#5b4386"], audio_video:["#f6e6ee","#8a2f5c"], team:["#e3f1ec","#22684f"],
+    behov_menighet:["#eceef1","#4b5563"]
+  };
+  function fagTagHtml(fag){
+    if(!fag) return "";
+    var t = FAG_TAG_TONES[fag] || ["#eceef1","#4b5563"];
+    return '<span class="fagtag" style="background:'+t[0]+'; color:'+t[1]+'">'+escapeHtml(FAG_LABELS[fag] || fag)+'</span>';
   }
-  // Teller antall ukedager (man-fre) i det lukkede intervallet [startIso, endIso].
-  function countWeekdaysInclusive(startIso, endIso){
-    if(!startIso || !endIso) return 0;
-    var start = fromISODate(startIso), end = fromISODate(endIso);
-    if(end < start) return 0;
-    var count = 0, cur = new Date(start);
-    while(cur <= end){
-      var dow = cur.getDay();
-      if(dow !== 0 && dow !== 6) count++;
-      cur.setDate(cur.getDate()+1);
-    }
-    return count;
+  // Ukedager (man–fre) i inneværende uke der oppgaven er planlagt, og hvor mange av dem som mangler folk.
+  function weekStaffingGap(e, mondayIso){
+    if(!isPlanned(e) || e.status === "ferdig") return null;
+    var mon = fromISODate(mondayIso), days = [];
+    for(var i = 0; i < 5; i++){ var iso = toISODate(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)); if(iso >= e.start && iso <= e.end) days.push(iso); }
+    if(!days.length) return null;
+    var missing = days.filter(function(d){ var ids = (e.assignments || {})[d]; return !ids || !ids.length; }).length;
+    return { days: days.length, missing: missing };
   }
-  // Andel av prosjektets ukedager (start-sluttdato) som har passert, til bruk i dashbord-stripen.
-  function projectProgressPct(project){
-    if(!project || !project.start || !project.end) return null;
-    var total = countWeekdaysInclusive(project.start, project.end);
-    if(!total) return null;
-    var todayIso = toISODate(new Date());
-    if(todayIso <= project.start) return 0;
-    var elapsedEndIso = todayIso < project.end ? toISODate(new Date(fromISODate(todayIso).getTime() - 86400000)) : project.end;
-    if(elapsedEndIso < project.start) return 0;
-    var elapsed = countWeekdaysInclusive(project.start, elapsedEndIso);
-    return Math.max(0, Math.min(100, Math.round(elapsed/total*100)));
+  // «Tirsdag 17:15» → [1, "17:15"] for sortering av «Denne uka». Ukjent tekst sorteres sist.
+  var WEEKDAY_PREFIX = ["man","tir","ons","tor","fre","lør","søn"];
+  function parseWeekTime(text){
+    var t = (text || "").trim().toLowerCase();
+    var day = WEEKDAY_PREFIX.findIndex(function(p){ return t.indexOf(p) === 0; });
+    var m = /(\d{1,2})[:.](\d{2})/.exec(t);
+    var time = m ? (m[1].length === 1 ? "0" + m[1] : m[1]) + ":" + m[2] : "";
+    return { day: day, time: time, label: day === -1 ? (time || (text || "")) : (WEEKDAY_PREFIX[day].charAt(0).toUpperCase() + WEEKDAY_PREFIX[day].slice(1) + (time ? " " + time : "")) };
   }
   function renderDashboardTab(){
     if(!isByggeleder()) return;
+    var els = elementsForCurrentProject();
+    var counts = { mangler:0, pabegynt:0, ferdig:0 };
+    els.forEach(function(e){ counts[e.status] = (counts[e.status] || 0) + 1; });
+    var tot = els.length;
+    byId("dashPct").textContent = tot ? Math.round(counts.ferdig / tot * 100) + "%" : "–";
+    byId("dashPctLbl").textContent = tot ? counts.ferdig + " av " + tot + " oppgaver ferdig" : "Ingen oppgaver ennå";
+    byId("dashBar").innerHTML = tot ? [["ferdig","var(--good)"],["pabegynt","var(--warn)"],["mangler","var(--bad)"]].map(function(x){
+      return '<i style="width:'+(counts[x[0]] / tot * 100)+'%; background:'+x[1]+'"></i>'; }).join("") : "";
+    byId("dashLegend").innerHTML = [["ferdig","ferdig","var(--good)"],["pabegynt","påbegynt","var(--warn)"],["mangler","mangler","var(--bad)"]].map(function(x){
+      return '<span><i class="dot" style="background:'+x[2]+'"></i><b>'+counts[x[0]]+'</b> '+x[1]+'</span>'; }).join("");
 
-    var curProjForProgress = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    var progressPct = projectProgressPct(curProjForProgress);
-    byId("dashProgressWrap").hidden = progressPct === null;
-    if(progressPct !== null){
-      byId("dashProgressPct").textContent = progressPct + "%";
-      byId("dashProgressFill").style.width = progressPct + "%";
-      byId("dashProgressLine").style.left = progressPct + "%";
+    var mondayIso = toISODate(mondayOf(fromISODate(osloTodayIso())));
+    var late = els.filter(isLate);
+    var gaps = els.map(function(e){ return { e: e, g: weekStaffingGap(e, mondayIso) }; }).filter(function(x){ return x.g && x.g.missing > 0 && !isLate(x.e); });
+    var missingShop = shopItemsForCurrentProject().filter(function(x){ return !x.bought; });
+    function kpi(n, lbl, color, nav, filter){
+      return '<button type="button" class="dash-kpi'+(n ? '' : ' zero')+'" data-dashnav="'+nav+'"'+(filter ? ' data-dashfilter="'+filter+'"' : '')+'>' +
+        '<span class="dash-kpi-num" style="color:'+(n ? color : '')+'">'+n+'</span><span class="dash-kpi-lbl">'+lbl+'</span></button>';
     }
+    byId("dashKpiRow").innerHTML =
+      kpi(late.length, "forsinket", "var(--bad)", "elementer", "forsinket") +
+      kpi(gaps.length, "oppgaver uten folk denne uka", "#b07d16", "elementer", "aktive") +
+      kpi(missingShop.length, "mangler å kjøpe inn", "var(--text)", "handleliste");
 
-    var allEls = state.elements.filter(inCurrentProject);
-    var counts = {mangler:0,pabegynt:0,ferdig:0};
-    allEls.forEach(function(e){ counts[e.status]++; });
-    var tot = allEls.length || 1;
-    var missingShop = state.shopItems.filter(inCurrentProject).filter(function(s){ return !s.bought; });
-    var openFollowups = toFollowupsForCurrentProject().filter(function(f){ return !f.done; });
-    var slotIds = behovSlotsForCurrentProject().map(function(s){ return s.id; });
-    var openBehov = state.behovDays.filter(function(d){ return slotIds.indexOf(d.slot_id) !== -1 && !d.personId; });
+    // Trenger oppfølging: forsinket først, så oppgaver denne uka som mangler folk.
+    var rows = late.slice().sort(function(a,b){ return a.end < b.end ? -1 : 1; }).map(function(e){
+      return { e: e, pill: '<span class="pill bad">Forsinket</span>', btn: '<button type="button" class="btn-row" data-dashopen="'+e.id+'">Åpne</button>' };
+    }).concat(gaps.sort(function(a,b){ return a.e.start < b.e.start ? -1 : 1; }).map(function(x){
+      var all = x.g.missing === x.g.days;
+      return { e: x.e, pill: all ? '<span class="pill bad">Ingen folk</span>' : '<span class="pill warn">'+x.g.missing+' dag'+(x.g.missing === 1 ? '' : 'er')+' uten folk</span>',
+        btn: '<button type="button" class="btn-row" data-dashstaff="'+x.e.id+'">Bemann</button>' };
+    }));
+    byId("dashFollowList").innerHTML = rows.length ? rows.map(function(r){
+      return '<div class="follow-row"><div><div class="follow-name">'+escapeHtml(r.e.name)+' '+fagTagHtml(r.e.fag)+'</div>' +
+        '<div class="follow-date">'+fmtRange(r.e.start, r.e.end)+'</div></div>'+r.pill+r.btn+'</div>';
+    }).join("") : '<p class="empty-note">Ingenting å følge opp – ingen forsinkede oppgaver, og alle oppgaver denne uka har folk.</p>';
 
-    byId("dashKpiRow").innerHTML = [
-      dashKpiHtml({
-        num: allEls.length ? (counts.ferdig+'<small>/'+allEls.length+'</small>') : '0',
-        lbl: "oppgaver ferdig", nav: "elementer",
-        bar: allEls.length ? '<div class="bar"><i style="width:'+(counts.ferdig/tot*100)+'%; background:var(--good)"></i><i style="width:'+(counts.pabegynt/tot*100)+'%; background:var(--warn)"></i></div>' : ""
-      }),
-      dashKpiHtml({ num: missingShop.length, lbl: "mangler å kjøpe inn", cls: missingShop.length?"warn":"", nav: "handleliste" }),
-      dashKpiHtml({ num: openFollowups.length, lbl: "å følge opp fra TO-møte", cls: openFollowups.length?"warn":"", nav: "tomote" }),
-      dashKpiHtml({ num: openBehov.length, lbl: "ufylte dager i behov", cls: openBehov.length?"warn":"", nav: "personer" })
-    ].join("");
-    byId("dashKpiRow").querySelectorAll("[data-dashnav]").forEach(function(el){
-      el.addEventListener("click", function(){ switchTab(this.dataset.dashnav); });
-    });
+    // Denne uka: møter og åndelig program samlet, sortert på ukedag og tid.
+    var weekItems = overviewForCurrentProject("mote").map(function(o){ return { o: o, kind: "mote" }; })
+      .concat(overviewForCurrentProject("program").map(function(o){ return { o: o, kind: "program" }; }))
+      .map(function(x){ x.t = parseWeekTime(x.o.time); return x; })
+      .sort(function(a,b){
+        var da = a.t.day === -1 ? 9 : a.t.day, db = b.t.day === -1 ? 9 : b.t.day;
+        return da - db || (a.t.time < b.t.time ? -1 : a.t.time > b.t.time ? 1 : 0);
+      });
+    byId("dashWeekList").innerHTML = weekItems.length ? weekItems.map(function(x){
+      return '<div class="week-row"><span class="week-time">'+escapeHtml(x.t.label)+'</span><span class="week-name">'+escapeHtml(x.o.name)+(x.o.ansvarlig ? ' <span style="color:var(--muted); font-weight:400;">· '+escapeHtml(x.o.ansvarlig)+'</span>' : '')+'</span>' +
+        (x.kind === "mote" ? '<span class="pill mote">Møte</span>' : '<span class="pill program">Program</span>')+'</div>';
+    }).join("") : '<p class="empty-note">Ingen møter eller program lagt inn ennå (Team).</p>';
 
-    var meetings = toMeetingsForCurrentProject();
-    var todayMon = toISODate(mondayOf(new Date()));
-    var thisWeekMeeting = meetings.find(function(m){ return m.weekStart === todayMon; });
-    byId("dashCreateMeetingBtn").textContent = thisWeekMeeting ? "Åpne TO-møte for denne uken" : "+ Opprett TO-møte for denne uken";
-
-    byId("dashShopList").innerHTML = missingShop.length ? missingShop.map(function(s){
-      return '<div class="shoprow">' +
-        '<input type="checkbox" data-dashtoggleshop="'+s.id+'" />' +
-        '<span class="sname">'+escapeHtml(s.name)+'</span>' +
-        (s.quantity ? '<span class="sqty">'+escapeHtml(s.quantity)+'</span>' : '') +
-        '<span class="fag-badge" style="background:'+(FAG_COLORS[s.fag]||"var(--muted)")+'">'+escapeHtml(FAG_LABELS[s.fag]||s.fag)+'</span>' +
-        '</div>';
-    }).join("") : '<p class="empty-note">Alt er kjøpt inn.</p>';
-    byId("dashShopList").querySelectorAll("[data-dashtoggleshop]").forEach(function(cb){
-      cb.addEventListener("change", function(){ toggleBought(this.dataset.dashtoggleshop, this.checked); });
-    });
-
-    var mote = overviewForCurrentProject("mote");
-    byId("dashMoteList").innerHTML = mote.length ? mote.map(function(o){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span></div>';
-    }).join("") : '<p class="empty-note">Ingen møter lagt til ennå. Legg til under Team.</p>';
-
-    var prog = overviewForCurrentProject("program");
-    byId("dashProgramList").innerHTML = prog.length ? prog.map(function(o){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span>'+(o.time?'<span class="sqty">'+escapeHtml(o.time)+'</span>':'')+'</div>';
-    }).join("") : '<p class="empty-note">Ingen rader lagt til ennå. Legg til under Team.</p>';
+    // Handleliste: de fem første som mangler.
+    byId("dashShopMeta").textContent = missingShop.length ? missingShop.length + " mangler" : "";
+    byId("dashShopList").innerHTML = missingShop.length ? missingShop.slice(0, 5).map(function(x){
+      return '<label class="dash-shop-row"><input type="checkbox" data-dashtoggleshop="'+x.id+'" /><span>'+escapeHtml(x.name)+'</span>' +
+        '<span class="dash-shop-qty">'+escapeHtml(x.quantity || "")+'</span>'+fagTagHtml(x.fag)+'</label>';
+    }).join("") + (missingShop.length > 5 ? '<div class="dcard-foot"><a href="#" data-dashnav="handleliste">Se alle '+missingShop.length+' →</a></div>' : '')
+      : '<p class="empty-note">Alt er kjøpt inn.</p>';
 
     var pid = currentProjectId();
     var openFlex = state.flexRequests.filter(function(r){ return r.project_id === pid && r.status === "pending"; })
       .sort(function(a,b){ return a.day < b.day ? -1 : a.day > b.day ? 1 : 0; });
     byId("dashFlexWrap").hidden = openFlex.length === 0;
-    if(openFlex.length){
-      byId("dashFlexList").innerHTML = openFlex.map(function(r){
-        var periodLabel = r.period === "formiddag" ? "Formiddag" : "Ettermiddag";
-        return '<div class="shoprow" data-dashnav="andelig" style="cursor:pointer;">' +
-          '<span class="sname">'+escapeHtml(flexDisplayName(r.personId))+'</span>' +
-          '<span class="sqty">'+fmtRange(r.day, r.day)+' · '+periodLabel+'</span>' +
-          '</div>';
-      }).join("");
-      byId("dashFlexList").querySelectorAll("[data-dashnav]").forEach(function(el){
-        el.addEventListener("click", function(){ switchTab(this.dataset.dashnav); });
-      });
-    }
+    byId("dashFlexList").innerHTML = openFlex.map(function(r){
+      return '<div class="week-row"><span class="week-time">'+fmtRange(r.day, r.day)+'</span><span class="week-name">'+escapeHtml(flexDisplayName(r.personId))+'</span>' +
+        '<span class="pill warn">'+(r.period === "formiddag" ? "Formiddag" : "Ettermiddag")+'</span></div>';
+    }).join("");
+
+    var meetings = toMeetingsForCurrentProject();
+    var thisWeekMeeting = meetings.find(function(m){ return m.weekStart === mondayIso; });
+    var wk = isoWeekInfo(fromISODate(mondayIso)).week;
+    byId("dashCreateMeetingBtn").textContent = thisWeekMeeting ? "Åpne TO-møte for uke " + wk : "+ Opprett TO-møte for uke " + wk;
+
+    var panel = byId("panel-dashbord");
+    panel.querySelectorAll("[data-dashnav]").forEach(function(el){
+      el.onclick = function(ev){ ev.preventDefault(); if(this.dataset.dashfilter) view.elFilter = this.dataset.dashfilter; switchTab(this.dataset.dashnav); renderAll(); };
+    });
+    panel.querySelectorAll("[data-dashopen]").forEach(function(b){ b.onclick = function(){ openElDialog(this.dataset.dashopen); }; });
+    panel.querySelectorAll("[data-dashstaff]").forEach(function(b){ b.onclick = function(){ openStaff(this.dataset.dashstaff); }; });
+    panel.querySelectorAll("[data-dashtoggleshop]").forEach(function(cb){ cb.onchange = function(){ toggleBought(this.dataset.dashtoggleshop, this.checked); }; });
   }
   byId("dashCreateMeetingBtn").addEventListener("click", function(){
     var meetings = toMeetingsForCurrentProject();
-    var mon = toISODate(mondayOf(new Date()));
+    var mon = toISODate(mondayOf(fromISODate(osloTodayIso())));
     var existing = meetings.find(function(m){ return m.weekStart === mon; });
     if(existing){ view.toMeetingId = existing.id; } else { createToMeeting(mon); }
     switchTab("tomote");
