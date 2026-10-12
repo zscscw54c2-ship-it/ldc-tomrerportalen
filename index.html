@@ -9,7 +9,7 @@
 <link rel="icon" sizes="192x192" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="icons/manifest.json">
-<meta name="theme-color" content="#2f6fa8">
+<meta name="theme-color" content="#2c6ca6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="LDC CG1">
@@ -20,29 +20,35 @@
 <script src="vendor/xlsx.mini.min.js"></script>
 <style>
   :root{
+    /* Design-tokens (Forslag 3). Rødt/gult/grønt brukes bare til status. */
     --bg:#f3f5f8;
     --surface:#ffffff;
-    --surface-alt:#edf1f5;
-    --border:#dde3ea;
-    --border-strong:#c7d1dc;
-    --text:#1b2430;
-    --muted:#64748b;
-    --accent:#2f6fa8;
+    --surface-alt:#f3f5f8;
+    --thead:#f8fafc;
+    --border:#e1e6ed;
+    --row:#eef1f5;
+    --border-strong:#d5dce5;
+    --text:#1c2430;
+    --text-2:#3b4554;
+    --muted:#5b6676;
+    --faint:#a7b0bc;
+    --accent:#2c6ca6;
+    --accent-dark:#1d4f7e;
     --accent-ink:#ffffff;
-    --accent-soft:#e4edf6;
+    --accent-soft:#e3edf7;
     --innvendig:#e08a3c;
     --innvendig-soft:#fdf0e3;
     --utvendig:#1fa38e;
     --utvendig-soft:#e0f5f1;
-    --good:#1f9d6f;
-    --good-soft:#e3f6ec;
-    --good-ink:#1b6b47;
-    --warn:#d69a1f;
-    --warn-soft:#fdf3da;
-    --warn-ink:#7a5510;
-    --bad:#d2503d;
-    --bad-soft:#fde8e4;
-    --bad-ink:#8a2e1f;
+    --good:#2a9d6a;
+    --good-soft:#e8f5ee;
+    --good-ink:#1d6e4a;
+    --warn:#e0a42e;
+    --warn-soft:#fcf1dc;
+    --warn-ink:#8a6110;
+    --bad:#d4483b;
+    --bad-soft:#fbe6e4;
+    --bad-ink:#b23529;
     --status-dark-grey:#475569;
     --violet:#8b6fd1;
     --rose:#d1667f;
@@ -61,6 +67,7 @@
     --fag-team:#2f9e6f;
     --fag-ovrig:#4a3a2e;
     --shadow: 0 1px 2px rgba(27,36,48,0.05), 0 8px 20px -12px rgba(27,36,48,0.18);
+    --shadow-seg: 0 1px 2px rgba(0,0,0,.08);
     color-scheme: light;
   }
 
@@ -83,48 +90,54 @@
 
   .wrap{max-width:1600px; margin:0 auto; padding-block:0 60px;}
 
+  /* ---------- toppstripe + fanemeny (Forslag 3) ---------- */
   header.top{
-    position:sticky; top:0; z-index:20;
-    background:rgba(255,255,255,0.94); backdrop-filter:blur(8px); padding-block:14px 10px; margin-inline:-16px; padding-inline:16px;
-    box-shadow:0 0 0 100vmax rgba(255,255,255,0.94), 0 1px 0 100vmax var(--border); clip-path:inset(0 -100vmax -1px);
+    position:sticky; top:0; z-index:20; background:var(--surface);
+    margin-inline:-16px; padding-inline:0;
+    box-shadow:0 1px 0 var(--border);
   }
-  .top-inner{max-width:1600px; margin:0 auto; display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 16px;}
+  .topbar{ background:var(--accent); color:#fff; display:flex; align-items:center; gap:14px; padding:10px 24px; flex-wrap:wrap; }
   .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
-  .brand h1{font-size:22px; letter-spacing:-0.01em;}
-  .brand h1 .ldc{color:var(--accent);}
-  .brand .tag{font-size:12px; color:var(--muted); font-family:"IBM Plex Mono",monospace; letter-spacing:.02em;}
-  nav.tabs{display:flex; gap:4px; max-width:100%; overflow-x:auto; scrollbar-width:none; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px;}
-  nav.tabs button{
-    border:none; background:transparent; padding:7px 13px; border-radius:8px; font-size:13.5px; font-weight:600;
-    color:var(--muted); cursor:pointer; white-space:nowrap;
+  .brand h1{font-size:18px; font-weight:700; color:#fff; letter-spacing:0;}
+  .brand .tag{font-size:12px; color:#fff; opacity:.8;}
+  .topbar-spacer{ flex:1; }
+  .topchip{
+    display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3);
+    color:#fff; border-radius:8px; padding:6px 12px; font-size:14px; cursor:pointer; font-family:inherit; max-width:100%;
   }
-  nav.tabs button[aria-selected="true"]{background:var(--surface); color:var(--accent); box-shadow:var(--shadow);}
-  nav.tabs button:hover{color:var(--text);}
-
-  .project-bar{
-    max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-  }
-  .project-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:6px 10px; font:inherit; color:var(--accent); cursor:pointer; }
-  .project-pill:hover{ background:var(--surface); }
-  .project-pill::before{ content:"📍"; font-size:12px; }
+  .topchip:hover{ background:rgba(255,255,255,.22); }
+  .topchip .chevron{ color:#fff; opacity:.7; font-size:11px; }
+  .project-pill #projectCurrentLabel{ font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .project-dates{ font-size:14px; opacity:.85; white-space:nowrap; }
   /* Bare ett prosjekt å velge (f.eks. fag-/menighetskonto låst til prosjektet): vis som tekst, ikke knapp. */
-  .project-pill.single{ background:transparent; border-color:transparent; padding-left:0; padding-right:0; cursor:default; }
+  .project-pill.single{ background:transparent; border-color:transparent; cursor:default; }
   .project-pill.single:hover{ background:transparent; }
+  .project-pill.single .chevron{ display:none; }
   .mh-project-banner.single{ cursor:default; }
-  .icon-btn{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:34px; height:34px; border-radius:50%; border:1px solid var(--border-strong);
-    background:var(--surface); font-size:18px; line-height:1; cursor:pointer; color:var(--text);
-    transition:transform .15s ease, background .15s ease;
+  .avatar-wrap{ position:relative; }
+  .avatar{ width:32px; height:32px; border-radius:50%; border:none; background:#fff; color:var(--accent); font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; font-family:inherit; }
+  .avatar-menu{ position:absolute; right:0; top:calc(100% + 8px); z-index:210; min-width:220px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px rgba(28,36,48,.16); padding:6px; }
+  .avatar-menu-head{ display:flex; flex-direction:column; gap:1px; padding:8px 10px 10px; border-bottom:1px solid var(--row); margin-bottom:4px; font-size:14px; }
+  .avatar-menu-head span{ font-size:12.5px; color:var(--muted); }
+  .avatar-menu button{ display:block; width:100%; text-align:left; border:none; background:none; padding:9px 10px; border-radius:8px; font-size:14px; cursor:pointer; font-family:inherit; color:var(--text); }
+  .avatar-menu button:hover{ background:var(--surface-alt); }
+  nav.tabs{ display:flex; align-items:stretch; gap:0; overflow-x:auto; scrollbar-width:none; background:var(--surface); border-bottom:1px solid var(--border); padding:0 12px; }
+  nav.tabs::-webkit-scrollbar{ display:none; }
+  nav.tabs button{
+    border:none; border-bottom:3px solid transparent; background:transparent; padding:14px 10px 12px; font-size:14px; font-weight:500;
+    color:var(--text-2); cursor:pointer; white-space:nowrap; border-radius:0; font-family:inherit;
   }
-  .icon-btn:hover{ background:var(--surface-alt); }
-  .icon-btn:active{ transform:rotate(-25deg); }
-  .project-pill span{ font-size:14px; font-weight:700; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .project-dates{font-size:11.5px; color:var(--muted);}
+  nav.tabs button:hover{ color:var(--text); background:var(--surface-alt); }
+  nav.tabs button[aria-selected="true"]{ color:var(--accent); font-weight:600; border-bottom-color:var(--accent); }
+  nav.tabs button.grp-start{ margin-left:4px; padding-left:14px; box-shadow:inset 1px 0 0 var(--border); }
+  .tab-badge{ margin-left:6px; border-radius:10px; padding:1px 7px; font-size:11px; font-weight:600; background:#e8ecf1; color:var(--muted); }
+  nav.tabs button[aria-selected="true"] .tab-badge{ background:var(--accent); color:#fff; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
   .fagswitch{ position:relative; display:inline-block; }
   .dropbtn{ display:inline-flex; align-items:center; gap:6px; }
   .dropbtn .chevron{ font-size:11px; color:var(--muted); transition:transform .12s; }
+  header.top .topchip .chevron{ color:#fff; opacity:.7; }
   .dropbtn[aria-expanded="true"] .chevron{ transform:rotate(180deg); }
   /* dropmenu portal-es rett på <body> (se openDropdownMenu), derfor position:fixed og ingen egen forelder å forholde seg til */
   .dropmenu{
@@ -159,13 +172,13 @@
   section.panel.active{display:block;}
 
   .summary-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:18px;}
-  .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow);}
+  .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px;}
   .tile .num{font-family:"IBM Plex Mono",monospace; font-size:24px; font-weight:600; font-variant-numeric:tabular-nums;}
   .tile .lbl{font-size:12px; color:var(--muted); margin-top:2px;}
   .tile.bad .num{color:var(--bad-ink);}
   .tile.warn .num{color:var(--warn-ink);}
 
-  .cal-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
+  .cal-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;}
   .cal-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border);}
   .cal-head{flex-wrap:wrap; gap:10px;}
   .cal-head .mo{text-transform:none !important;}
@@ -207,7 +220,7 @@
   .cols2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media (max-width:720px){ .cols2{grid-template-columns:1fr;} }
 
-  .seccard{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;}
+  .seccard{background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;}
   .seccard > .sechead{padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--border);}
   .seccard > .sechead h2{font-size:15.5px; display:flex; align-items:center; gap:8px;}
   .seccard .seclist{padding:12px; display:grid; grid-template-columns:1fr; gap:10px;}
@@ -273,7 +286,7 @@
   .drawcard .dname{font-size:12px; font-weight:600; overflow-wrap:anywhere; line-height:1.35;}
   .drawcard .dactions{display:flex; justify-content:flex-end; padding:0 8px 8px;}
 
-  .peoplecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); padding:16px;}
+  .peoplecard{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;}
   .board-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; align-items:start;}
   .board-card{border-top:5px solid var(--accent);}
   .board-card.size-small{grid-column:span 1;}
@@ -319,7 +332,7 @@
     font-weight:600; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:7px;
   }
   .sec-toggle button .dot{width:9px; height:9px; border-radius:3px;}
-  .sec-toggle button[aria-pressed="true"]{color:var(--text); box-shadow:var(--shadow);}
+  .sec-toggle button[aria-pressed="true"]{color:var(--text); box-shadow:var(--shadow-seg);}
   .sec-toggle button[data-sec="innvendig"][aria-pressed="true"]{border-color:var(--innvendig); background:var(--innvendig-soft);}
   .sec-toggle button[data-sec="utvendig"][aria-pressed="true"]{border-color:var(--utvendig); background:var(--utvendig-soft);}
 
@@ -408,11 +421,11 @@
   .cal-toolbar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
   .seg{display:inline-flex; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px;}
   .seg button{border:none; background:none; padding:7px 13px; border-radius:8px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;}
-  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow);}
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--text); box-shadow:var(--shadow-seg);}
   .seg .dot{width:8px; height:8px; border-radius:3px;}
 
   .kpis{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px;}
-  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); min-width:0;}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; min-width:0;}
   .kpi .num{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; line-height:1.1;}
   .kpi .num small{font-size:13px; color:var(--muted); font-weight:500;}
   .kpi .lbl{font-size:12px; color:var(--muted); margin-top:3px;}
@@ -687,8 +700,10 @@
     .cal-head{padding:10px;}
     .cal-foot{padding:8px 10px;}
     .peoplecard, .cal-card, .seccard{border-radius:8px; border-left:none; border-right:none;}
-    header.top{position:static; backdrop-filter:none; clip-path:none; box-shadow:0 1px 0 var(--border); background:#fff; margin-inline:-4px; padding-inline:4px;}
-    header.top .top-inner{display:block;}
+    header.top{position:static; margin-inline:-4px;}
+    .topbar{ padding:10px 12px; gap:8px 10px; }
+    .topbar .topchip{ font-size:13px; padding:5px 10px; }
+    .project-pill #projectCurrentLabel{ max-width:140px; }
     .kpis{gap:8px;}
     .kpi{padding:10px 12px;}
     .kpi .num{font-size:19px;}
@@ -864,16 +879,18 @@
   @media (max-width:640px){
     #mobileHome{ display:block; }
     header.top nav.tabs{ display:none; }
-    header.top .project-bar{ display:none; }
+    header.top .topbar .project-pill, header.top .topbar .fagswitch{ display:none; }
+    #mobileBackHome{ padding-inline:12px; }
     .wrap > section.panel{ display:none !important; }
     .wrap > .foot-note{ display:none !important; }
 
     body.section-active #mobileHome{ display:none; }
-    body.section-active header.top .project-bar{ display:flex; }
+    body.section-active header.top .topbar .project-pill{ display:inline-flex; }
+    body.section-active header.top .topbar .fagswitch:not([hidden]){ display:inline-block; }
     body.section-active .wrap > section.panel.active{ display:block !important; }
     body.section-active .wrap > .foot-note{ display:block !important; }
     body.section-active #mobileBackHome{ display:flex; }
-    #refreshBtn, #kontaktRefreshBtn{ display:none !important; }
+    #kontaktRefreshBtn{ display:none !important; }
   }
 
   .foot-note{margin-top:28px; font-size:11.5px; color:var(--muted); line-height:1.5;}
@@ -990,42 +1007,50 @@
 
 <div class="wrap">
   <header class="top">
-    <a href="#" id="mobileBackHome"><span class="arrow">←</span> Hjem</a>
-    <div class="top-inner">
+    <!-- Blå toppstripe: merke + rolle til venstre, prosjekt, fagfilter og profil til høyre. -->
+    <div class="topbar">
       <div class="brand">
-        <h1><span class="ldc">LDC</span> CG1</h1>
+        <h1>LDC CG1</h1>
         <span class="tag" id="brandTag"></span>
       </div>
-      <nav class="tabs" role="tablist">
-        <button role="tab" data-tab="dashbord" aria-selected="false" hidden>Dashbord</button>
-        <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
-        <button role="tab" data-tab="elementer" aria-selected="false">Oppgaver</button>
-        <button role="tab" data-tab="handleliste" aria-selected="false">Handleliste</button>
-        <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
-        <button role="tab" data-tab="dokumentasjon" aria-selected="false">Dokumentasjon</button>
-        <button role="tab" data-tab="personer" aria-selected="false">Frivillige</button>
-        <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
-        <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
-        <button role="tab" data-tab="cg1" aria-selected="false" hidden>CG1</button>
-        <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
-        <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Administrasjon</button>
-        <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
-      </nav>
-    </div>
-    <div class="project-bar">
+      <span class="topbar-spacer"></span>
+      <button type="button" class="dropbtn topchip project-pill" id="projectSwitchBtn" title="Bytt prosjekt" aria-haspopup="listbox" aria-expanded="false">
+        <span id="projectCurrentLabel"></span>
+        <span id="projectDates" class="project-dates"></span>
+        <span class="chevron" aria-hidden="true">▾</span>
+      </button>
       <div class="fagswitch" id="fagSwitchWrap" hidden>
-        <button type="button" class="btn small dropbtn" id="fagSwitchBtn" title="Vis byggegruppe" aria-haspopup="listbox" aria-expanded="false">
+        <button type="button" class="dropbtn topchip" id="fagSwitchBtn" title="Vis byggegruppe" aria-haspopup="listbox" aria-expanded="false">
           <span id="fagSwitchLabel"></span>
-          <span class="chevron">⌄</span>
+          <span class="chevron" aria-hidden="true">▾</span>
         </button>
       </div>
-      <button type="button" class="dropbtn project-pill" id="projectSwitchBtn" title="Bytt prosjekt" aria-haspopup="listbox" aria-expanded="false">
-        <span id="projectCurrentLabel"></span>
-      </button>
-      <span id="projectDates" class="mono project-dates"></span>
-      <button class="icon-btn" id="refreshBtn" title="Oppdater siden" aria-label="Oppdater siden">⟳</button>
-      <button class="btn small ghost" id="logoutBtn" title="Logg ut">Logg ut</button>
+      <div class="avatar-wrap">
+        <button type="button" class="avatar" id="avatarBtn" aria-haspopup="menu" aria-expanded="false" title="Profil og innstillinger"><span id="avatarInitials"></span></button>
+        <div class="avatar-menu" id="avatarMenu" role="menu" hidden>
+          <div class="avatar-menu-head"><b id="avatarMenuName"></b><span id="avatarMenuRole"></span></div>
+          <button type="button" role="menuitem" id="refreshBtn" title="Oppdater siden">⟳ Oppdater</button>
+          <button type="button" role="menuitem" id="logoutBtn" title="Logg ut">Logg ut</button>
+        </div>
+      </div>
     </div>
+    <a href="#" id="mobileBackHome"><span class="arrow">←</span> Hjem</a>
+    <!-- Fanemeny i grupper (skillestrek før første fane i hver gruppe). -->
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="dashbord" aria-selected="false" hidden>Dashbord</button>
+      <button role="tab" data-tab="kalender" aria-selected="true">Kalender</button>
+      <button role="tab" data-tab="elementer" aria-selected="false">Oppgaver<span class="tab-badge" id="tabBadgeElementer" hidden></span></button>
+      <button role="tab" data-tab="handleliste" aria-selected="false" class="grp-start">Handleliste<span class="tab-badge" id="tabBadgeHandleliste" hidden></span></button>
+      <button role="tab" data-tab="tegninger" aria-selected="false">Tegninger</button>
+      <button role="tab" data-tab="dokumentasjon" aria-selected="false">Dokumentasjon</button>
+      <button role="tab" data-tab="personer" aria-selected="false" class="grp-start">Frivillige</button>
+      <button role="tab" data-tab="rom" aria-selected="false">To-do</button>
+      <button role="tab" data-tab="andelig" aria-selected="false">Team</button>
+      <button role="tab" data-tab="referat" aria-selected="false" hidden>Referat</button>
+      <button role="tab" data-tab="cg1" aria-selected="false" class="grp-start" hidden>CG1</button>
+      <button role="tab" data-tab="tomote" aria-selected="false" hidden>TO-møte</button>
+      <button role="tab" data-tab="prosjekt" aria-selected="false" hidden>Administrasjon</button>
+    </nav>
     <div id="offlineBanner" class="status-banner offline" role="status" hidden></div>
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
@@ -3813,7 +3838,7 @@
     var wrap = byId("fagSwitchWrap");
     if(isByggeleder()){
       wrap.hidden = false;
-      byId("fagSwitchLabel").textContent = view.byggeleiderFag === "alle" ? "Alle fag (oversikt)" : (FAG_LABELS[view.byggeleiderFag] || view.byggeleiderFag);
+      byId("fagSwitchLabel").textContent = view.byggeleiderFag === "alle" ? "Alle fag" : (FAG_LABELS[view.byggeleiderFag] || view.byggeleiderFag);
     } else {
       wrap.hidden = true;
       if(openDropdownState && openDropdownState.btn === byId("fagSwitchBtn")) closeDropdownMenu();
@@ -3823,7 +3848,7 @@
       brandTag.textContent = isByggeleder() ? byggeleiderIdentityLabel() : (FAG_LABELS[myRole()] || "");
     }
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
-    byId("projectCurrentLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
+    byId("projectCurrentLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name : "");
     byId("projectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
     byId("mobileHomeProjectLabel").textContent = state.projects.length === 0 ? "Ingen prosjekter ennå" : (cur ? cur.name+(cur.isActive?' ★':'') : "");
     byId("mobileHomeProjectDates").textContent = cur && (cur.start || cur.end) ? fmtRange(cur.start || cur.end, cur.end || cur.start) : "";
@@ -3831,11 +3856,55 @@
     byId("projectSwitchBtn").title = state.projects.length < 2 ? "" : "Bytt prosjekt";
     byId("projectSwitchBtn").classList.toggle("single", state.projects.length < 2);
     byId("mobileHomeProjectBtn").classList.toggle("single", state.projects.length < 2);
+    renderAvatar();
+    renderTabBadges();
+  }
+  // Profil (avatar med initialer) i toppstripen: navn/rolle + Oppdater/Logg ut i menyen.
+  function myDisplayName(){
+    if(!state.me) return "";
+    var p = myLinkedPerson();
+    if(isByggeleder()){
+      var acc = myCg1Access();
+      return p ? p.name : ((acc && acc.display_name) || state.me.email || "");
+    }
+    if(myRole() === "kontakt") return "Menighet";
+    return p ? p.name : (FAG_LABELS[myRole()] || myRole() || "");
+  }
+  function initialsOf(name){
+    var parts = (name || "").trim().split(/\s+/).filter(Boolean);
+    if(!parts.length) return "?";
+    return (parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  function renderAvatar(){
+    if(!state.me) return;
+    var name = myDisplayName();
+    byId("avatarInitials").textContent = initialsOf(name);
+    byId("avatarMenuName").textContent = name;
+    var role = isByggeleder() ? byggeleiderIdentityLabel() : (myRole() === "kontakt" ? "Menighet" : (FAG_LABELS[myRole()] || ""));
+    var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
+    byId("avatarMenuRole").textContent = [role, cur ? cur.name : ""].filter(Boolean).join(" · ");
+  }
+  function setAvatarMenu(open){
+    byId("avatarMenu").hidden = !open;
+    byId("avatarBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  byId("avatarBtn").addEventListener("click", function(ev){ ev.stopPropagation(); setAvatarMenu(byId("avatarMenu").hidden); });
+  document.addEventListener("click", function(ev){ if(!byId("avatarMenu").hidden && !ev.target.closest(".avatar-wrap")) setAvatarMenu(false); });
+  document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && !byId("avatarMenu").hidden){ setAvatarMenu(false); byId("avatarBtn").focus(); } });
+  // Tellere på fanene: Oppgaver = ikke ferdig, Handleliste = mangler å kjøpe (følger fagfilteret).
+  function renderTabBadges(){
+    var open = elementsForCurrentProject().filter(function(e){ return e.status !== "ferdig"; }).length;
+    var shop = shopItemsForCurrentProject().filter(function(x){ return !x.bought; }).length;
+    [["tabBadgeElementer", open], ["tabBadgeHandleliste", shop]].forEach(function(b){
+      var el = byId(b[0]);
+      el.hidden = !b[1];
+      el.textContent = b[1] || "";
+    });
   }
   byId("fagSwitchBtn").addEventListener("click", function(){
     var itemsHtml = activeProjectFags().map(function(f){
       return fagSwitchItemHtml(f, FAG_LABELS[f], FAG_COLORS[f] || "var(--muted)");
-    }).join("") + '<div class="dropmenu-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag (oversikt)", "var(--muted)");
+    }).join("") + '<div class="dropmenu-divider"></div>' + fagSwitchItemHtml("alle", "Alle fag", "var(--muted)");
     openDropdownMenu(this, itemsHtml, function(value){
       view.byggeleiderFag = value;
       view.dokuWeek = null;
