@@ -943,7 +943,8 @@
 
     <div id="kontaktSectionToggle" style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
       <button type="button" class="btn small" data-kontaktsection="behov">Behov for hjelp</button>
-      <button type="button" class="btn small" data-kontaktsection="logi">Logi</button>
+      <button type="button" class="btn small" data-kontaktsection="logiteam">Losji for byggegruppen</button>
+      <button type="button" class="btn small" data-kontaktsection="logi">Losji</button>
       <button type="button" class="btn small" data-kontaktsection="mat">Mat</button>
     </div>
 
@@ -962,7 +963,8 @@
     </div>
 
     <div id="kontaktLogiWrap" hidden>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Personer vises her når CG1 har markert at de trenger logi. Frivillige som fikser logi selv vises ikke her.</p>
+      <h3 id="kontaktLogiTitle" style="font-size:15px; margin:0 0 4px;">Losji</h3>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Frivillige og tilgjengeligheten deres, gruppert etter hvem som deler losji (familier, ektepar, venner osv.), med losji-status. «Losji for byggegruppen» er teamet, som trenger losji tidligere enn de andre; «Losji» er alle andre. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Personer vises her når CG1 har markert at de trenger logi. Frivillige som fikser losji selv vises ikke her.</p>
       <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
         <strong style="color:var(--text); font-weight:700;">Farger:</strong>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger logi</span>
@@ -1257,7 +1259,8 @@
     <div id="personerSectionToggle" hidden style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content; flex-wrap:wrap;">
       <button type="button" class="btn small" data-personersection="frivillige">Frivillige</button>
       <button type="button" class="btn small" data-personersection="behov">Behov fra menigheten</button>
-      <button type="button" class="btn small" data-personersection="logi" id="personerLogiToggleBtn" hidden>Logi</button>
+      <button type="button" class="btn small" data-personersection="logiteam" id="personerLogiTeamToggleBtn" hidden>Losji for byggegruppen</button>
+      <button type="button" class="btn small" data-personersection="logi" id="personerLogiToggleBtn" hidden>Losji</button>
     </div>
 
     <div id="personerFrivilligeBox">
@@ -1317,13 +1320,13 @@
     <div id="personerLogiBox" hidden>
       <div class="peoplecard">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-          <h2 data-etkey="personer_logi_title" style="font-size:16px;">Logi</h2>
+          <h2 id="personerLogiTitle" style="font-size:16px;">Losji</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <input type="search" id="logiSearchInput" placeholder="Søk etter navn …" style="border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--surface); min-width:160px;" />
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
           </div>
         </div>
-        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige på prosjektet, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe. Trykk på gruppenavnet for å endre, ta ut personer eller løse opp gruppen. Frivillige som fikser logi selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Frivillige gruppert etter hvem som deler losji, med status vist som et fargeikon foran navnet. «Losji for byggegruppen» viser dem som er huket av for «Med i teamet» (og logi-gruppene deres), «Losji» viser alle andre. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe. Trykk på gruppenavnet for å endre, ta ut personer eller løse opp gruppen. Frivillige som fikser losji selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
         <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
           <strong style="color:var(--text); font-weight:700;">Farger:</strong>
           <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--status-dark-grey); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Uavklart</span>
@@ -2592,7 +2595,7 @@
   try{ var savedView = localStorage.getItem("ldc_cal_view"); if(savedView === "prosjekt" || savedView === "dag") view.calView = savedView; }catch(e){}
   // Husker hvilken underfane man var på under Personer (Frivillige/Behov/Logi), slik at en
   // full side-refresh (f.eks. på mobil) ikke hopper tilbake til Frivillige.
-  try{ var savedPersonerSection = localStorage.getItem("ldc_personer_section"); if(savedPersonerSection === "frivillige" || savedPersonerSection === "behov" || savedPersonerSection === "logi") view.personerSection = savedPersonerSection; }catch(e){}
+  try{ var savedPersonerSection = localStorage.getItem("ldc_personer_section"); if(savedPersonerSection === "frivillige" || savedPersonerSection === "behov" || savedPersonerSection === "logi" || savedPersonerSection === "logiteam") view.personerSection = savedPersonerSection; }catch(e){}
   var STATUS_LABEL = { mangler:"Mangler", pabegynt:"Påbegynt", ferdig:"Ferdig" };
   var STATUS_ORDER = ["mangler","pabegynt","ferdig"];
 
@@ -4503,13 +4506,15 @@
     var canLogi = canSeeLogi();
     sectionToggle.hidden = !(isByggeleder() || canLogi);
     byId("personerLogiToggleBtn").hidden = !canLogi;
+    byId("personerLogiTeamToggleBtn").hidden = !canLogi;
     if(!isByggeleder() && view.personerSection === "behov") view.personerSection = "frivillige";
-    if(view.personerSection === "logi" && !canLogi) view.personerSection = "frivillige";
+    if((view.personerSection === "logi" || view.personerSection === "logiteam") && !canLogi) view.personerSection = "frivillige";
     sectionToggle.querySelectorAll("[data-personersection]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.personersection === view.personerSection);
     });
     var showBehov = isByggeleder() && view.personerSection === "behov";
-    var showLogi = canLogi && view.personerSection === "logi";
+    var showLogi = canLogi && (view.personerSection === "logi" || view.personerSection === "logiteam");
+    var logiTeam = view.personerSection === "logiteam";
     byId("personerFrivilligeBox").hidden = showBehov || showLogi;
     byId("personerBehovBox").hidden = !showBehov;
     byId("personerLogiBox").hidden = !showLogi;
@@ -4526,7 +4531,8 @@
       byId("logiFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
       // Fag-uavhengig og skrivebeskyttet tilgjengelighet (gruppert etter logi-gruppe, ikke fag) -
       // denne siden skal bare koordinere logi, ikke redigere hvem som er tilgjengelig når.
-      byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, allowGroupEdit: isByggeleder(), searchQuery: view.logiSearch });
+      byId("personerLogiTitle").textContent = logiTeam ? "Losji for byggegruppen" : "Losji";
+      byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, allowGroupEdit: isByggeleder(), searchQuery: view.logiSearch, team: logiTeam });
       wireFrivilligeGridEvents("personerLogiList", { readOnly: false, allowGroupEdit: isByggeleder() });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("personerLogiList", cur); else byId("personerLogiList").scrollLeft = 0;
       renderLogiGroupSelectionBar();
@@ -8821,6 +8827,10 @@
   // ektepar, venner osv.) i stedet for fag - menighetens Logi-side bryr seg om hvem som bor
   // sammen, ikke hvilket fag folk jobber i. Tilgjengelighet er fag-uavhengig her (til stede
   // "i det hele tatt" den dagen, uansett fag), siden det er det som er relevant for logi.
+  function isLosjiTeamPerson(p){
+    if(p.onTeam) return true;
+    return !!p.logiGroupId && state.people.some(function(o){ return o.logiGroupId === p.logiGroupId && o.onTeam; });
+  }
   function buildLogiGroupGridHtml(project, opts){
     opts = opts || {};
     if(!project || !project.start || !project.end){
@@ -8885,6 +8895,9 @@
       var linfo = logiInfoForPerson(p.id);
       // Menigheten ser bare dem CG1 har satt til «Trenger logi» (eller senere status) - ikke «Uavklart».
       if(opts.hideUnclear && (!linfo || linfo.status === "uavklart")) return false;
+      // To losjisider: byggegruppen (med i teamet) for seg, alle andre for seg. En logi-gruppe
+      // følger med til byggegruppen hvis minst én i gruppen er med i teamet.
+      if(opts.team !== undefined && isLosjiTeamPerson(p) !== !!opts.team) return false;
       return !linfo || linfo.status !== "ordner_selv";
     });
     if(opts.fromToday && startIdx > 0){
@@ -9710,7 +9723,9 @@
     document.querySelectorAll("#kontaktSectionToggle [data-kontaktsection]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.kontaktsection === view.kontaktSection);
     });
-    var section = view.kontaktSection === "logi" || view.kontaktSection === "mat" ? view.kontaktSection : "behov";
+    var section = ["logi", "logiteam", "mat"].indexOf(view.kontaktSection) !== -1 ? view.kontaktSection : "behov";
+    var kontaktLogiTeam = section === "logiteam";
+    if(kontaktLogiTeam) section = "logi";
     byId("kontaktBehovWrap").hidden = section !== "behov";
     byId("kontaktLogiWrap").hidden = section !== "logi";
     byId("kontaktMatWrap").hidden = section !== "mat";
@@ -9723,7 +9738,8 @@
       // Gruppert etter logi-gruppe (familie/ektepar/venner), ikke fag - menighetens
       // Logi-side bryr seg om hvem som bor sammen. Helt statisk rutenett (ingen
       // data-toggleavail/data-requestavail), kun navnene har data-logiopen.
-      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, searchQuery: view.logiSearch, hideUnclear: true });
+      byId("kontaktLogiTitle").textContent = kontaktLogiTeam ? "Losji for byggegruppen" : "Losji";
+      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, searchQuery: view.logiSearch, hideUnclear: true, team: kontaktLogiTeam });
       wireFrivilligeGridEvents("kontaktLogiList", { readOnly: false });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("kontaktLogiList", cur); else byId("kontaktLogiList").scrollLeft = 0;
       return;
