@@ -1200,6 +1200,7 @@
       <form class="inline-add" id="addShopForm" style="flex-wrap:wrap;">
         <input type="text" id="newShopName" placeholder="Vare" required maxlength="80" />
         <input type="text" id="newShopQty" placeholder="Antall (valgfritt)" maxlength="30" style="max-width:150px;" />
+        <select id="newShopFag" hidden aria-label="Fag"></select>
         <label class="btn small" id="newShopCameraTrigger" for="newShopCameraInput" style="margin:0; cursor:pointer;">📷 Ta bilde</label>
         <input type="file" id="newShopCameraInput" accept="image/*" capture="environment" style="display:none;" />
         <label class="btn small ghost" id="newShopFileTrigger" for="newShopFileInput" style="margin:0; cursor:pointer;">Last opp bilde/fil</label>
@@ -2098,6 +2099,10 @@
       <label for="elName">Navn på oppgave</label>
       <input type="text" id="elName" required maxlength="80" placeholder="F.eks. Kle nordvegg" list="elNameSuggestions" />
       <datalist id="elNameSuggestions"></datalist>
+    </div>
+    <div class="field" id="elFagField" hidden>
+      <label for="elFag">Fag</label>
+      <select id="elFag"></select>
     </div>
     <div class="field" id="elSectionField">
       <label for="elSection">Seksjon</label>
@@ -4067,6 +4072,11 @@
 
   // ---------- handleliste tab ----------
   function renderShopTab(){
+    var shopFag = byId("newShopFag");
+    var pickShopFag = activeFag() === "alle";
+    if(pickShopFag) shopFag.innerHTML = fagPickerOptionsHtml(shopFag.value);
+    shopFag.hidden = !pickShopFag;
+    shopFag.required = pickShopFag;
     var box = byId("shopList");
     var items = shopItemsForCurrentProject().slice().sort(function(a,b){ return (a.bought?1:0) - (b.bought?1:0); });
     if(items.length === 0){
@@ -4106,7 +4116,9 @@
     var name = nameInput.value.trim();
     if(!name) return;
     var chosenFile = (cameraInput.files && cameraInput.files[0]) || (fileInput.files && fileInput.files[0]) || null;
-    addShopItem(name, qtyInput.value.trim(), chosenFile);
+    var shopFag = activeFag() === "alle" ? byId("newShopFag").value : activeFag();
+    if(!shopFag){ showError("Velg hvilket fag varen hører til."); return; }
+    addShopItem(name, qtyInput.value.trim(), chosenFile, shopFag);
     nameInput.value = "";
     qtyInput.value = "";
     cameraInput.value = "";
@@ -5965,6 +5977,16 @@
     renderDateRangeSummary();
   });
 
+  // Fagvelger for «Alle fag»-oversikten: ny oppgave / ny vare må høre til ett fag.
+  function fagPickerOptionsHtml(selected){
+    var fags = activeProjectFags();
+    if(!fags.length) fags = FAG_LIST.slice();
+    return '<option value="">Velg fag …</option>' + fags.map(function(f){
+      return '<option value="'+escapeHtml(f)+'"'+(f === selected ? ' selected' : '')+'>'+escapeHtml(FAG_LABELS[f] || f)+'</option>';
+    }).join("");
+  }
+  byId("elFag").addEventListener("change", function(){ byId("elSectionField").hidden = this.value !== "tomrer"; });
+
   // elementId: rediger eksisterende · prefillDate: åpnet fra en dag i kalenderen · planNow: åpne med datoer slått på
   function openElDialog(elementId, prefillDate, prefillSection, planNow){
     var isEdit = !!elementId;
@@ -5972,6 +5994,10 @@
     byId("elId").value = elementId || "";
     byId("elPickWrap").hidden = true;
     byId("elDelete").hidden = !isEdit;
+    var pickFag = !isEdit && activeFag() === "alle";
+    byId("elFagField").hidden = !pickFag;
+    byId("elFag").required = pickFag;
+    if(pickFag) byId("elFag").innerHTML = fagPickerOptionsHtml("");
     if(isEdit){
       var e = state.elements.find(function(x){ return x.id === elementId; });
       if(!e){ showError("Fant ikke oppgaven – den kan ha blitt slettet."); return; }
@@ -5985,7 +6011,7 @@
       byId("elDlgTitle").textContent = "Ny oppgave";
       byId("elName").value = "";
       byId("elNotes").value = "";
-      byId("elSectionField").hidden = activeFag() !== "tomrer";
+      byId("elSectionField").hidden = pickFag || activeFag() !== "tomrer";
       byId("elSection").value = (prefillSection === "innvendig" || prefillSection === "utvendig") ? prefillSection : "innvendig";
       setDlgStatus("mangler");
       byId("elStart").value = prefillDate || "";
@@ -6051,8 +6077,10 @@
       payload.assignments = prunedAssignments(existing && existing.assignments, start, end);
       updateElement(id, payload);
     } else {
-      if(activeFag() === "alle"){ showError("Velg et bestemt fag for å opprette en ny oppgave."); return; }
-      payload.fag = activeFag();
+      var newFag = activeFag() === "alle" ? byId("elFag").value : activeFag();
+      if(!newFag || newFag === "alle"){ showError("Velg hvilket fag oppgaven hører til."); return; }
+      payload.fag = newFag;
+      if(newFag !== "tomrer") payload.section = "innvendig";
       addElement(payload);
     }
     elDialog.close();
@@ -10837,11 +10865,12 @@
       });
     });
   }
-  function addShopItem(name, quantity, imageFile){
+  function addShopItem(name, quantity, imageFile, fag){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    if(activeFag() === "alle"){ showError("Velg et bestemt fag for å legge til en vare."); return; }
-    var insertRow = { project_id: currentProjectId(), name: name.slice(0,80), quantity: quantity ? quantity.slice(0,30) : null, bought:false, fag: activeFag() };
+    fag = fag || activeFag();
+    if(!fag || fag === "alle"){ showError("Velg hvilket fag varen hører til."); return; }
+    var insertRow = { project_id: currentProjectId(), name: name.slice(0,80), quantity: quantity ? quantity.slice(0,30) : null, bought:false, fag: fag };
     var imgPromise = imageFile ? uploadShopItemImage(imageFile) : Promise.resolve(null);
     imgPromise.then(function(path){
       if(path) insertRow.image_path = path;
