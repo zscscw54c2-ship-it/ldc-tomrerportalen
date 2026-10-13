@@ -962,10 +962,9 @@
     </div>
 
     <div id="kontaktLogiWrap" hidden>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Frivillige som fikser logi selv vises ikke her.</p>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Personer vises her når CG1 har markert at de trenger logi. Frivillige som fikser logi selv vises ikke her.</p>
       <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
         <strong style="color:var(--text); font-weight:700;">Farger:</strong>
-        <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--status-dark-grey); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Uavklart</span>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger logi</span>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--warn); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Logi klart</span>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--good); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Melding sendt</span>
@@ -8884,6 +8883,8 @@
     var rosterPeople = state.people.filter(function(p){
       if(p.projectId !== pid) return false;
       var linfo = logiInfoForPerson(p.id);
+      // Menigheten ser bare dem CG1 har satt til «Trenger logi» (eller senere status) - ikke «Uavklart».
+      if(opts.hideUnclear && (!linfo || linfo.status === "uavklart")) return false;
       return !linfo || linfo.status !== "ordner_selv";
     });
     if(opts.fromToday && startIdx > 0){
@@ -9722,7 +9723,7 @@
       // Gruppert etter logi-gruppe (familie/ektepar/venner), ikke fag - menighetens
       // Logi-side bryr seg om hvem som bor sammen. Helt statisk rutenett (ingen
       // data-toggleavail/data-requestavail), kun navnene har data-logiopen.
-      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, searchQuery: view.logiSearch });
+      byId("kontaktLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, searchQuery: view.logiSearch, hideUnclear: true });
       wireFrivilligeGridEvents("kontaktLogiList", { readOnly: false });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("kontaktLogiList", cur); else byId("kontaktLogiList").scrollLeft = 0;
       return;
