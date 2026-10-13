@@ -7207,7 +7207,7 @@
     return state.toFollowups.filter(function(f){ return f.project_id === pid; }).sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
   }
   function rowToRoomTodo(row){
-    return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, assignedPersonId: row.assigned_person_id || null, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, room: row.room, text: row.text, done: !!row.done, assignedPersonId: row.assigned_person_id || null, doneAt: row.done_at || null, createdAt: row.created_at };
   }
   function roomTodosForCurrentProject(){
     var pid = currentProjectId();
@@ -10808,7 +10808,21 @@
       if(res.error){ return; }
       state.roomTodos = res.data.map(rowToRoomTodo);
       scheduleRender();
+      sweepOldDoneRoomTodos();
     });
+  }
+  // Avhukede To-do-punkter slettes automatisk 48 timer etter avhuking (done_at, sql/90) -
+  // samme opplegg som handlelistens kjøpte varer. Bare de med tilgang til To-do rydder.
+  // Hvert punkt forsøkes bare én gang per økt, så en sletting som ikke går gjennom (f.eks. tilgang)
+  // ikke gir en evig løkke med sletting og ny henting.
+  var roomTodoSweepTried = {};
+  function sweepOldDoneRoomTodos(){
+    if(!sb || !canSeeTeamPages()) return;
+    var cutoff = Date.now() - 48*3600*1000;
+    var old = state.roomTodos.filter(function(t){ return t.done && t.doneAt && new Date(t.doneAt).getTime() < cutoff && !roomTodoSweepTried[t.id]; });
+    if(!old.length) return;
+    old.forEach(function(t){ roomTodoSweepTried[t.id] = true; });
+    sb.from("room_todos").delete().in("id", old.map(function(t){ return t.id; })).then(function(res){ if(!res.error) refetchRoomTodos(); });
   }
 
   function selectProject(id){
@@ -11599,7 +11613,7 @@
   }
   function toggleRoomTodo(id, done){
     if(!sb) return;
-    sb.from("room_todos").update({ done: done }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; } refetchRoomTodos(); });
+    sb.from("room_todos").update({ done: done, done_at: done ? new Date().toISOString() : null }).eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke oppdatere: "+res.error.message); return; } refetchRoomTodos(); });
   }
   function deleteRoomTodo(id){
     if(!sb) return;
