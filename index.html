@@ -964,11 +964,11 @@
 
     <div id="kontaktLogiWrap" hidden>
       <h3 id="kontaktLogiTitle" style="font-size:15px; margin:0 0 4px;">Losji</h3>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Frivillige og tilgjengeligheten deres, gruppert etter hvem som deler losji (familier, ektepar, venner osv.), med losji-status. «Losji for byggegruppen» er teamet, som trenger losji tidligere enn de andre; «Losji» er alle andre. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Personer vises her når CG1 har markert at de trenger logi. Frivillige som fikser losji selv vises ikke her.</p>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Frivillige og tilgjengeligheten deres, gruppert etter hvem som deler losji (familier, ektepar, venner osv.), med losji-status. «Losji for byggegruppen» er teamet, som trenger losji tidligere enn de andre; «Losji» er alle andre. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Personer vises her når CG1 har markert at de trenger losji. Frivillige som fikser losji selv vises ikke her.</p>
       <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
         <strong style="color:var(--text); font-weight:700;">Farger:</strong>
-        <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger logi</span>
-        <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--warn); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Logi klart</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger losji</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--warn); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Losji klart</span>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--good); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Melding sendt</span>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
@@ -981,6 +981,7 @@
     <div id="kontaktMatWrap" hidden>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
         <p class="sub" style="font-size:13px; color:var(--muted); margin:0; flex:1; min-width:200px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, dag for dag.</p>
+        <button type="button" class="btn small" id="kontaktMatAllDaysBtn">Vis alle dager</button>
         <button type="button" class="btn small" id="kontaktPrintMatBtn">Skriv ut matliste for uken</button>
       </div>
       <div id="kontaktMatChart"></div>
@@ -1326,12 +1327,12 @@
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
           </div>
         </div>
-        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Frivillige gruppert etter hvem som deler losji, med status vist som et fargeikon foran navnet. «Losji for byggegruppen» viser dem som er huket av for «Med i teamet» (og logi-gruppene deres), «Losji» viser alle andre. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe. Trykk på gruppenavnet for å endre, ta ut personer eller løse opp gruppen. Frivillige som fikser losji selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Frivillige gruppert etter hvem som deler losji, med status vist som et fargeikon foran navnet. «Losji for byggegruppen» viser dem som er huket av for «Med i teamet» (og losji-gruppene deres), «Losji» viser alle andre. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en losji-gruppe. Trykk på gruppenavnet for å endre, ta ut personer eller løse opp gruppen. Frivillige som fikser losji selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
         <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
           <strong style="color:var(--text); font-weight:700;">Farger:</strong>
           <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--status-dark-grey); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Uavklart</span>
-          <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger logi</span>
-          <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--warn); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Logi klart</span>
+          <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--bad); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Trenger losji</span>
+          <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--warn); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Losji klart</span>
           <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--good); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Melding sendt</span>
         </div>
         <div id="logiGroupSelectionBar" hidden style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:12.5px; position:sticky; top:var(--header-h, 0px); z-index:15; box-shadow:var(--shadow);">
@@ -2372,7 +2373,7 @@
 
 <dialog id="logiGroupDialog">
   <form class="dlg-body" id="logiGroupDialogForm" method="dialog">
-    <h3 id="logiGroupDialogTitle">Ny logi-gruppe</h3>
+    <h3 id="logiGroupDialogTitle">Ny losji-gruppe</h3>
     <p class="sub" id="logiGroupDialogMembers" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;"></p>
     <input type="hidden" id="logiGroupDialogMemberIds" />
     <div class="field"><label for="logiGroupDialogLabel">Merkelapp (valgfritt)</label><input type="text" id="logiGroupDialogLabel" maxlength="80" placeholder="f.eks. Familien Hansen" /></div>
@@ -2426,14 +2427,14 @@
     <div style="margin:0 0 16px;"><button type="button" class="btn small" id="pdEditInfoBtn" hidden>Rediger info</button></div>
     <div id="pdGroupMembers" hidden style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin:10px 0 16px; padding:10px 12px; background:var(--surface-alt); border-radius:8px;"></div>
     <p class="sub" id="logiGroupNote" hidden style="font-size:12.5px; margin:-8px 0 14px; padding:8px 12px; background:var(--accent-soft); color:var(--accent); border-radius:8px;"></p>
-    <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Logi</h4>
+    <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Losji</h4>
     <div class="field" id="logiStatusField">
       <label for="logiStatusSelect">Status</label>
       <select id="logiStatusSelect">
         <option value="uavklart">Uavklart</option>
-        <option value="trenger_logi">Trenger logi</option>
-        <option value="logi_klart">Logi klart</option>
-        <option value="ordner_selv">Fikser logi selv</option>
+        <option value="trenger_logi">Trenger losji</option>
+        <option value="logi_klart">Losji klart</option>
+        <option value="ordner_selv">Fikser losji selv</option>
       </select>
     </div>
     <label class="checkrow" id="logiMeldingSendtField" style="margin:0 0 16px;">
@@ -2449,8 +2450,8 @@
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="logiDialogClose">Lukk</button>
-      <button type="button" class="btn" id="logiUndoReadyBtn" hidden>Angre «logi klart»</button>
-      <button type="button" class="btn primary" id="logiMarkReadyBtn" hidden>Merk logi som klart</button>
+      <button type="button" class="btn" id="logiUndoReadyBtn" hidden>Angre «losji klart»</button>
+      <button type="button" class="btn primary" id="logiMarkReadyBtn" hidden>Merk losji som klart</button>
       <button type="button" class="btn primary" id="logiSaveBtn">Lagre</button>
     </div>
   </div>
@@ -3319,7 +3320,7 @@
   guardDialog("elDialog", { cancelId: "elCancel", what: "den nye oppgaven", isNew: function(){ return !byId("elId").value; } });
   guardDialog("projectDialog", { cancelId: "projectCancel", what: "det nye prosjektet", isNew: function(){ return !byId("projId").value; } });
   guardDialog("pwDialog", { cancelId: "pwCancel", what: "den nye privilege-uken", isNew: function(){ return !byId("pwId").value; } });
-  guardDialog("logiGroupDialog", { cancelId: "logiGroupDialogCancel", what: "logi-gruppen", isNew: function(){ return !/^Rediger/.test(byId("logiGroupDialogTitle").textContent); } });
+  guardDialog("logiGroupDialog", { cancelId: "logiGroupDialogCancel", what: "losji-gruppen", isNew: function(){ return !/^Rediger/.test(byId("logiGroupDialogTitle").textContent); } });
   guardDialog("deliveryEditDialog", { cancelId: "deliveryEditCancel", isNew: function(){ return false; } });
   guardDialog("logiDialog", { cancelId: "logiDialogClose", saveId: "logiSaveBtn", isNew: function(){ return false; } });
   guardDialog("personInfoEditDialog", { cancelId: "personInfoEditCancel", isNew: function(){ return false; } });
@@ -5753,7 +5754,7 @@
         '<td><input type="text" data-impfield="address" value="'+escapeHtml(r.address)+'" maxlength="160" /></td>' +
         '<td><input type="text" data-impfield="congregation" value="'+escapeHtml(r.congregation)+'" maxlength="120" /></td>' +
         '<td><select data-impfield="fag">'+fagOptionsHtml(r.fag)+'</select>'+(r.currentFagLabel ? '<div class="imp-status-chip">Nå: '+escapeHtml(r.currentFagLabel)+'</div>' : '')+'</td>' +
-        '<td style="text-align:center;"><input type="checkbox" data-implokal="'+idx+'" title="Lokal frivillig - får tag og blir ikke lagt inn under Logi"'+(r.lokal?' checked':'')+' /></td>' +
+        '<td style="text-align:center;"><input type="checkbox" data-implokal="'+idx+'" title="Lokal frivillig - får tag og blir ikke lagt inn under Losji"'+(r.lokal?' checked':'')+' /></td>' +
         '<td><button type="button" class="imp-rowremove" data-improwremove="'+idx+'" title="Fjern rad">×</button></td>' +
       '</tr>';
     });
@@ -5860,7 +5861,7 @@
       impPeopleDialog.close();
       uploadBtn.textContent = origLabel;
       var msg = summary.insertedCount + " nye personer lagt til, " + summary.patchedCount + " oppdatert.";
-      if(summary.logiCount) msg += " " + summary.logiCount + " merket som lokal frivillig (utelatt fra Logi).";
+      if(summary.logiCount) msg += " " + summary.logiCount + " merket som lokal frivillig (utelatt fra Losji).";
       if(summary.skippedAttendance) msg += " Prosjektet mangler start-/sluttdato, så fag kunne ikke settes i kalenderen – sett det fra «Frivillige etter fag» etter at datoene er lagt inn.";
       showInfo(msg);
     }).catch(function(err){
@@ -7902,6 +7903,7 @@
   byId("printAttendanceBtn").addEventListener("click", function(){ printAttendanceList(byId("printDate").value); });
   byId("printMatBtn").addEventListener("click", function(){ printMatList(byId("printDate").value); });
   byId("printPhoneBtn").addEventListener("click", printPhoneList);
+  byId("kontaktMatAllDaysBtn").addEventListener("click", function(){ view.matAllDays = !view.matAllDays; renderKontaktView(); });
   byId("kontaktPrintMatBtn").addEventListener("click", function(){ printMatList(toISODate(new Date())); });
 
   // ---------- eksport av hele prosjektet (Excel) ----------
@@ -8953,7 +8955,7 @@
       }
       var statusTitle = LOGI_STATUS_LABELS[lstatus] + (lstatus === "logi_klart" && linfo && linfo.meldingSendt ? " · melding sendt" : "");
       var statusDot = '<i class="dot" style="background:'+statusColor+'; width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0;" title="'+escapeHtml(statusTitle)+'"></i>';
-      var allergyTag = (linfo && linfo.allergiLogiTekst) ? ' <span class="badge" style="background:var(--bad-soft); color:var(--bad-ink); font-size:9px; padding:1px 5px;" title="'+escapeHtml(linfo.allergiLogiTekst)+'">Allergi</span>' : "";
+      var allergyTag = (linfo && (linfo.allergiLogiTekst || linfo.allergiLogi)) ? ' <span class="badge" style="background:var(--bad-soft); color:var(--bad-ink); font-size:9px; padding:1px 5px;" title="'+escapeHtml(linfo.allergiLogiTekst || "Allergi – losji (ikke beskrevet)")+'">Allergi</span>' : "";
       var tagBadge = p.tag ? ' <span class="badge persontag">'+escapeHtml(p.tag)+'</span>' : "";
       var nameCell = statusDot + '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo - '+escapeHtml(statusTitle)+'"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>' + tagBadge + allergyTag;
       var rowAttr = "", checkHtml = "", handleHtml = "";
@@ -9187,7 +9189,7 @@
     if(person.logiGroupId && person.logiGroupId !== groupId){
       var others = logiGroupMembers(person.logiGroupId).map(function(m){ return m.name; }).filter(function(n){ return n !== person.name; });
       askConfirm(
-        person.name+' er allerede i en annen logi-gruppe'+(others.length ? ' (med '+others.join(", ")+')' : '')+'. Flytte til den nye gruppen?',
+        person.name+' er allerede i en annen losji-gruppe'+(others.length ? ' (med '+others.join(", ")+')' : '')+'. Flytte til den nye gruppen?',
         function(){ doAddPersonToExistingLogiGroup(personId, groupId); },
         { title: "Flytte til ny gruppe?", confirmLabel: "Flytt" }
       );
@@ -9621,9 +9623,9 @@
     Object.keys(presentIds).forEach(function(id){
       total += 1;
       var info = logiInfoForPerson(id);
-      if(info && info.allergiMatTekst && info.allergiMatTekst.trim()){
+      if(info && ((info.allergiMatTekst && info.allergiMatTekst.trim()) || info.allergiMat)){
         var p = state.people.find(function(x){ return x.id === id; });
-        allergies.push({ name: p ? p.name : "?", text: info.allergiMatTekst.trim(), updatedAt: info.updatedAt });
+        allergies.push({ name: p ? p.name : "?", text: (info.allergiMatTekst || "").trim() || "Allergi (ikke beskrevet)", updatedAt: info.updatedAt });
       }
     });
     allergies.sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
@@ -9642,7 +9644,11 @@
   function renderKontaktMat(cur){
     if(!cur){ byId("kontaktMatChart").innerHTML = ""; byId("kontaktMatList").innerHTML = ""; return; }
     var todayIso = toISODate(new Date());
-    var upcoming = projectWorkdayIsoList(cur).filter(function(d){ return d >= todayIso; }).slice(0, 10);
+    // Standard: de neste 10 arbeidsdagene. «Vis alle dager»: resten av prosjektet.
+    var allUpcoming = projectWorkdayIsoList(cur).filter(function(d){ return d >= todayIso; });
+    var upcoming = view.matAllDays ? allUpcoming : allUpcoming.slice(0, 10);
+    byId("kontaktMatAllDaysBtn").hidden = allUpcoming.length <= 10;
+    byId("kontaktMatAllDaysBtn").textContent = view.matAllDays ? "Vis bare de neste 10 dagene" : "Vis alle dager (" + allUpcoming.length + ")";
     if(!upcoming.length){
       byId("kontaktMatChart").innerHTML = "";
       byId("kontaktMatList").innerHTML = '<p class="empty-note">Ingen kommende dager i prosjektperioden.</p>';
@@ -9659,7 +9665,7 @@
       var d = fromISODate(iso);
       var dayAbbr = DAY_ABBR[(d.getDay()+6)%7];
       var heightPct = s.total > 0 ? Math.max(6, Math.round((s.total / maxTotal) * 100)) : 2;
-      return '<div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0;">' +
+      return '<div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:'+(upcoming.length > 14 ? 30 : 0)+'px;">' +
         '<div style="font-size:11px; color:var(--text); font-weight:700;">'+(s.total || "")+'</div>' +
         '<div style="width:100%; max-width:30px; height:64px; display:flex; align-items:flex-end;">' +
         '<div style="width:100%; height:'+heightPct+'%; background:var(--accent); border-radius:4px 4px 2px 2px;" title="'+escapeHtml(dayAbbr)+' '+d.getDate()+'.: '+s.total+' personer"></div>' +
@@ -9668,8 +9674,8 @@
         '<div style="font-size:9.5px; color:var(--muted);">'+d.getDate()+'.'+(d.getMonth()+1)+'.</div>' +
         '</div>';
     }).join("");
-    byId("kontaktMatChart").innerHTML = '<div class="peoplecard" style="margin-bottom:14px;"><h3 style="font-size:14px; margin:0 0 10px;">Antall personer - neste dager</h3>' +
-      '<div style="display:flex; gap:4px; align-items:flex-end;">'+bars+'</div></div>';
+    byId("kontaktMatChart").innerHTML = '<div class="peoplecard" style="margin-bottom:14px;"><h3 style="font-size:14px; margin:0 0 10px;">Antall personer - '+(view.matAllDays ? 'resten av prosjektet' : 'neste dager')+'</h3>' +
+      '<div style="overflow-x:auto;"><div style="display:flex; gap:4px; align-items:flex-end;">'+bars+'</div></div></div>';
 
     byId("kontaktMatList").innerHTML = upcoming.map(function(iso, i){
       var sum = summaries[i];
@@ -9980,7 +9986,7 @@
     if(!pid){ showError("Opprett eller velg et prosjekt først."); return; }
     if(!personIds.length){ showError("Velg minst 1 person."); return; }
     sb.from("logi_groups").insert({ project_id: pid, label: label.slice(0,80) || null, relation: relation.slice(0,60) || null }).select().single().then(function(res){
-      if(res.error){ showError(res.error.message.indexOf("logi_groups") !== -1 ? "Databasen mangler logi-gruppe-tabellen. Kjør sql/53-logi-grupper.sql i Supabase." : "Kunne ikke opprette gruppe: "+res.error.message); return; }
+      if(res.error){ showError(res.error.message.indexOf("logi_groups") !== -1 ? "Databasen mangler losji-gruppe-tabellen. Kjør sql/53-logi-grupper.sql i Supabase." : "Kunne ikke opprette gruppe: "+res.error.message); return; }
       var groupId = res.data.id;
       Promise.all(personIds.map(function(personId){ return sb.from("people").update({ logi_group_id: groupId }).eq("id", personId); })).then(function(){
         refetchLogiGroups();
@@ -10041,7 +10047,7 @@
       });
     }
     var existing = groupId ? state.logiGroups.find(function(g){ return g.id === groupId; }) : null;
-    byId("logiGroupDialogTitle").textContent = groupId ? "Rediger logi-gruppe" : (memberIds.length === 1 ? "Sett kategori" : "Ny logi-gruppe");
+    byId("logiGroupDialogTitle").textContent = groupId ? "Rediger losji-gruppe" : (memberIds.length === 1 ? "Sett kategori" : "Ny losji-gruppe");
     logiGroupDialogCtx = { groupId: groupId, memberIds: memberIds.slice() };
     renderLogiGroupDialogMembers();
     byId("logiGroupDialogDissolve").hidden = !groupId;
@@ -10069,11 +10075,11 @@
   byId("logiGroupDialogDissolve").addEventListener("click", function(){
     var ctx = logiGroupDialogCtx;
     if(!ctx || !ctx.groupId) return;
-    askConfirm("Hver person får igjen sin egen logi.", function(){
+    askConfirm("Hver person får igjen sitt eget losji.", function(){
       logiGroupDialogCtx = null;
       byId("logiGroupDialog").close();
       deleteLogiGroup(ctx.groupId);
-    }, { title: "Løse opp logi-gruppen?", confirmLabel: "Løs opp" });
+    }, { title: "Løse opp losji-gruppen?", confirmLabel: "Løs opp" });
   });
   byId("logiGroupDialogCancel").addEventListener("click", function(){ byId("logiGroupDialog").close(); logiGroupDialogCtx = null; });
   byId("logiGroupDialogForm").addEventListener("submit", function(ev){
@@ -10089,7 +10095,7 @@
     else addLogiGroup(label, relation, ctx.memberIds);
     view.logiGroupSelection = [];
   });
-  var LOGI_STATUS_LABELS = { uavklart:"Uavklart", trenger_logi:"Trenger logi", logi_klart:"Logi klart", ordner_selv:"Fikser logi selv" };
+  var LOGI_STATUS_LABELS = { uavklart:"Uavklart", trenger_logi:"Trenger losji", logi_klart:"Losji klart", ordner_selv:"Fikser losji selv" };
   var LOGI_STATUS_COLORS = { uavklart:"var(--status-dark-grey)", trenger_logi:"var(--bad)", logi_klart:"var(--warn)", ordner_selv:"var(--warn)" };
   // "Logi klart" er gult helt til "melding sendt" også er krysset av - da først blir det grønt.
   // Egen funksjon siden fargen for denne ene statusen avhenger av et felt utenfor selve statusen.
@@ -10138,12 +10144,12 @@
         melding: existing ? existing.melding : ""
       }, patch);
       var allergyData = allergyDataByMember && allergyDataByMember[memberId];
-      if(allergyData){ body.allergi_mat_tekst = allergyData.allergiMatTekst; body.allergi_logi_tekst = allergyData.allergiLogiTekst; }
+      if(allergyData){ body.allergi_mat_tekst = allergyData.allergiMatTekst; body.allergi_logi_tekst = allergyData.allergiLogiTekst; body.allergi_mat = !!allergyData.allergiMat; body.allergi_logi = !!allergyData.allergiLogi; }
       // Mat-siden sammenligner mot dette for å varsle om NYE allergier - rør den bare når
       // allergi-feltet faktisk er endret (ikke ved f.eks. "Merk som klart").
       if(allergyData) body.updated_at = new Date().toISOString();
       sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
-        if(res.error){ showError(res.error.message.indexOf("allergi_mat_tekst") !== -1 ? "Databasen mangler kolonnene for separate allergifelt. Kjør sql/58-person-tag-og-separate-allergifelt.sql i Supabase." : (res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler Logi-tabellen. Kjør sql/42-logi-og-menighetsinvitasjon.sql i Supabase." : "Kunne ikke lagre: "+res.error.message)); return; }
+        if(res.error){ showError(res.error.message.indexOf("allergi_mat_tekst") !== -1 ? "Databasen mangler kolonnene for separate allergifelt. Kjør sql/58-person-tag-og-separate-allergifelt.sql i Supabase." : (res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler Losji-tabellen. Kjør sql/42-logi-og-menighetsinvitasjon.sql i Supabase." : "Kunne ikke lagre: "+res.error.message)); return; }
         refetchLogiInfo();
       });
     });
@@ -10168,7 +10174,7 @@
         melding: existing ? existing.melding : ""
       }, patch);
       var allergyData = allergyDataByMember && allergyDataByMember[memberId];
-      if(allergyData){ body.allergi_mat_tekst = allergyData.allergiMatTekst; body.allergi_logi_tekst = allergyData.allergiLogiTekst; }
+      if(allergyData){ body.allergi_mat_tekst = allergyData.allergiMatTekst; body.allergi_logi_tekst = allergyData.allergiLogiTekst; body.allergi_mat = !!allergyData.allergiMat; body.allergi_logi = !!allergyData.allergiLogi; }
       if(allergyData) body.updated_at = new Date().toISOString();
       sb.from("logi_info").upsert(body, { onConflict: "project_id,person_id" }).then(function(res){
         if(res.error){ showError(res.error.message.indexOf("allergi_mat_tekst") !== -1 ? "Databasen mangler kolonnene for separate allergifelt. Kjør sql/58-person-tag-og-separate-allergifelt.sql i Supabase." : (res.error.message.indexOf("logi_info") !== -1 ? "Databasen mangler oppdatert tilgang for menigheten. Kjør sql/52-kontakt-kan-opprette-logi-info.sql i Supabase." : "Kunne ikke lagre: "+res.error.message)); return; }
@@ -10220,7 +10226,7 @@
     if(grouped){
       var relLabel = group && group.relation ? (LOGI_RELATION_LABELS[group.relation] || group.relation) : "";
       groupNote.hidden = false;
-      groupNote.textContent = "Felles logi-kort" + (relLabel ? " (" + relLabel + ")" : "") + ". Status, adresse, vertsfamilie, telefon og kommentar er delt for hele gruppen. Allergier/diett føres per person nedenfor.";
+      groupNote.textContent = "Felles losji-kort" + (relLabel ? " (" + relLabel + ")" : "") + ". Status, adresse, vertsfamilie, telefon og kommentar er delt for hele gruppen. Allergier/diett føres per person nedenfor.";
     } else {
       groupNote.hidden = true;
     }
@@ -10241,10 +10247,13 @@
       var mInfo = logiInfoForPerson(m.id);
       var matVal = mInfo ? (mInfo.allergiMatTekst||"") : "";
       var logiVal = mInfo ? (mInfo.allergiLogiTekst||"") : "";
+      // Avkrysset uten beskrivelse skal også huskes (allergi_mat/allergi_logi).
+      var matOn = !!matVal || !!(mInfo && mInfo.allergiMat);
+      var logiOn = !!logiVal || !!(mInfo && mInfo.allergiLogi);
       if(allergyInfoOnly){
         var lines = [];
-        if(matVal) lines.push('<div style="font-size:13px;"><strong>Mat:</strong> '+escapeHtml(matVal)+'</div>');
-        if(logiVal) lines.push('<div style="font-size:13px;"><strong>Logi:</strong> '+escapeHtml(logiVal)+'</div>');
+        if(matOn) lines.push('<div style="font-size:13px;"><strong>Mat:</strong> '+escapeHtml(matVal || "ikke beskrevet")+'</div>');
+        if(logiOn) lines.push('<div style="font-size:13px;"><strong>Losji:</strong> '+escapeHtml(logiVal || "ikke beskrevet")+'</div>');
         return '<div class="allergy-info" style="background:var(--surface-alt); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:4px;">' +
           (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:700;">'+escapeHtml(m.name)+'</span>' : '') +
           (lines.length ? lines.join("") : '<div style="font-size:13px; color:var(--muted);">Ingen allergier oppført.</div>') +
@@ -10252,10 +10261,10 @@
       }
       return '<div style="background:var(--surface-alt); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">' +
         (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:700;">'+escapeHtml(m.name)+'</span>' : '') +
-        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matVal?" checked":"")+' /> Allergi – mat</label>' +
-        '<div data-allergymatwrap="'+m.id+'" style="padding-left:25px;"'+(matVal?"":' hidden')+'><input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Beskriv matallergien/dietten, f.eks. nøtter, vegetar, gluten" value="'+escapeHtml(matVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
-        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergilogicheck="'+m.id+'"'+(logiVal?" checked":"")+' /> Allergi – logi</label>' +
-        '<div data-allergilogiwrap="'+m.id+'" style="padding-left:25px;"'+(logiVal?"":' hidden')+'><input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Beskriv logiallergien, f.eks. kjæledyr, røyk" value="'+escapeHtml(logiVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
+        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matOn?" checked":"")+' /> Allergi – mat</label>' +
+        '<div data-allergymatwrap="'+m.id+'" style="padding-left:25px;"'+(matOn?"":' hidden')+'><input type="text" data-allergymatfor="'+m.id+'" maxlength="300" placeholder="Beskriv matallergien/dietten, f.eks. nøtter, vegetar, gluten" value="'+escapeHtml(matVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
+        '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergilogicheck="'+m.id+'"'+(logiOn?" checked":"")+' /> Allergi – losji</label>' +
+        '<div data-allergilogiwrap="'+m.id+'" style="padding-left:25px;"'+(logiOn?"":' hidden')+'><input type="text" data-allergilogifor="'+m.id+'" maxlength="300" placeholder="Beskriv allergien (losji), f.eks. kjæledyr, røyk" value="'+escapeHtml(logiVal)+'" style="width:100%; box-sizing:border-box;" /></div>' +
         '</div>';
     }).join("");
     byId("logiAllergierList").querySelectorAll("[data-allergymatcheck]").forEach(function(cb){
@@ -10293,11 +10302,16 @@
       var memberId = el.dataset.allergymatfor;
       var matVal = el.value.trim();
       var logiVal = byId("logiAllergierList").querySelector('[data-allergilogifor="'+memberId+'"]').value.trim();
+      var list = byId("logiAllergierList");
+      var matOn = list.querySelector('[data-allergymatcheck="'+memberId+'"]').checked;
+      var logiOn = list.querySelector('[data-allergilogicheck="'+memberId+'"]').checked;
       var existing = logiInfoForPerson(memberId);
       var prevMat = existing ? (existing.allergiMatTekst || "") : "";
       var prevLogi = existing ? (existing.allergiLogiTekst || "") : "";
-      if(matVal !== prevMat || logiVal !== prevLogi){
-        allergyDataByMember[memberId] = { allergiMatTekst: matVal, allergiLogiTekst: logiVal };
+      var prevMatOn = !!prevMat || !!(existing && existing.allergiMat);
+      var prevLogiOn = !!prevLogi || !!(existing && existing.allergiLogi);
+      if(matVal !== prevMat || logiVal !== prevLogi || matOn !== prevMatOn || logiOn !== prevLogiOn){
+        allergyDataByMember[memberId] = { allergiMatTekst: matVal, allergiLogiTekst: logiVal, allergiMat: matOn, allergiLogi: logiOn };
       }
     });
     if(isByggeleder() && !view.menighetPreview){
