@@ -1324,7 +1324,7 @@
             <button type="button" class="btn small" id="logiFullViewBtn">Vis hele prosjektet</button>
           </div>
         </div>
-        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige på prosjektet, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe, se «Logi-grupper» nedenfor. Frivillige som fikser logi selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
+        <p class="sub" data-etkey="personer_logi_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alle frivillige på prosjektet, gruppert etter hvem som deler logi, med status vist som et fargeikon foran navnet. Trykk på et navn for detaljer. Viser som standard kun fra inneværende uke og fremover. Dra en person oppå en annen (PC) eller kryss av flere (mobil) for å sette dem sammen i en logi-gruppe. Trykk på gruppenavnet for å endre, ta ut personer eller løse opp gruppen. Frivillige som fikser logi selv vises kun på den vanlige Frivillige-listen, ikke her.</p>
         <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
           <strong style="color:var(--text); font-weight:700;">Farger:</strong>
           <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--status-dark-grey); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Uavklart</span>
@@ -1338,11 +1338,6 @@
           <button type="button" class="btn small ghost" id="logiGroupSelectionCancelBtn">Avbryt</button>
         </div>
         <div id="personerLogiList" class="gantt-wrap frivillige-grid"></div>
-      </div>
-      <div class="peoplecard" id="logiGroupsBox" hidden style="margin-top:14px;">
-        <h2 style="font-size:15px; margin-bottom:2px;">Logi-grupper</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Frivillige som deler én logi (ektepar, familie, venner osv.), så det ikke ser ut som de trenger hver sin. Adresse/koder/kontaktinfo/telefon/status lagres delt for gruppen - allergier er fortsatt individuelt. Trykk × på et navn for å ta det ut av gruppen.</p>
-        <div id="logiGroupsList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
     </div>
   </section>
@@ -2377,11 +2372,13 @@
   <form class="dlg-body" id="logiGroupDialogForm" method="dialog">
     <h3 id="logiGroupDialogTitle">Ny logi-gruppe</h3>
     <p class="sub" id="logiGroupDialogMembers" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;"></p>
+    <input type="hidden" id="logiGroupDialogMemberIds" />
     <div class="field"><label for="logiGroupDialogLabel">Merkelapp (valgfritt)</label><input type="text" id="logiGroupDialogLabel" maxlength="80" placeholder="f.eks. Familien Hansen" /></div>
     <div class="field"><label for="logiGroupDialogRelation">Kategori</label>
       <select id="logiGroupDialogRelation" required><option value="">Velg kategori...</option></select>
     </div>
     <div class="dlg-actions">
+      <button type="button" class="btn danger" id="logiGroupDialogDissolve" hidden style="margin-right:auto;">Løs opp</button>
       <button type="button" class="btn ghost" id="logiGroupDialogCancel">Avbryt</button>
       <button type="submit" class="btn primary">Lagre</button>
     </div>
@@ -4533,9 +4530,7 @@
       byId("personerLogiList").innerHTML = buildLogiGroupGridHtml(cur, { fromToday: !view.frivilligeFullView, allowGroupEdit: isByggeleder(), searchQuery: view.logiSearch });
       wireFrivilligeGridEvents("personerLogiList", { readOnly: false, allowGroupEdit: isByggeleder() });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("personerLogiList", cur); else byId("personerLogiList").scrollLeft = 0;
-      byId("logiGroupsBox").hidden = !isByggeleder();
       renderLogiGroupSelectionBar();
-      if(isByggeleder()) renderLogiGroupsBox();
       return;
     }
 
@@ -8975,7 +8970,7 @@
         var label = gr.group.label || gr.members.map(function(m){ return m.name; }).join(" & ");
         var headerAttr = opts.allowGroupEdit ? ' data-logigroup-header="'+gr.group.id+'"' : "";
         var nameSpan = opts.allowGroupEdit
-          ? '<span data-editlogigroupinline="'+gr.group.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for å endre kategori eller navn">'+escapeHtml(label)+'</span>'
+          ? '<span data-editlogigroupinline="'+gr.group.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for å endre, ta ut personer eller løse opp gruppen">'+escapeHtml(label)+'</span>'
           : '<span>'+escapeHtml(label)+'</span>';
         html += '<div class="g-row g-group g-subgroup"'+headerAttr+'><div class="g-name behov-fag-head">'+nameSpan+'</div><div class="g-track">'+bg+todayLine+'</div></div>';
         gr.members.forEach(function(p){ html += personRowHtml(p); });
@@ -9993,66 +9988,12 @@
       Promise.all(ops).then(function(){ refetchLogiGroups(); refetchPeople(); });
     });
   }
-  function removePersonFromLogiGroup(personId, groupId){
-    if(!sb || !isByggeleder()) return;
-    var remaining = logiGroupMembers(groupId).map(function(p){ return p.id; }).filter(function(id){ return id !== personId; });
-    // Løser opp gruppen helt når ≤1 blir igjen (ikke bare 0) - sletter du gruppen, nullstilles
-    // logi_group_id for alle resterende medlemmer automatisk via FK-en.
-    if(remaining.length <= 1){ deleteLogiGroup(groupId); return; }
-    sb.from("people").update({ logi_group_id: null }).eq("id", personId).then(function(res){
-      if(res.error){ showError("Kunne ikke fjerne personen fra gruppen: "+res.error.message); return; }
-      refetchPeople();
-    });
-  }
   function deleteLogiGroup(id){
     if(!sb) return;
     sb.from("logi_groups").delete().eq("id", id).then(function(res){
       if(res.error){ showError("Kunne ikke fjerne gruppen: "+res.error.message); return; }
       refetchLogiGroups();
       refetchPeople();
-    });
-  }
-  function renderLogiGroupsBox(){
-    var groups = logiGroupsForCurrentProject();
-    // Samme kategori-gruppering (Ektepar/Familie/osv.) som i selve rutenettet over, se
-    // buildLogiGroupGridHtml - kategorien vises som egen overskrift i stedet for et merke per rad.
-    var byCategory = {};
-    groups.forEach(function(g){
-      var key = g.relation && LOGI_RELATION_LIST.indexOf(g.relation) !== -1 ? g.relation : "__uncategorized";
-      (byCategory[key] = byCategory[key] || []).push(g);
-    });
-    var categoryKeys = LOGI_RELATION_LIST.filter(function(k){ return byCategory[k]; });
-    if(byCategory.__uncategorized) categoryKeys.push("__uncategorized");
-    function groupRowHtml(g){
-      var members = logiGroupMembers(g.id);
-      var label = g.label || members.map(function(m){ return m.name; }).join(" & ");
-      var memberChips = members.map(function(m){
-        return '<span class="badge" style="margin-right:4px;">'+escapeHtml(m.name)+' <a href="#" data-rmlogigroupmember="'+m.id+'|'+g.id+'" title="Fjern fra gruppen" style="text-decoration:none;">×</a></span>';
-      }).join("");
-      return '<div class="shoprow" style="flex-wrap:wrap; align-items:flex-start;"><span class="sname">'+escapeHtml(label)+'</span>' +
-        '<span class="sqty" style="font-size:12px; flex-basis:100%;">'+memberChips+'</span>' +
-        '<button type="button" class="btn small" data-editlogigroup="'+g.id+'">Rediger</button>' +
-        '<button type="button" class="btn small danger" data-dellogigroup="'+g.id+'">Løs opp</button></div>';
-    }
-    byId("logiGroupsList").innerHTML = groups.length ? categoryKeys.map(function(catKey){
-      var catLabel = catKey === "__uncategorized" ? "Uten kategori" : (LOGI_RELATION_LABELS[catKey] || catKey);
-      return '<div style="font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--accent); margin:10px 0 2px;">'+escapeHtml(catLabel)+'</div>' + byCategory[catKey].map(groupRowHtml).join("");
-    }).join("") : '<p class="empty-note">Ingen logi-grupper laget ennå. Dra en person oppå en annen i listen over, eller kryss av flere og trykk «Slå sammen».</p>';
-    byId("logiGroupsList").querySelectorAll("[data-dellogigroup]").forEach(function(b){
-      b.addEventListener("click", function(){ if(confirm("Løse opp denne logi-gruppen? Hver person får igjen sin egen logi.")) deleteLogiGroup(this.dataset.dellogigroup); });
-    });
-    byId("logiGroupsList").querySelectorAll("[data-editlogigroup]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var g = groups.find(function(x){ return x.id === b.dataset.editlogigroup; });
-        if(g) openLogiGroupDialog(g.id, logiGroupMembers(g.id).map(function(p){ return p.id; }));
-      });
-    });
-    byId("logiGroupsList").querySelectorAll("[data-rmlogigroupmember]").forEach(function(a){
-      a.addEventListener("click", function(ev){
-        ev.preventDefault();
-        var parts = a.dataset.rmlogigroupmember.split("|");
-        removePersonFromLogiGroup(parts[0], parts[1]);
-      });
     });
   }
   function renderLogiGroupSelectionBar(){
@@ -10084,12 +10025,39 @@
     }
     var existing = groupId ? state.logiGroups.find(function(g){ return g.id === groupId; }) : null;
     byId("logiGroupDialogTitle").textContent = groupId ? "Rediger logi-gruppe" : (memberIds.length === 1 ? "Sett kategori" : "Ny logi-gruppe");
-    byId("logiGroupDialogMembers").textContent = memberIds.map(personName).join(", ");
+    logiGroupDialogCtx = { groupId: groupId, memberIds: memberIds.slice() };
+    renderLogiGroupDialogMembers();
+    byId("logiGroupDialogDissolve").hidden = !groupId;
     byId("logiGroupDialogLabel").value = existing ? (existing.label || "") : (memberIds.length > 1 ? memberIds.map(personName).join(" & ") : "");
     relSelect.value = existing ? (existing.relation || "") : "";
-    logiGroupDialogCtx = { groupId: groupId, memberIds: memberIds.slice() };
     byId("logiGroupDialog").showModal();
   }
+  // Medlemmene i kortet: ved redigering kan man ta ut enkeltpersoner med × (lagres med «Lagre»).
+  function renderLogiGroupDialogMembers(){
+    var ctx = logiGroupDialogCtx, box = byId("logiGroupDialogMembers");
+    byId("logiGroupDialogMemberIds").value = ctx.memberIds.join(",");
+    if(!ctx.groupId){ box.textContent = ctx.memberIds.map(personName).join(", "); return; }
+    box.innerHTML = ctx.memberIds.map(function(id){
+      return '<span class="badge" style="margin:0 4px 4px 0;">'+escapeHtml(personName(id))+' <a href="#" data-lgdrm="'+id+'" title="Ta ut av gruppen" style="text-decoration:none;">×</a></span>';
+    }).join("") + (ctx.memberIds.length <= 1 ? '<div style="margin-top:4px; color:var(--bad);">Med bare én person igjen løses gruppen opp når du lagrer.</div>' : '');
+    box.querySelectorAll("[data-lgdrm]").forEach(function(a){
+      a.addEventListener("click", function(ev){
+        ev.preventDefault();
+        var id = a.dataset.lgdrm;
+        ctx.memberIds = ctx.memberIds.filter(function(x){ return x !== id; });
+        renderLogiGroupDialogMembers();
+      });
+    });
+  }
+  byId("logiGroupDialogDissolve").addEventListener("click", function(){
+    var ctx = logiGroupDialogCtx;
+    if(!ctx || !ctx.groupId) return;
+    askConfirm("Hver person får igjen sin egen logi.", function(){
+      logiGroupDialogCtx = null;
+      byId("logiGroupDialog").close();
+      deleteLogiGroup(ctx.groupId);
+    }, { title: "Løse opp logi-gruppen?", confirmLabel: "Løs opp" });
+  });
   byId("logiGroupDialogCancel").addEventListener("click", function(){ byId("logiGroupDialog").close(); logiGroupDialogCtx = null; });
   byId("logiGroupDialogForm").addEventListener("submit", function(ev){
     ev.preventDefault();
