@@ -4618,7 +4618,7 @@
           var assignedPerson = t.assignedPersonId ? teamPeople.find(function(p){ return p.id === t.assignedPersonId; }) : null;
           var personField;
           if(assignedPerson && !view.roomTodoEditing[t.id]){
-            personField = '<span class="sname" data-roomtodotaken="'+t.id+'" style="cursor:pointer; color:'+personColorFor(assignedPerson.id)+'; font-weight:600;" title="Klikk for å endre">'+escapeHtml(assignedPerson.name)+' tar denne😎</span>';
+            personField = '<span class="sname" data-roomtodotaken="'+t.id+'" style="cursor:pointer; color:'+personColorFor(assignedPerson.id)+'; font-weight:600;" title="Klikk for å endre">'+escapeHtml(assignedPerson.name)+'</span>';
           } else {
             personField = '<select data-roomtodoperson="'+t.id+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12px; background:var(--surface); max-width:160px;">' +
               '<option value="">Ingen person</option>' +
