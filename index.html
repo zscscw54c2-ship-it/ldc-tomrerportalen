@@ -10067,7 +10067,7 @@
   // noen logi_info-rad fra før (siden "Uavklart" nå er standard for alle), men rører
   // aldri status direkte - det går kun via "Merk logi som klart"-knappen.
   function upsertLogiInfoAsKontakt(personId, patch, allergyDataByMember){
-    if(!sb || !(state.me && state.me.role === "kontakt")) return;
+    if(!sb || !isKontaktViewActive()) return;
     var pid = currentProjectId();
     if(!pid){ showError("Velg et prosjekt først."); return; }
     logiGroupMemberIds(personId).forEach(function(memberId){
@@ -10100,8 +10100,10 @@
     var grouped = members.length > 1;
     var info = logiInfoForPerson(personId);
     var status = info ? info.status : "uavklart";
-    var isKontakt = state.me && state.me.role === "kontakt";
-    var canEditFull = isByggeleder();
+    // CG1 i forhåndsvisningen av menighetsportalen får samme personkort som menigheten.
+    var asKontaktPreview = isByggeleder() && !!view.menighetPreview;
+    var isKontakt = (state.me && state.me.role === "kontakt") || asKontaktPreview;
+    var canEditFull = isByggeleder() && !asKontaktPreview;
     var canEditKontakt = isKontakt;
     var readOnly = !canEditFull && !canEditKontakt;
 
@@ -10211,11 +10213,11 @@
         allergyDataByMember[memberId] = { allergiMatTekst: matVal, allergiLogiTekst: logiVal };
       }
     });
-    if(isByggeleder()){
+    if(isByggeleder() && !view.menighetPreview){
       fields.status = byId("logiStatusSelect").value;
       fields.melding_sendt = byId("logiMeldingSendtInput").checked;
       upsertLogiInfo(personId, fields, allergyDataByMember);
-    } else if(state.me && state.me.role === "kontakt"){
+    } else if((state.me && state.me.role === "kontakt") || view.menighetPreview){
       upsertLogiInfoAsKontakt(personId, fields, allergyDataByMember);
     }
     logiDialog.close();
