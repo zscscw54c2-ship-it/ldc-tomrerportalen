@@ -962,7 +962,7 @@
     </div>
 
     <div id="kontaktLogiWrap" hidden>
-      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse, vertsfamilie og allergier, og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Frivillige som fikser logi selv vises ikke her.</p>
+      <p class="sub" style="font-size:13px; color:var(--muted); margin-bottom:10px;">Oversikt over alle frivillige og tilgjengeligheten deres, gruppert etter hvem som deler logi (familier, ektepar, venner osv.), med Logi-status. Trykk på et navn for å fylle inn adresse og vertsfamilie (allergier vises som info), og merk som klart når det er ordnet. Dere kan ikke endre selve tilgjengeligheten her. Frivillige som fikser logi selv vises ikke her.</p>
       <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:center; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:7px 12px; margin-bottom:10px; font-size:12px; color:var(--muted);">
         <strong style="color:var(--text); font-weight:700;">Farger:</strong>
         <span style="display:inline-flex; align-items:center; gap:5px;"><i style="background:var(--status-dark-grey); width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0;"></i>Uavklart</span>
@@ -10146,10 +10146,22 @@
     byId("logiTelefonInput").value = info ? info.telefon : "";
     byId("logiMeldingInput").value = info ? info.melding : "";
     byId("logiAllergierLabel").textContent = grouped ? "Allergier / diett (individuelt per person)" : "Allergier / diett";
+    // Menigheten ser allergiene som info, men kan ikke endre dem (føres av CG1).
+    var allergyInfoOnly = isKontakt && !canEditFull;
+    if(allergyInfoOnly) byId("logiAllergierLabel").textContent += " – kun til info";
     byId("logiAllergierList").innerHTML = members.map(function(m){
       var mInfo = logiInfoForPerson(m.id);
       var matVal = mInfo ? (mInfo.allergiMatTekst||"") : "";
       var logiVal = mInfo ? (mInfo.allergiLogiTekst||"") : "";
+      if(allergyInfoOnly){
+        var lines = [];
+        if(matVal) lines.push('<div style="font-size:13px;"><strong>Mat:</strong> '+escapeHtml(matVal)+'</div>');
+        if(logiVal) lines.push('<div style="font-size:13px;"><strong>Logi:</strong> '+escapeHtml(logiVal)+'</div>');
+        return '<div class="allergy-info" style="background:var(--surface-alt); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:4px;">' +
+          (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:700;">'+escapeHtml(m.name)+'</span>' : '') +
+          (lines.length ? lines.join("") : '<div style="font-size:13px; color:var(--muted);">Ingen allergier oppført.</div>') +
+          '</div>';
+      }
       return '<div style="background:var(--surface-alt); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">' +
         (grouped ? '<span style="font-size:12.5px; color:var(--muted); font-weight:700;">'+escapeHtml(m.name)+'</span>' : '') +
         '<label class="checkrow" style="margin:0; font-size:12.5px; font-weight:600;"><input type="checkbox" data-allergymatcheck="'+m.id+'"'+(matVal?" checked":"")+' /> Allergi – mat</label>' +
