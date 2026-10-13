@@ -3243,22 +3243,91 @@
   // ---------- egen bekreftelsesdialog (i stedet for window.confirm, som er upålitelig i enkelte nettlesere/PWA) ----------
   var confirmDialog = byId("confirmDialog");
   var confirmOkHandler = null;
+  var confirmCancelHandler = null;
   function askConfirm(message, onConfirm, opts){
     opts = opts || {};
     byId("confirmTitle").textContent = opts.title || "Bekreft";
     byId("confirmMsg").textContent = message;
     byId("confirmOk").textContent = opts.confirmLabel || "Slett";
+    byId("confirmOk").className = "btn " + (opts.okClass || "danger");
+    byId("confirmCancel").textContent = opts.cancelLabel || "Avbryt";
     confirmOkHandler = onConfirm;
+    confirmCancelHandler = opts.onCancel || null;
     confirmDialog.showModal();
   }
-  byId("confirmCancel").addEventListener("click", function(){ confirmDialog.close(); confirmOkHandler = null; });
+  byId("confirmCancel").addEventListener("click", function(){
+    var fn = confirmCancelHandler;
+    confirmDialog.close(); confirmOkHandler = null; confirmCancelHandler = null;
+    if(fn) fn();
+  });
+  confirmDialog.addEventListener("close", function(){ confirmCancelHandler = null; });
   confirmDialog.addEventListener("click", function(ev){ if(ev.target === confirmDialog){ confirmDialog.close(); confirmOkHandler = null; } });
   byId("confirmOk").addEventListener("click", function(){
     var fn = confirmOkHandler;
+    confirmCancelHandler = null;
     confirmDialog.close();
     confirmOkHandler = null;
     if(fn) fn();
   });
+
+  // ---------- ulagrede endringer i kortene ----------
+  // Lukker man et kort (Avbryt/Lukk, trykk utenfor eller Esc) etter å ha endret noe:
+  //  - kort som redigerer noe som finnes  -> lagres automatisk («Endringer lagret ✓»)
+  //  - kort som lager noe nytt            -> spør «Lagre» / «Forkast» (lukket ved et uhell ≠ lagre)
+  // Uten endringer lukkes kortet som før. Lagringen går via kortets egen Lagre-knapp, så
+  // samme kontroller gjelder (påkrevde felt osv.); feiler den, blir kortet stående åpent.
+  function dialogFieldsSnapshot(dlg){
+    return Array.prototype.map.call(dlg.querySelectorAll("input, select, textarea"), function(el){
+      return (el.id || el.name || "") + "=" + ((el.type === "checkbox" || el.type === "radio") ? el.checked : el.value);
+    }).join("\u0001");
+  }
+  function guardDialog(dlgId, o){
+    var dlg = byId(dlgId), snap = null, bypass = false;
+    var origShow = dlg.showModal;
+    dlg.showModal = function(){ origShow.call(dlg); snap = dialogFieldsSnapshot(dlg); };
+    function saveBtn(){ return o.saveId ? byId(o.saveId) : dlg.querySelector('form button[type="submit"]'); }
+    function dirty(){
+      if(snap === null || !dlg.open) return false;
+      var b = saveBtn();
+      if(!b || b.hidden || b.disabled) return false;
+      return dialogFieldsSnapshot(dlg) !== snap;
+    }
+    function save(isEdit){
+      var b = saveBtn(), form = b.form;
+      if(form && form.requestSubmit) form.requestSubmit(b); else b.click();
+      if(isEdit) setTimeout(function(){ if(!dlg.open) showInfo("Endringer lagret ✓"); }, 0);
+    }
+    function discard(){
+      bypass = true;
+      try{ byId(o.cancelId).click(); } finally { bypass = false; }
+      if(dlg.open) dlg.close();
+    }
+    function onCloseAttempt(ev){
+      if(bypass || !dirty()) return;
+      ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+      if(o.isNew()){
+        askConfirm("Du har fylt inn noe som ikke er lagret. Vil du lagre " + o.what + "?", function(){ save(false); },
+          { title: "Lagre før du lukker?", confirmLabel: "Lagre", okClass: "primary", cancelLabel: "Forkast", onCancel: discard });
+      } else {
+        save(true);
+      }
+    }
+    dlg.addEventListener("click", function(ev){
+      if(ev.target === dlg || (ev.target.closest && ev.target.closest("#" + o.cancelId))) onCloseAttempt(ev);
+    }, true);
+    dlg.addEventListener("cancel", onCloseAttempt);
+  }
+  guardDialog("elDialog", { cancelId: "elCancel", what: "den nye oppgaven", isNew: function(){ return !byId("elId").value; } });
+  guardDialog("projectDialog", { cancelId: "projectCancel", what: "det nye prosjektet", isNew: function(){ return !byId("projId").value; } });
+  guardDialog("pwDialog", { cancelId: "pwCancel", what: "den nye privilege-uken", isNew: function(){ return !byId("pwId").value; } });
+  guardDialog("logiGroupDialog", { cancelId: "logiGroupDialogCancel", what: "logi-gruppen", isNew: function(){ return !/^Rediger/.test(byId("logiGroupDialogTitle").textContent); } });
+  guardDialog("deliveryEditDialog", { cancelId: "deliveryEditCancel", isNew: function(){ return false; } });
+  guardDialog("logiDialog", { cancelId: "logiDialogClose", saveId: "logiSaveBtn", isNew: function(){ return false; } });
+  guardDialog("personInfoEditDialog", { cancelId: "personInfoEditCancel", isNew: function(){ return false; } });
+  guardDialog("behovFillDialog", { cancelId: "behovFillCancel", what: "den nye lokale frivillige", isNew: function(){ return byId("behovFillSelect").value === "__new"; } });
+  guardDialog("codeDialog", { cancelId: "codeDlgCancel", what: "koden", isNew: function(){ return true; } });
+  guardDialog("createBoxDialog", { cancelId: "createBoxCancel", what: "den nye tavlen", isNew: function(){ return true; } });
+  guardDialog("addPersonDialog", { cancelId: "addPersonCancel", what: "den nye frivillige", isNew: function(){ return true; } });
 
   var flexActionDialog = byId("flexActionDialog");
   var flexActionId = null;
