@@ -2445,6 +2445,7 @@
     <p class="empty-note" id="logiReadOnlyNote" hidden>Du kan se denne informasjonen, men ikke redigere den.</p>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="logiDialogClose">Lukk</button>
+      <button type="button" class="btn" id="logiUndoReadyBtn" hidden>Angre «logi klart»</button>
       <button type="button" class="btn primary" id="logiMarkReadyBtn" hidden>Merk logi som klart</button>
       <button type="button" class="btn primary" id="logiSaveBtn">Lagre</button>
     </div>
@@ -10193,6 +10194,7 @@
     byId("logiReadOnlyNote").hidden = !readOnly;
     byId("logiSaveBtn").hidden = readOnly;
     byId("logiMarkReadyBtn").hidden = !(canEditKontakt && (status === "trenger_logi" || status === "uavklart"));
+    byId("logiUndoReadyBtn").hidden = !(canEditKontakt && status === "logi_klart");
     logiDialog.showModal();
   }
   byId("logiDialogClose").addEventListener("click", function(){ logiDialog.close(); });
@@ -10227,6 +10229,12 @@
     var personId = logiDialog.dataset.personId;
     // «Logi klart» blir grønt først når losji-informasjonen også er krysset av som sendt.
     upsertLogiInfoAsKontakt(personId, { status: "logi_klart", melding_sendt: byId("logiMeldingSendtInput").checked });
+    logiDialog.close();
+  });
+  // Angre «logi klart» (menigheten): tilbake til «Trenger logi», og avkrysningen for sendt informasjon fjernes.
+  byId("logiUndoReadyBtn").addEventListener("click", function(){
+    var personId = logiDialog.dataset.personId;
+    upsertLogiInfoAsKontakt(personId, { status: "trenger_logi", melding_sendt: false });
     logiDialog.close();
   });
   byId("pdEditInfoBtn").addEventListener("click", function(){ openPersonInfoEditDialog(logiDialog.dataset.personId); });
