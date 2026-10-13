@@ -7486,7 +7486,7 @@
       return '<div class="shoprow" data-openreferat="'+m.id+'" style="cursor:pointer;">' +
         '<span class="sname">Uke '+info.week+'</span>' +
         '<span class="sqty">'+fmtRange(m.weekStart, toISODate(end))+(m.meetingInfo?' · '+escapeHtml(m.meetingInfo):'')+'</span>' +
-        (m.referatPdfPath ? '<a class="btn small" data-pdflink data-fileurl href="'+escapeHtml(referatPdfUrl(m.referatPdfPath))+'" target="_blank" rel="noopener" title="Last ned PDF">PDF</a>' : '<span class="empty-note" style="font-size:11px;">Ingen PDF ennå</span>') +
+        (m.referatPdfPath ? '<a class="btn small" data-pdflink="'+escapeHtml(m.referatPdfPath)+'" data-fileurl href="'+escapeHtml(referatPdfUrl(m.referatPdfPath))+'" target="_blank" rel="noopener" title="Last ned PDF">PDF</a>' : '<span class="empty-note" style="font-size:11px;">Ingen PDF ennå</span>') +
         '</div>';
     }).join("") : '<p class="empty-note">Ingen avsluttede møter ennå.</p>';
     byId("acgoReferatArchive").querySelectorAll("[data-openreferat]").forEach(function(row){
@@ -7496,7 +7496,10 @@
       });
     });
     byId("acgoReferatArchive").querySelectorAll("[data-pdflink]").forEach(function(a){
-      a.addEventListener("click", function(ev){ ev.stopPropagation(); });
+      a.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        if(this.getAttribute("href") !== "#" && downloadReferatPdf(this, this.dataset.pdflink)) ev.preventDefault();
+      });
     });
 
     var pendingReq = pendingFagRequestsForCurrentProject();
@@ -11403,7 +11406,9 @@
     if(!blob){ showError("Kunne ikke lage PDF-referat (PDF-biblioteket lastet ikke inn). Referatet er likevel lagret i portalen."); return Promise.resolve(); }
     // Nytt filnavn for hver versjon: lagringsreglene tillater å laste opp og slette, men ikke å
     // overskrive en fil (upsert). Den forrige versjonen slettes når den nye er lagret på møtet.
-    var path = meeting.project_id + "/" + meeting.id + "-" + Date.now() + ".pdf";
+    // Filnavnet slutter på «TO_Mote_uke_<nr>.pdf» (lagringen tillater ikke «ø» i navn; ved nedlasting
+    // fra portalen heter den «TO_Møte_uke_<nr>.pdf», se referatDownloadName). Egen mappe per versjon.
+    var path = meeting.project_id + "/" + meeting.id + "-" + Date.now() + "/TO_Mote_uke_" + isoWeekInfo(fromISODate(meeting.weekStart)).week + ".pdf";
     var latest = state.toMeetings.find(function(x){ return x.id === meeting.id; });
     var oldPath = (latest && latest.referatPdfPath) || meeting.referatPdfPath || "";
     return sb.storage.from("referater").upload(path, blob, { contentType: "application/pdf" }).then(function(res){
@@ -11426,6 +11431,23 @@
     }
   }
   function referatPdfUrl(path){ return fileUrl("referater", path); }
+  // Nye referater (fra okt. 2026) lastes ned som «TO_Møte_uke_<nr>.pdf». Eldre beholder navnet sitt.
+  function referatDownloadName(path){
+    var m = /\/TO_Mote_uke_(\d+)\.pdf$/.exec(path || "");
+    return m ? "TO_Møte_uke_" + m[1] + ".pdf" : "";
+  }
+  function downloadReferatPdf(a, path){
+    var name = referatDownloadName(path);
+    if(!name) return false;
+    fetch(a.href).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement("a");
+      link.href = url; link.download = name;
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+    }).catch(function(){ window.open(a.href, "_blank", "noopener"); });
+    return true;
+  }
   function deleteToMeeting(id){
     if(!sb) return;
     var m = state.toMeetings.find(function(x){ return x.id === id; });
