@@ -2433,7 +2433,7 @@
       </select>
     </div>
     <label class="checkrow" id="logiMeldingSendtField" style="margin:0 0 16px;">
-      <input type="checkbox" id="logiMeldingSendtInput" /> Melding er sendt til frivillig
+      <input type="checkbox" id="logiMeldingSendtInput" /> Losji-informasjon er sendt til frivillige
     </label>
     <h4 style="margin:0 0 6px; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em;">Vertsfamilie</h4>
     <div class="field"><label for="logiAdresseInput">Adresse</label><input type="text" id="logiAdresseInput" maxlength="200" /></div>
@@ -10140,7 +10140,7 @@
     }
     byId("logiStatusBadge").innerHTML = '<span class="badge" style="background:'+(logiStatusColor(status, info && info.meldingSendt))+'22; color:'+(logiStatusColor(status, info && info.meldingSendt))+';">'+LOGI_STATUS_LABELS[status]+(status === "logi_klart" && info && info.meldingSendt ? " · melding sendt" : "")+'</span>';
     byId("logiStatusField").hidden = !canEditFull;
-    byId("logiMeldingSendtField").hidden = !canEditFull;
+    byId("logiMeldingSendtField").hidden = readOnly;
     byId("logiStatusSelect").value = status;
     byId("logiMeldingSendtInput").checked = !!(info && info.meldingSendt);
     byId("logiAdresseInput").value = info ? info.adresse : "";
@@ -10218,13 +10218,15 @@
       fields.melding_sendt = byId("logiMeldingSendtInput").checked;
       upsertLogiInfo(personId, fields, allergyDataByMember);
     } else if((state.me && state.me.role === "kontakt") || view.menighetPreview){
+      fields.melding_sendt = byId("logiMeldingSendtInput").checked;
       upsertLogiInfoAsKontakt(personId, fields, allergyDataByMember);
     }
     logiDialog.close();
   });
   byId("logiMarkReadyBtn").addEventListener("click", function(){
     var personId = logiDialog.dataset.personId;
-    upsertLogiInfoAsKontakt(personId, { status: "logi_klart", melding_sendt: true });
+    // «Logi klart» blir grønt først når losji-informasjonen også er krysset av som sendt.
+    upsertLogiInfoAsKontakt(personId, { status: "logi_klart", melding_sendt: byId("logiMeldingSendtInput").checked });
     logiDialog.close();
   });
   byId("pdEditInfoBtn").addEventListener("click", function(){ openPersonInfoEditDialog(logiDialog.dataset.personId); });
