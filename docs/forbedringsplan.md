@@ -217,3 +217,10 @@ prosjekt, bare lokale kan endres); `fill_behov_day` er uendret.
    fane) og `can_see_team(prosjekt)` i databasen; restriktiv regel «p10 team-tilgang» på `room_todos`.
 3. **Dokumentasjon:** ukeoversikten har «📷 Ta bilde» (samme skjema som inne på en uke) som lagrer på
    inneværende uke, og den uken er fremhevet med «Denne uken». ISO-uke, norsk tid (Europe/Oslo).
+
+## Menighet: allergier kun til info (sql/89)
+
+- Menighetens personkort viser allergier som tekst, uten felt. Lagring fra menigheten sender ikke allergiendringer.
+- `sql/89-menighet-allergi-kun-info.sql` (kjørt): trigger på `logi_info` som avviser endring av allergifeltene
+  (`allergier`, `allergi_mat`, `allergi_logi`, `allergi_mat_tekst`, `allergi_logi_tekst`) for rollen `kontakt`.
+  Nye rader fra menigheten må ha tomme allergifelt. CG1 er ikke berørt. Testet i tilbakerullede transaksjoner.
