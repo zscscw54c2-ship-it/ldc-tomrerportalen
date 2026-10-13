@@ -11401,11 +11401,17 @@
     if(!sb) return Promise.resolve();
     var blob = buildReferatPdfBlob(meeting);
     if(!blob){ showError("Kunne ikke lage PDF-referat (PDF-biblioteket lastet ikke inn). Referatet er likevel lagret i portalen."); return Promise.resolve(); }
-    var path = meeting.project_id + "/" + meeting.id + ".pdf";
-    return sb.storage.from("referater").upload(path, blob, { contentType: "application/pdf", upsert: true }).then(function(res){
+    // Nytt filnavn for hver versjon: lagringsreglene tillater å laste opp og slette, men ikke å
+    // overskrive en fil (upsert). Den forrige versjonen slettes når den nye er lagret på møtet.
+    var path = meeting.project_id + "/" + meeting.id + "-" + Date.now() + ".pdf";
+    var latest = state.toMeetings.find(function(x){ return x.id === meeting.id; });
+    var oldPath = (latest && latest.referatPdfPath) || meeting.referatPdfPath || "";
+    return sb.storage.from("referater").upload(path, blob, { contentType: "application/pdf" }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("referater") !== -1 ? "Databasen mangler PDF-lagringsrommet. Kjør sql/26-to-mote-referat-pdf.sql i Supabase." : "Kunne ikke laste opp PDF-referatet: "+res.error.message); return; }
       return sb.from("to_meetings").update({ referat_pdf_path: path }).eq("id", meeting.id).then(function(res2){
-        if(res2.error){ showError("PDF ble lastet opp, men kunne ikke lagres på møtet: "+res2.error.message); return; }
+        if(res2.error){ showError("PDF ble lastet opp, men kunne ikke lagres på møtet: "+res2.error.message); sb.storage.from("referater").remove([path]); return; }
+        if(latest) latest.referatPdfPath = path;
+        if(oldPath && oldPath !== path) sb.storage.from("referater").remove([oldPath]);
         showInfo("PDF-referat opprettet ✓");
         refetchToMeetings();
       });
