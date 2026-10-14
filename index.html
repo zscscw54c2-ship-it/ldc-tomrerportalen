@@ -1610,7 +1610,7 @@
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
         <div id="portalSuggestionList" style="display:flex; flex-direction:column; gap:8px;"></div>
         <form class="inline-add" id="addPortalSuggestionForm" style="margin-top:10px;">
-          <input type="text" id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+          <textarea id="newPortalSuggestionText" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
           <button class="btn primary" type="submit">Legg til</button>
         </form>
       </div>
@@ -1805,7 +1805,7 @@
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
       <div id="portalSuggestionList-cgo" style="display:flex; flex-direction:column; gap:8px;"></div>
       <form class="inline-add" id="addPortalSuggestionForm-cgo" style="margin-top:10px;">
-        <input type="text" id="newPortalSuggestionText-cgo" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <textarea id="newPortalSuggestionText-cgo" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
@@ -1827,7 +1827,7 @@
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
       <div id="portalSuggestionList-kontor1" style="display:flex; flex-direction:column; gap:8px;"></div>
       <form class="inline-add" id="addPortalSuggestionForm-kontor1" style="margin-top:10px;">
-        <input type="text" id="newPortalSuggestionText-kontor1" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <textarea id="newPortalSuggestionText-kontor1" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
@@ -1849,7 +1849,7 @@
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
       <div id="portalSuggestionList-kontor2" style="display:flex; flex-direction:column; gap:8px;"></div>
       <form class="inline-add" id="addPortalSuggestionForm-kontor2" style="margin-top:10px;">
-        <input type="text" id="newPortalSuggestionText-kontor2" placeholder="F.eks. Legg til påminnelse for..." required maxlength="300" style="flex:1; min-width:220px;" />
+        <textarea id="newPortalSuggestionText-kontor2" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
@@ -7801,7 +7801,7 @@
     if(!box) return;
     var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
     box.innerHTML = suggestions.length ? suggestions.map(function(s){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
+      return '<div class="shoprow" style="align-items:flex-start;"><span class="sname" style="white-space:pre-wrap; word-break:break-word;">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
     box.querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
       b.addEventListener("click", function(){
@@ -7822,6 +7822,10 @@
       if(!text) return;
       addPortalSuggestion(text);
       input.value = "";
+    });
+    // Ctrl/Cmd + Enter sender (vanlig Enter gir ny linje).
+    byId(inputId).addEventListener("keydown", function(ev){
+      if(ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)){ ev.preventDefault(); if(form.requestSubmit) form.requestSubmit(); }
     });
   }
   wirePortalSuggestionForm("addPortalSuggestionForm", "newPortalSuggestionText");
@@ -11563,7 +11567,7 @@
   }
   function addPortalSuggestion(text){
     if(!sb) return;
-    sb.from("portal_suggestions").insert({ text: text.slice(0,300) }).then(function(res){
+    sb.from("portal_suggestions").insert({ text: text.slice(0,4000) }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("portal_suggestions") !== -1 ? "Databasen mangler tabellen for portal-forslag. Kjør sql/22-portal-forslag.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchPortalSuggestions();
     });
