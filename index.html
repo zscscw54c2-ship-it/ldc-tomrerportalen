@@ -532,6 +532,22 @@
   .office-mine{ background:var(--accent-soft); border-radius:8px; padding:4px 10px; margin-bottom:10px; }
   .office-note{ width:100%; box-sizing:border-box; min-height:90px; border:1px solid var(--border); border-radius:8px; padding:8px; font:inherit; font-size:13px; background:var(--surface); }
   .office-topic-note{ width:100%; box-sizing:border-box; margin-top:4px; border:1px solid var(--border); border-radius:6px; padding:4px 6px; font:inherit; font-size:12.5px; background:var(--surface); }
+  /* Godsmottaker */
+  .goods-card{ margin-bottom:16px; }
+  .goods-filters{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  .goods-filters .chip{ border:1px solid var(--border-strong, var(--border)); background:var(--surface); border-radius:16px; padding:4px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .goods-filters .chip.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .goods-row{ border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px; display:flex; gap:10px; align-items:flex-start; }
+  .goods-row.done{ opacity:.65; }
+  .goods-row .gmain{ flex:1; min-width:0; }
+  .goods-row .gtitle{ font-weight:700; font-size:14px; }
+  .goods-row .gmeta{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .goods-row .gdev{ background:var(--bad-soft); color:var(--bad-ink); border-radius:6px; padding:4px 8px; font-size:12.5px; margin-top:6px; white-space:pre-wrap; }
+  .goods-row .gfiles{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .goods-row .gfile{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-size:12px; background:var(--surface-alt); text-decoration:none; color:var(--text); }
+  .goods-form{ border:1px dashed var(--border-strong, var(--border)); border-radius:10px; padding:10px 12px; margin:8px 0; display:flex; flex-direction:column; gap:8px; }
+  .goods-form .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
+  .goods-form input[type="text"], .goods-form input[type="date"], .goods-form select, .goods-form textarea{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; font:inherit; font-size:13px; background:var(--surface); }
   /* Mat: ukestabell */
   .mat-week{ width:100%; border-collapse:collapse; font-size:13px; }
   .mat-week th, .mat-week td{ padding:6px 6px; border-bottom:1px solid var(--border); text-align:center; vertical-align:middle; }
@@ -1570,6 +1586,7 @@
   <section id="panel-acgo" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="acgo"></div>
+    <div class="goods-shared" data-goodspage="acgo"></div>
     <p id="acgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div>
@@ -1651,7 +1668,7 @@
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Hver ny bruker får sin egen side under CG1 (med samme navn). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Hver ny bruker får sin egen side under CG1 (med samme navn). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Godsmottaker: brukeren ser Godsmottaker (mottak med dokumenter). Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
       <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <details id="cg1AddUserBox" style="border:1px dashed var(--border-strong); border-radius:10px; padding:10px 12px;">
         <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">+ Legg til bruker</summary>
@@ -1662,7 +1679,7 @@
           </div>
           <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
           <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
-          <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label></div>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label></div>
           <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
         </form>
       </details>
@@ -1716,6 +1733,7 @@
   <section id="panel-cgo" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="cgo"></div>
+    <div class="goods-shared" data-goodspage="cgo"></div>
     <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0; flex:1; min-width:180px;"></p>
       <div style="display:flex; align-items:center; gap:6px;">
@@ -1814,6 +1832,7 @@
   <section id="panel-kontor1" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="kontor1"></div>
+    <div class="goods-shared" data-goodspage="kontor1"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 1</h2>
       <div style="display:flex; gap:8px;">
@@ -1836,6 +1855,7 @@
   <section id="panel-cg1side" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="" id="cg1sideOffice"></div>
+    <div class="goods-shared" data-goodspage="" id="cg1sideGoods"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;" id="cg1sideTitle">Side</h2>
       <div style="display:flex; gap:8px;">
@@ -1858,6 +1878,7 @@
   <section id="panel-kontor2" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="kontor2"></div>
+    <div class="goods-shared" data-goodspage="kontor2"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 2</h2>
       <div style="display:flex; gap:8px;">
@@ -2584,7 +2605,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -6720,6 +6741,7 @@
     switchTab("cg1side");
     renderCg1Side();
     renderOfficeShared();
+    renderGoodsShared();
   }
   function renderCg1Side(){
     var key = view.cg1Side;
@@ -6727,6 +6749,7 @@
     byId("cg1sideTitle").textContent = pg ? pg.label : "";
     byId("cg1sideCreateBox").dataset.opencreatebox = key || "";
     byId("cg1sideOffice").dataset.officepage = key || "";
+    byId("cg1sideGoods").dataset.goodspage = key || "";
     if(pg) renderOfficeBoxes(key, byId("officeBoxes-cg1side"));
     else byId("officeBoxes-cg1side").innerHTML = "";
   }
@@ -6957,6 +6980,231 @@
     f.querySelector('input[type="text"]').value = ""; f.querySelector('input[type="date"]').value = "";
   });
 
+  // ---------- Godsmottaker (sql/97): mottak av varer med dokumenter, per prosjekt ----------
+  // Vises øverst på CG1-sidene (under Office) for brukere med «Godsmottaker» krysset av. Alle med
+  // Godsmottaker kan legge til, endre, krysse av «Behandlet» og slette. Dokumentene ligger i den
+  // private filmappen «godsmottak» under <prosjekt>/<mottak>/.
+  function userHasGoods(){
+    if(!isByggeleder()) return false;
+    if(view.cg1AccessMissing) return false;
+    var a = myCg1Access();
+    return !!(a && a.active && a.godsmottak);
+  }
+  function refetchGoods(){
+    if(!sb || !isByggeleder() || !userHasGoods()) return;
+    Promise.all([
+      sb.from("goods_receipts").select("*").order("received_on", { ascending: false }).order("created_at", { ascending: false }),
+      sb.from("goods_receipt_files").select("*").order("created_at")
+    ]).then(function(r){
+      if(r[0].error || r[1].error){ view.goodsMissing = true; scheduleRender(); return; }
+      view.goodsMissing = false;
+      state.goodsReceipts = r[0].data || []; state.goodsFiles = r[1].data || [];
+      scheduleRender();
+    });
+  }
+  function goodsForProject(){
+    var pid = currentProjectId();
+    return state.goodsReceipts.filter(function(g){ return g.project_id === pid; });
+  }
+  function goodsFilesFor(id){ return state.goodsFiles.filter(function(f){ return f.receipt_id === id; }); }
+  function goodsFagOptions(selected){
+    var fags = activeProjectFags();
+    return '<option value="">Fag (valgfritt)</option>' + fags.map(function(f){ return '<option value="'+escapeHtml(f)+'"'+(f === selected ? ' selected' : '')+'>'+escapeHtml(FAG_LABELS[f] || f)+'</option>'; }).join("");
+  }
+  function goodsFileButtons(attr){
+    return '<label class="btn small" style="margin:0; cursor:pointer;">📷 Ta bilde<input type="file" accept="image/*" capture="environment" multiple '+attr+' style="display:none;" /></label>' +
+      '<label class="btn small ghost" style="margin:0; cursor:pointer;">Last opp fil<input type="file" accept="image/*,.pdf,application/pdf" multiple '+attr+' style="display:none;" /></label>';
+  }
+  function goodsFormHtml(g){
+    var isNew = !g;
+    g = g || {};
+    var suppliers = [];
+    goodsForProject().forEach(function(x){ if(x.supplier && suppliers.indexOf(x.supplier) === -1) suppliers.push(x.supplier); });
+    return '<form class="goods-form" data-goodsform="'+(isNew ? "new" : g.id)+'">' +
+      '<div class="grow2"><input type="date" name="received_on" value="'+escapeHtml(g.received_on || osloTodayIso())+'" aria-label="Dato mottatt" />' +
+      '<input type="text" name="supplier" maxlength="120" placeholder="Leverandør, f.eks. Byggmakker" value="'+escapeHtml(g.supplier || "")+'" list="goodsSupplierList" style="flex:1; min-width:160px;" />' +
+      '<select name="fag">'+goodsFagOptions(g.fag || "")+'</select></div>' +
+      '<datalist id="goodsSupplierList">'+suppliers.map(function(x){ return '<option value="'+escapeHtml(x)+'"></option>'; }).join("")+'</datalist>' +
+      '<input type="text" name="description" maxlength="500" placeholder="Hva kom? F.eks. 40 gipsplater, 2 paller isolasjon" value="'+escapeHtml(g.description || "")+'" />' +
+      '<textarea name="deviation" rows="2" maxlength="1000" placeholder="Avvik/merknad (valgfritt) – f.eks. 1 plate knust, mangler 2 pakker">'+escapeHtml(g.deviation || "")+'</textarea>' +
+      (isNew ? '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-goodsnewfile')+'<span class="empty-note" data-goodsnewfiles style="margin:0;"></span></div>' : '') +
+      '<div class="grow2" style="justify-content:flex-end;"><button type="button" class="btn small ghost" data-goodscancel>Avbryt</button><button type="submit" class="btn small primary">'+(isNew ? "Lagre mottak" : "Lagre")+'</button></div>' +
+      '</form>';
+  }
+  function goodsRowHtml(g){
+    var files = goodsFilesFor(g.id);
+    if(view.goodsEditing === g.id) return goodsFormHtml(g);
+    var title = escapeHtml(g.supplier || "Mottak") + ' · ' + fmtRange(g.received_on, g.received_on);
+    var doneTxt = g.done ? 'Behandlet' + (g.done_by ? ' av ' + escapeHtml(g.done_by) : '') + (g.done_at ? ', ' + fmtRange(g.done_at.slice(0,10), g.done_at.slice(0,10)) : '') : '';
+    return '<div class="goods-row'+(g.done ? ' done' : '')+'">' +
+      '<label title="Behandlet" style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--muted); cursor:pointer;"><input type="checkbox" data-goodsdone="'+g.id+'"'+(g.done ? ' checked' : '')+' style="width:18px; height:18px;" />Behandlet</label>' +
+      '<div class="gmain"><div class="gtitle">'+title+(g.fag ? ' '+fagBadgeHtml(g.fag) : '')+(g.deviation ? ' <span class="badge" style="background:var(--bad-soft); color:var(--bad-ink);">Avvik</span>' : '')+'</div>' +
+      (g.description ? '<div style="font-size:13px; margin-top:2px;">'+escapeHtml(g.description)+'</div>' : '') +
+      (g.deviation ? '<div class="gdev">'+escapeHtml(g.deviation)+'</div>' : '') +
+      '<div class="gfiles">' + files.map(function(f){
+        var img = (f.content_type || "").indexOf("image/") === 0;
+        return '<span style="display:inline-flex; align-items:center;"><a class="gfile" data-fileurl href="'+escapeHtml(fileUrl("godsmottak", f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Dokument")+'</a><button type="button" class="x" data-goodsdelfile="'+f.id+'" title="Fjern dokumentet" style="border:none; background:none; color:var(--muted); cursor:pointer;">×</button></span>';
+      }).join("") + goodsFileButtons('data-goodsaddfile="'+g.id+'"') + '</div>' +
+      (doneTxt ? '<div class="gmeta">'+doneTxt+'</div>' : '') +
+      '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:4px;"><button type="button" class="btn small ghost" data-goodsedit="'+g.id+'">Endre</button><button type="button" class="btn small ghost danger" data-goodsdel="'+g.id+'">Slett</button></div>' +
+      '</div>';
+  }
+  function goodsHtml(){
+    if(view.goodsMissing) return '<div class="peoplecard goods-card"><h2 style="font-size:16px;">Godsmottaker</h2><p class="empty-note">Databasen mangler Godsmottaker. Kjør sql/97-godsmottaker.sql i Supabase.</p></div>';
+    if(!currentProjectId()) return "";
+    var all = goodsForProject();
+    var open = all.filter(function(g){ return !g.done; }).length;
+    var dev = all.filter(function(g){ return g.deviation; }).length;
+    var f = view.goodsFilter || "open";
+    var q = (view.goodsSearch || "").trim().toLowerCase();
+    var list = all.filter(function(g){
+      if(f === "open" && g.done) return false;
+      if(f === "avvik" && !g.deviation) return false;
+      if(q){
+        var hay = [g.supplier, g.description, g.deviation, FAG_LABELS[g.fag] || g.fag].concat(goodsFilesFor(g.id).map(function(x){ return x.file_name; })).join(" ").toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    var chip = function(key, label){ return '<button type="button" class="chip'+(f === key ? ' on' : '')+'" data-goodsfilter="'+key+'">'+label+'</button>'; };
+    return '<div class="peoplecard goods-card">' +
+      '<div class="office-head"><h2 style="font-size:17px; margin:0;">Godsmottaker</h2>' +
+      (view.goodsAddOpen ? '' : '<button type="button" class="btn small primary" data-goodsadd>+ Nytt mottak</button>') + '</div>' +
+      (view.goodsAddOpen ? goodsFormHtml(null) : '') +
+      '<div class="goods-filters">' + chip("open", "Ikke behandlet (" + open + ")") + chip("avvik", "Med avvik (" + dev + ")") + chip("alle", "Alle (" + all.length + ")") +
+        '<input type="search" data-goodssearch placeholder="Søk leverandør, tekst, dokument …" value="'+escapeHtml(view.goodsSearch || "")+'" style="flex:1; min-width:160px; border:1px solid var(--border); border-radius:8px; padding:5px 8px; background:var(--surface);" /></div>' +
+      (list.length ? list.map(goodsRowHtml).join("") : '<p class="empty-note" style="margin:6px 0;">' + (all.length ? 'Ingen mottak her.' : 'Ingen mottak registrert ennå. Trykk «+ Nytt mottak».') + '</p>') +
+      '</div>';
+  }
+  var goodsRenderedSig = {};
+  function renderGoodsShared(){
+    if(!isByggeleder()) return;
+    document.querySelectorAll(".goods-shared").forEach(function(box){
+      var page = box.dataset.goodspage;
+      var html = (page && cg1PageByKey(page) && userHasGoods()) ? goodsHtml() : "";
+      if(goodsRenderedSig[page] === html) return;
+      var ae = document.activeElement;
+      if(ae && box.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox"){
+        if(ae.hasAttribute("data-goodssearch")){ /* søk: tegn på nytt og behold markøren */ }
+        else { view.goodsPendingRender = true; return; }
+      }
+      var searchFocused = ae && box.contains(ae) && ae.hasAttribute("data-goodssearch");
+      var caret = searchFocused ? ae.selectionStart : null;
+      // Utfylte felt i et åpent skjema beholdes ved omtegning (f.eks. når noen andre legger inn et mottak).
+      var keep = {};
+      box.querySelectorAll("[data-goodsform] [name]").forEach(function(el){ keep[el.closest("[data-goodsform]").dataset.goodsform + "|" + el.name] = el.value; });
+      box.innerHTML = html;
+      goodsRenderedSig[page] = html;
+      box.querySelectorAll("[data-goodsform] [name]").forEach(function(el){ var k = el.closest("[data-goodsform]").dataset.goodsform + "|" + el.name; if(k in keep) el.value = keep[k]; });
+      if(searchFocused){ var s2 = box.querySelector("[data-goodssearch]"); if(s2){ s2.focus(); try{ s2.setSelectionRange(caret, caret); }catch(e){} } }
+    });
+  }
+  function goodsRerender(){ goodsRenderedSig = {}; renderGoodsShared(); }
+  function goodsWrite(promise, okMsg){
+    return promise.then(function(res){
+      if(res && res.error){ showError("Kunne ikke lagre i Godsmottaker: " + res.error.message); }
+      else if(okMsg) showInfo(okMsg);
+      refetchGoods();
+      return res;
+    });
+  }
+  var MAX_GOODS_FILE_BYTES = 25 * 1024 * 1024;
+  function uploadGoodsFiles(receiptId, files){
+    var pid = currentProjectId();
+    if(!pid || !files || !files.length) return Promise.resolve();
+    showInfo("Laster opp " + files.length + " dokument(er) …");
+    return Promise.all(Array.prototype.map.call(files, function(file){
+      return compressImage(file, 2000, 0.85).then(function(f){
+        if(f.size > MAX_GOODS_FILE_BYTES){ showError("«" + f.name + "» er for stor (maks 25 MB)."); return null; }
+        var safe = (f.name || "dokument").replace(/[^a-zA-Z0-9_.\-]/g, "_");
+        var path = pid + "/" + receiptId + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
+        return sb.storage.from("godsmottak").upload(path, f, { contentType: f.type || "application/octet-stream" }).then(function(res){
+          if(res.error){ showError("Kunne ikke laste opp «" + f.name + "»: " + res.error.message); return null; }
+          return sb.from("goods_receipt_files").insert({ receipt_id: receiptId, project_id: pid, file_path: path, file_name: (f.name || "dokument").slice(0, 120), content_type: f.type || null });
+        });
+      });
+    })).then(function(){ showInfo("Dokument(er) lagret ✓"); refetchGoods(); });
+  }
+  var goodsNewFiles = [];
+  document.addEventListener("click", function(ev){
+    var t = ev.target;
+    if(!t.closest || !t.closest(".goods-shared")) return;
+    var b;
+    if((b = t.closest("[data-goodsadd]"))){ view.goodsAddOpen = true; goodsNewFiles = []; goodsRerender(); }
+    else if((b = t.closest("[data-goodscancel]"))){ view.goodsAddOpen = false; view.goodsEditing = null; goodsNewFiles = []; goodsRerender(); }
+    else if((b = t.closest("[data-goodsfilter]"))){ view.goodsFilter = b.dataset.goodsfilter; goodsRerender(); }
+    else if((b = t.closest("[data-goodsedit]"))){ view.goodsEditing = b.dataset.goodsedit; goodsRerender(); }
+    else if((b = t.closest("[data-goodsdel]"))){
+      var id = b.dataset.goodsdel, g = state.goodsReceipts.find(function(x){ return x.id === id; });
+      var nf = goodsFilesFor(id).length;
+      askConfirm("Mottaket" + (g && g.supplier ? " fra " + g.supplier : "") + (nf ? " og " + nf + " dokument(er)" : "") + " slettes for alle.", function(){
+        var paths = goodsFilesFor(id).map(function(f){ return f.file_path; });
+        (paths.length ? sb.storage.from("godsmottak").remove(paths) : Promise.resolve()).then(function(){
+          goodsWrite(sb.from("goods_receipts").delete().eq("id", id), "Mottaket er slettet ✓");
+        });
+      }, { title: "Slette mottaket?" });
+    } else if((b = t.closest("[data-goodsdelfile]"))){
+      var fid = b.dataset.goodsdelfile, file = state.goodsFiles.find(function(x){ return x.id === fid; });
+      if(!file) return;
+      askConfirm("«" + (file.file_name || "Dokumentet") + "» fjernes for alle.", function(){
+        sb.storage.from("godsmottak").remove([file.file_path]).then(function(){ goodsWrite(sb.from("goods_receipt_files").delete().eq("id", fid), "Dokumentet er fjernet ✓"); });
+      }, { title: "Fjerne dokumentet?" });
+    }
+  });
+  document.addEventListener("change", function(ev){
+    var t = ev.target;
+    if(!t.closest || !t.closest(".goods-shared")) return;
+    if(t.dataset.goodsdone){
+      var me = myCg1Access();
+      goodsWrite(sb.from("goods_receipts").update({ done: t.checked, done_at: t.checked ? new Date().toISOString() : null, done_by: t.checked ? ((me && me.display_name) || "") : null }).eq("id", t.dataset.goodsdone), t.checked ? "Markert som behandlet ✓" : null);
+    } else if(t.dataset.goodsaddfile){
+      uploadGoodsFiles(t.dataset.goodsaddfile, t.files);
+      t.value = "";
+    } else if(t.hasAttribute("data-goodsnewfile")){
+      Array.prototype.forEach.call(t.files || [], function(f){ goodsNewFiles.push(f); });
+      t.value = "";
+      var lbl = t.closest("[data-goodsform]").querySelector("[data-goodsnewfiles]");
+      if(lbl) lbl.textContent = goodsNewFiles.length ? goodsNewFiles.length + " dokument(er) valgt: " + goodsNewFiles.map(function(f){ return f.name; }).join(", ") : "";
+    }
+  });
+  document.addEventListener("input", function(ev){
+    var t = ev.target;
+    if(!t.hasAttribute || !t.hasAttribute("data-goodssearch")) return;
+    view.goodsSearch = t.value;
+    goodsRerender();
+  });
+  document.addEventListener("focusout", function(ev){
+    if(!view.goodsPendingRender || !ev.target.closest || !ev.target.closest(".goods-shared")) return;
+    setTimeout(function(){ view.goodsPendingRender = false; renderGoodsShared(); }, 0);
+  });
+  document.addEventListener("submit", function(ev){
+    var f = ev.target;
+    if(!f.closest || !f.closest(".goods-shared") || !f.hasAttribute("data-goodsform")) return;
+    ev.preventDefault();
+    var val = function(n){ var el = f.querySelector('[name="'+n+'"]'); return el ? el.value.trim() : ""; };
+    var row = { received_on: val("received_on") || osloTodayIso(), supplier: val("supplier").slice(0,120) || null, description: val("description").slice(0,500) || null, fag: val("fag") || null, deviation: val("deviation").slice(0,1000) || null };
+    if(!row.supplier && !row.description && !(f.dataset.goodsform === "new" && goodsNewFiles.length)){ showError("Fyll inn leverandør, hva som kom, eller legg ved et dokument."); return; }
+    if(document.activeElement && f.contains(document.activeElement)) document.activeElement.blur();
+    if(f.dataset.goodsform === "new"){
+      var files = goodsNewFiles.slice();
+      row.project_id = currentProjectId();
+      sb.from("goods_receipts").insert(row).select().single().then(function(res){
+        if(res.error){ showError("Kunne ikke lagre mottaket: " + res.error.message); return; }
+        view.goodsAddOpen = false; goodsNewFiles = [];
+        showInfo("Mottak lagret ✓");
+        refetchGoods();
+        goodsRerender();
+        if(files.length && res.data) uploadGoodsFiles(res.data.id, files);
+      });
+    } else {
+      var id = f.dataset.goodsform;
+      view.goodsEditing = null;
+      goodsWrite(sb.from("goods_receipts").update(row).eq("id", id), "Endringer lagret ✓");
+      goodsRerender();
+    }
+  });
+
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAdminEditButtons();
@@ -6982,6 +7230,7 @@
     renderCgoTab();
     renderKontorTabs();
     renderOfficeShared();
+    renderGoodsShared();
     renderAllPortalSuggestionLists();
     renderToMoteTab();
     renderDashboardTab();
@@ -7746,6 +7995,7 @@
       }
       if(isCg1Admin() && !view.cg1UsersLoaded) refetchCg1Users();
       refetchOffice();
+      refetchGoods();
       scheduleRender();
     });
   }
@@ -7778,6 +8028,7 @@
       if("pages" in body) u.pages = body.pages;
       if("isAdmin" in body) u.isAdmin = body.isAdmin;
       if("office" in body) u.office = body.office;
+      if("godsmottak" in body) u.godsmottak = body.godsmottak;
       if("displayName" in body) u.displayName = body.displayName;
     }
     cg1UserAdmin(body).then(function(){
@@ -7983,6 +8234,7 @@
           cg1PageCheckboxesHtml("data-cg1page", u.userId, u.pages) +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; margin-left:6px;"><input type="checkbox" data-cg1admin="'+u.userId+'"'+(u.isAdmin?' checked':'')+' /> Admin</label>' +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter"><input type="checkbox" data-cg1office="'+u.userId+'"'+(u.office?' checked':'')+' /> Office</label>' +
+          '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Godsmottaker (mottak av varer med dokumenter) øverst på CG1-sidene"><input type="checkbox" data-cg1goods="'+u.userId+'"'+(u.godsmottak?' checked':'')+' /> Godsmottaker</label>' +
           '<span style="flex:1;"></span>' +
           '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
           (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
@@ -7999,6 +8251,9 @@
         var pages = Array.prototype.slice.call(box.querySelectorAll('[data-cg1page="'+id+'"]')).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
         cg1UserAction({ action:"update", userId:id, pages:pages }, "Tilgang lagret ✓");
       });
+    });
+    box.querySelectorAll("[data-cg1goods]").forEach(function(cb){
+      cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1goods, godsmottak:this.checked }, this.checked ? "Godsmottaker slått på ✓" : "Godsmottaker slått av ✓"); });
     });
     box.querySelectorAll("[data-cg1office]").forEach(function(cb){
       cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1office, office:this.checked }, this.checked ? "Office slått på ✓" : "Office slått av ✓"); });
@@ -8043,7 +8298,7 @@
   byId("cg1AddUserForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var pages = Array.prototype.slice.call(document.querySelectorAll("[data-cg1newpage]")).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
-    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked };
+    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked, godsmottak: byId("cg1NewGoods").checked };
     if(body.password.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
     cg1UserAdmin(body).then(function(){
       showInfo("Bruker opprettet ✓ Brukeren har fått sin egen side under CG1. Gi e-post og passord videre til personen.");
@@ -12427,6 +12682,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "office_boxes" }, refetchOfficeBoxes)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_todos" }, refetchOffice)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_notes" }, refetchOffice)
+      .on("postgres_changes", { event: "*", schema: "public", table: "goods_receipts" }, refetchGoods)
+      .on("postgres_changes", { event: "*", schema: "public", table: "goods_receipt_files" }, refetchGoods)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_links" }, refetchOfficeBoxLinks)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_contacts" }, refetchOfficeBoxContacts)

@@ -39,7 +39,7 @@ async function rememberCode(client: any, projectId: string, fagKey: string, code
   return !error;
 }
 
-const FILE_BUCKETS = ["tegninger", "dokumentasjon", "referater", "handleliste"];
+const FILE_BUCKETS = ["tegninger", "dokumentasjon", "referater", "handleliste", "godsmottak"];
 
 // Alle filstier under en mappe (prosjekt-id) i en filmappe, også i undermapper.
 // deno-lint-ignore no-explicit-any
@@ -62,7 +62,7 @@ async function listAllFiles(client: any, bucket: string, prefix: string): Promis
 //   1) Prosjektets delte fag-/menighetskontoer slettes i Auth. Ellers blir profilen stående uten
 //      prosjekt (profiles.project_id settes til null), og "uten prosjekt" betyr i can_see_project()
 //      en gammel konto som ser ALLE prosjekter - den gamle koden ville da gitt tilgang overalt.
-//   2) Alle filer under prosjekt-mappen i de fire filmappene slettes.
+//   2) Alle filer under prosjekt-mappen i filmappene slettes (også godsmottak, sql/97).
 //   3) Prosjektet slettes; databasen sletter resten (personer, oppmøte, allergier ...) via
 //      "on delete cascade".
 // Stopper ved første feil, før prosjektet slettes, så ingenting blir liggende halvveis uten at
