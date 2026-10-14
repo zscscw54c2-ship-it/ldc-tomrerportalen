@@ -1315,6 +1315,7 @@
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
           <h2 data-etkey="personer_byfag_title" style="font-size:16px;">Frivillige etter fag</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="frivilligeTagFilter" hidden aria-label="Filtrer på tagg" style="border:1px solid var(--border); border-radius:8px; padding:5px 8px; background:var(--surface); font-size:12.5px;"></select>
             <button type="button" class="btn small" id="frivilligeFullViewBtn">Vis hele prosjektet</button>
             <button type="button" class="btn small" id="frivilligeEditModeBtn" hidden>Gjør endringer</button>
           </div>
@@ -4596,7 +4597,18 @@
       byId("frivilligeEditModeBtn").classList.toggle("primary", view.frivilligeEditMode);
       byId("frivilligeFullViewBtn").textContent = view.frivilligeFullView ? "Vis kun fremover" : "Vis hele prosjektet";
       var fagFilter = isByggeleder() ? null : activeFag();
-      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder(), fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode, allowFagDrag: true });
+      // Tagg-velger: taggene som faktisk er i bruk i prosjektet («Lokal», «Under 18» …).
+      var tags = [];
+      projectPeople.forEach(function(p){ var t = (p.tag || "").trim(); if(t && tags.indexOf(t) === -1) tags.push(t); });
+      tags.sort(function(a,b){ return a.localeCompare(b, "no"); });
+      if(view.frivilligeTag && tags.indexOf(view.frivilligeTag) === -1) view.frivilligeTag = "";
+      var tagSel = byId("frivilligeTagFilter");
+      tagSel.hidden = !tags.length;
+      tagSel.innerHTML = '<option value="">Alle tagger</option>' + tags.map(function(t){
+        var n = projectPeople.filter(function(p){ return (p.tag || "").trim() === t; }).length;
+        return '<option value="'+escapeHtml(t)+'"'+(t === view.frivilligeTag ? ' selected' : '')+'>Bare «'+escapeHtml(t)+'» ('+n+')</option>';
+      }).join("");
+      byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder(), fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode, allowFagDrag: true, tagFilter: view.frivilligeTag || "", showUnassigned: isByggeleder() });
       wireFrivilligeGridEvents("peopleByFag", { readOnly: !isByggeleder(), allowFagDrag: true, editMode: view.frivilligeEditMode });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("peopleByFag", cur); else byId("peopleByFag").scrollLeft = 0;
     }
@@ -4628,6 +4640,7 @@
       renderPeopleTab();
     });
   });
+  byId("frivilligeTagFilter").addEventListener("change", function(){ view.frivilligeTag = this.value; renderPeopleTab(); });
   byId("peopleShowAllBtn").addEventListener("click", function(){ view.peopleShowAll = !view.peopleShowAll; renderPeopleTab(); });
   function toggleFrivilligeFullView(){
     view.frivilligeFullView = !view.frivilligeFullView;
@@ -9020,17 +9033,21 @@
       return false;
     }
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(activeOverviewFags().filter(function(f){ return f !== "team"; }));
-    var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamMemberPeopleForCurrentProject().map(function(p){ return p.id; }) : [];
+    var tagOk = function(p){ return !opts.tagFilter || (p.tag || "").trim() === opts.tagFilter; };
+    var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamMemberPeopleForCurrentProject().filter(tagOk).map(function(p){ return p.id; }) : [];
+    // «Ny»: lagt til (f.eks. importert) de siste sju dagene - så nye ikke blir oversett.
+    var newSince = Date.now() - 7*24*3600*1000;
+    var newBadge = function(p){ return p.createdAt && new Date(p.createdAt).getTime() > newSince ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;" title="Lagt til de siste sju dagene">Ny</span>' : ''; };
     // Finner personene per fag FØR noe HTML bygges, slik at Totalt-summen (som trenger å ha
     // sett alle fag) kan skrives øverst i rutenettet i stedet for nederst.
     var fagGroups = fagsToList.map(function(fag){
       var people;
       if(fag === "team"){
         var ids = teamPersonIds.slice();
-        state.people.forEach(function(p){ if(byPerson[p.id] && byPerson[p.id][fag] && ids.indexOf(p.id) === -1) ids.push(p.id); });
+        state.people.forEach(function(p){ if(byPerson[p.id] && byPerson[p.id][fag] && ids.indexOf(p.id) === -1 && tagOk(p)) ids.push(p.id); });
         people = state.people.filter(function(p){ return ids.indexOf(p.id) !== -1; }).sort(compareByLastName);
       } else {
-        people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag]; });
+        people = state.people.filter(function(p){ return byPerson[p.id] && byPerson[p.id][fag] && tagOk(p); });
         people = orderPeopleForFag(project, fag, people);
         if(opts.fromToday && startIdx > 0){
           people = people.filter(function(p){ return hasFutureAvailability(p.id, fag); });
@@ -9038,10 +9055,15 @@
       }
       return { fag: fag, people: people };
     }).filter(function(g){ return g.people.length > 0; });
-    var anyRows = fagGroups.length > 0;
     var allListedPeople = [];
     var seenPersonIds = {};
     fagGroups.forEach(function(g){ g.people.forEach(function(p){ if(!seenPersonIds[p.id]){ seenPersonIds[p.id] = true; allListedPeople.push(p); } }); });
+    // «Ikke satt opp ennå»: personer i prosjektet uten noen dager i noe fag (ellers usynlige her).
+    var unassigned = opts.showUnassigned ? state.people.filter(function(p){
+      return p.projectId === project.id && !byPerson[p.id] && !seenPersonIds[p.id] && tagOk(p);
+    }).sort(compareByLastName) : [];
+    allListedPeople = allListedPeople.concat(unassigned);
+    var anyRows = fagGroups.length > 0 || unassigned.length > 0;
     var shortNameMap = buildShortNameMap(allListedPeople);
     // Summerer antall frivillige per dag - både per fag og totalt for hele dagen (unike personer,
     // så noen som står i flere fag samme dag ikke telles dobbelt i totalen) - for rask oversikt.
@@ -9085,7 +9107,7 @@
           var titleSuffix = pending ? " (forespørsel sendt, venter på ACGO)" : "";
           cells += '<div class="'+cls+'"'+attr+' title="'+escapeHtml(p.name)+' · '+fmtRange(iso,iso)+titleSuffix+'">'+content+'</div>';
         }
-        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>'+(p.tag ? ' <span class="badge persontag">'+escapeHtml(p.tag)+'</span>' : '');
+        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>'+(p.tag ? ' <span class="badge persontag">'+escapeHtml(p.tag)+'</span>' : '') + newBadge(p);
         var rowAttr = "";
         if(canDragRow){
           nameCell = '<span class="frivillig-draghandle" data-frivillig-handle="'+p.id+'|'+fag+'" title="Dra for å endre rekkefølge eller fag">⋮⋮</span> ' + nameCell;
@@ -9099,8 +9121,15 @@
       }
       html += '<div class="g-row g-fagtotal"><div class="g-name" style="padding-left:24px;">Antall</div><div class="behov-track">'+fagSumCells+'</div></div>';
     });
+    if(unassigned.length){
+      html += '<div class="g-row g-group g-unassigned"><div class="g-name behov-fag-head"><span><i class="dot" style="background:var(--muted); width:8px; height:8px; border-radius:3px; opacity:.5;"></i> Ikke satt opp ennå ('+unassigned.length+')</span></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      unassigned.forEach(function(p){
+        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>'+(p.tag ? ' <span class="badge persontag">'+escapeHtml(p.tag)+'</span>' : '') + newBadge(p);
+        html += '<div class="g-row" data-unassigned="'+p.id+'"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="g-track">'+bg+todayLine+'</div></div>';
+      });
+    }
     html += '</div>';
-    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp på noe fag ennå.')+'</p>';
+    if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.tagFilter ? 'Ingen med taggen «'+escapeHtml(opts.tagFilter)+'» her.' : (opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp på noe fag ennå.'))+'</p>';
     return html;
   }
   // Samme rutenett-format som buildFrivilligeGridHtml, men gruppert etter logi-gruppe (familier,
