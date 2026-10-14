@@ -17,6 +17,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 //   setPassword { userId, password }
 //   setActive   { userId, active }
 //   delete      { userId }                       -> sletter kontoen helt (Auth + profil + tilganger)
+//
+// Siden følger brukeren (sql/96): create lager en egen CG1-side med brukerens navn (eller bruker en
+// side som allerede heter det samme) og krysser den av; nytt navn på brukeren gir siden samme navn.
+// Slettes brukeren, slettes siden hens (cg1_pages.owner_user, on delete cascade).
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -38,6 +42,14 @@ function jsonResponse(body: unknown, status: number): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json", "Connection": "keep-alive" },
   });
+}
+
+function pageKeyFor(label: string, taken: string[]): string {
+  let base = label.toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "o").replace(/å/g, "a").replace(/[^a-z0-9]+/g, "").slice(0, 30);
+  if (base.length < 2) base = "side";
+  let key = base, n = 2;
+  while (taken.indexOf(key) !== -1) key = base + n++;
+  return key;
 }
 
 function cleanPages(input: unknown): string[] | null {
@@ -156,7 +168,25 @@ Deno.serve(async (req: Request) => {
       await admin.auth.admin.deleteUser(newId);
       return jsonResponse({ error: "Kunne ikke lagre tilgangene: " + accErr.message }, 500);
     }
-    return jsonResponse({ ok: true, userId: newId }, 200);
+    // Egen side for brukeren: finnes det allerede en side med samme navn, brukes den.
+    let pageKey: string | null = null;
+    if (displayName) {
+      const { data: allPages } = await admin.from("cg1_pages").select("key, label, sort_order");
+      const list = allPages || [];
+      const same = list.find((p: { label: string }) => p.label.trim().toLowerCase() === displayName.toLowerCase());
+      if (same) {
+        pageKey = same.key;
+      } else {
+        pageKey = pageKeyFor(displayName, list.map((p: { key: string }) => p.key));
+        const maxSort = list.reduce((m: number, p: { sort_order: number }) => Math.max(m, p.sort_order || 0), 0);
+        const { error: pageErr } = await admin.from("cg1_pages").insert({ key: pageKey, label: displayName.slice(0, 40), fixed: false, sort_order: maxSort + 1, owner_user: newId });
+        if (pageErr) pageKey = null;
+      }
+      if (pageKey && pages.indexOf(pageKey) === -1) {
+        await admin.from("cg1_access").update({ pages: pages.concat([pageKey]) }).eq("user_id", newId);
+      }
+    }
+    return jsonResponse({ ok: true, userId: newId, pageKey }, 200);
   }
 
   const userId = String(body.userId || "");
@@ -182,6 +212,10 @@ Deno.serve(async (req: Request) => {
     if ("office" in body) patch.office = !!body.office;
     const { error } = await admin.from("cg1_access").update(patch).eq("user_id", userId);
     if (error) return jsonResponse({ error: "Kunne ikke lagre: " + error.message }, 500);
+    // Brukerens egen side får samme navn som brukeren.
+    if (patch.display_name) {
+      await admin.from("cg1_pages").update({ label: String(patch.display_name).slice(0, 40) }).eq("owner_user", userId);
+    }
     return jsonResponse({ ok: true }, 200);
   }
 

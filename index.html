@@ -1650,17 +1650,8 @@
       </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">CG1-sider</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Sidene under CG1. Lag nye sider (f.eks. «Kontor 3») som starter blanke med egne tavler, og gi sidene nytt navn. Hvem som ser hvilken side – og Office – velges per bruker under Brukere og tilganger.</p>
-      <div id="cg1PageAdminList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
-      <form class="inline-add" id="cg1PageAddForm">
-        <input type="text" id="cg1PageAddName" maxlength="40" placeholder="Navn på ny side, f.eks. Kontor 3" required style="flex:1; min-width:200px;" />
-        <button class="btn primary small" type="submit">+ Ny side</button>
-      </form>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Hver ny bruker får sin egen side under CG1 (med samme navn). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
       <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <details id="cg1AddUserBox" style="border:1px dashed var(--border-strong); border-radius:10px; padding:10px 12px;">
         <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">+ Legg til bruker</summary>
@@ -7716,7 +7707,7 @@
   // ---------- ACGO-siden ----------
   var didCg1Landing = false;
   // ---------- CG1-sider (sql/94) ----------
-  function rowToCg1Page(row){ return { key: row.key, label: row.label, fixed: !!row.fixed, sortOrder: row.sort_order || 0 }; }
+  function rowToCg1Page(row){ return { key: row.key, label: row.label, fixed: !!row.fixed, sortOrder: row.sort_order || 0, ownerUser: row.owner_user || null }; }
   function refetchCg1Pages(){
     if(!sb || !isByggeleder()) return;
     sb.from("cg1_pages").select("*").order("sort_order").order("created_at").then(function(res){
@@ -7730,64 +7721,6 @@
       scheduleRender();
     });
   }
-  function cg1PageKeyFor(label){
-    var base = (label || "").toLowerCase().replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a")
-      .replace(/[^a-z0-9]+/g,"").slice(0, 30);
-    if(base.length < 2) base = "side";
-    var key = base, n = 2;
-    while(cg1PageByKey(key)) key = base + n++;
-    return key;
-  }
-  function renderCg1PageAdmin(){
-    var box = byId("cg1PageAdminList");
-    if(!box || !isCg1Admin()) return;
-    var html = cg1PagesList().map(function(p){
-      return '<div class="shoprow" style="align-items:center; gap:10px;">' +
-        '<input type="text" data-cg1pagelabel="'+p.key+'" value="'+escapeHtml(p.label)+'" maxlength="40" style="border:1px solid var(--border); border-radius:7px; padding:4px 8px; font-weight:700; width:160px; background:var(--surface);" />' +
-        '<span style="flex:1;"></span>' +
-        (p.fixed ? '<span class="badge group" title="Faste sider kan ikke slettes">Fast</span>' : '<button type="button" class="btn small danger" data-cg1pagedel="'+p.key+'">Slett</button>') +
-        '</div>';
-    }).join("");
-    if(box.dataset.sig === html) return;
-    if(document.activeElement && box.contains(document.activeElement) && document.activeElement.type === "text") return;
-    box.dataset.sig = html;
-    box.innerHTML = html;
-  }
-  function cg1PageWrite(promise, okMsg){
-    return promise.then(function(res){
-      if(res.error){ showError(/cg1_pages/.test(res.error.message || "") ? "Databasen mangler CG1-sider. Kjør sql/94-cg1-sider.sql i Supabase." : "Kunne ikke lagre: " + res.error.message); }
-      else if(okMsg) showInfo(okMsg);
-      refetchCg1Pages(); refetchCg1Access();
-      if(isCg1Admin()) refetchCg1Users();
-    });
-  }
-  byId("cg1PageAdminList").addEventListener("change", function(ev){
-    var t = ev.target;
-    if(t.dataset.cg1pagelabel){
-      var v = t.value.trim().slice(0, 40);
-      if(!v){ t.value = cg1PageLabel(t.dataset.cg1pagelabel); return; }
-      cg1PageWrite(sb.from("cg1_pages").update({ label: v }).eq("key", t.dataset.cg1pagelabel), "Navn lagret ✓");
-    }
-  });
-  byId("cg1PageAdminList").addEventListener("click", function(ev){
-    var b = ev.target.closest && ev.target.closest("[data-cg1pagedel]");
-    if(!b) return;
-    var key = b.dataset.cg1pagedel, label = cg1PageLabel(key);
-    var n = officeBoxesFor(key).length;
-    askConfirm("Siden «" + label + "» slettes" + (n ? ", sammen med " + n + " tavle(r) på den" : "") + ". Den fjernes fra brukernes tilganger.", function(){
-      if(view.tab === "cg1side" && view.cg1Side === key) switchTab("cg1");
-      cg1PageWrite(sb.from("cg1_pages").delete().eq("key", key), "Siden er slettet ✓");
-    }, { title: "Slette siden?", confirmLabel: "Slett siden" });
-  });
-  byId("cg1PageAddForm").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var name = byId("cg1PageAddName").value.trim().slice(0, 40);
-    if(!name) return;
-    if(cg1PagesList().some(function(p){ return p.label.toLowerCase() === name.toLowerCase(); })){ showError("Det finnes allerede en side som heter «" + name + "»."); return; }
-    var maxSort = cg1PagesList().reduce(function(m, p){ return Math.max(m, p.sortOrder || 0); }, 0);
-    cg1PageWrite(sb.from("cg1_pages").insert({ key: cg1PageKeyFor(name), label: name, sort_order: maxSort + 1 }), "Siden «" + name + "» er laget ✓ – kryss den av på brukerne som skal se den.");
-    byId("cg1PageAddName").value = "";
-  });
   function refetchCg1Access(){
     if(!isByggeleder()) return;
     sb.from("cg1_access").select("*").then(function(res){
@@ -7851,6 +7784,7 @@
       if(okMsg) showInfo(okMsg);
       refetchCg1Users();
       refetchCg1Access();
+      refetchCg1Pages(); // egen side får nytt navn med brukeren / slettes med brukeren
     }, function(err){ showError(err.message); refetchCg1Users(); });
   }
   function refetchUserAccounts(){
@@ -8090,7 +8024,9 @@
       btn.addEventListener("click", function(){
         var u = state.cg1Users.find(function(x){ return x.userId === btn.dataset.cg1delete; });
         var label = u ? (u.displayName || u.email) : "brukeren";
-        if(!confirm("Slette "+label+(u && u.displayName ? " ("+u.email+")" : "")+" for godt?\n\nInnloggingen og tilgangene fjernes. Personen i personlisten og alt innhold i portalen beholdes.\n\nDette kan ikke angres.")) return;
+        var own = (state.cg1Pages || []).find(function(p){ return p.ownerUser === btn.dataset.cg1delete; });
+        var ownTxt = own ? "\n\nSiden «" + own.label + "» slettes også" + (officeBoxesFor(own.key).length ? ", med " + officeBoxesFor(own.key).length + " tavle(r)" : "") + "." : "";
+        if(!confirm("Slette "+label+(u && u.displayName ? " ("+u.email+")" : "")+" for godt?\n\nInnloggingen og tilgangene fjernes. Personen i personlisten og alt annet innhold i portalen beholdes."+ownTxt+"\n\nDette kan ikke angres.")) return;
         cg1UserAction({ action:"delete", userId:btn.dataset.cg1delete }, "Bruker slettet ✓");
       });
     });
@@ -8110,10 +8046,10 @@
     var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked };
     if(body.password.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
     cg1UserAdmin(body).then(function(){
-      showInfo("Bruker opprettet ✓ Gi e-post og passord videre til personen.");
+      showInfo("Bruker opprettet ✓ Brukeren har fått sin egen side under CG1. Gi e-post og passord videre til personen.");
       byId("cg1AddUserForm").reset();
       byId("cg1AddUserBox").open = false;
-      refetchCg1Users(); refetchCg1Access(); refetchUserAccounts();
+      refetchCg1Users(); refetchCg1Access(); refetchUserAccounts(); refetchCg1Pages();
     }, function(err){ showError(err.message); });
   });
   // ---------- dialog for fag-/menighetskode (minst 8 tegn, med forslag til sterk kode) ----------
@@ -8423,7 +8359,6 @@
     var pfList = projectFagsForCurrentProject();
     var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
     renderCg1UserList(peopleSorted);
-    renderCg1PageAdmin();
 
     byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f.key; });
