@@ -12,8 +12,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 //
 // Handlinger (body.action):
 //   list                                         -> alle CG1-brukere med e-post og sist innlogget
-//   create      { email, password, displayName, pages, isAdmin }   (pages = nøkler fra cg1_pages)
-//   update      { userId, displayName?, pages?, isAdmin? }
+//   create      { email, password, displayName, pages, isAdmin, office }   (pages = nøkler fra cg1_pages)
+//   update      { userId, displayName?, pages?, isAdmin?, office? }       (office = ser Office, sql/95)
 //   setPassword { userId, password }
 //   setActive   { userId, active }
 //   delete      { userId }                       -> sletter kontoen helt (Auth + profil + tilganger)
@@ -116,6 +116,7 @@ Deno.serve(async (req: Request) => {
         displayName: r.display_name || "",
         pages: r.pages || [],
         isAdmin: !!r.is_admin,
+        office: !!r.office,
         active: !!r.active,
       });
     }
@@ -128,6 +129,7 @@ Deno.serve(async (req: Request) => {
     const displayName = String(body.displayName || "").trim().slice(0, 60) || null;
     const pages = cleanPages(body.pages) || [];
     const isAdmin = !!body.isAdmin;
+    const office = !!body.office;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonResponse({ error: "Ugyldig e-postadresse." }, 400);
     if (password.length < 8) return jsonResponse({ error: "Passordet må være minst 8 tegn." }, 400);
 
@@ -147,7 +149,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Kunne ikke lagre rollen: " + profErr.message }, 500);
     }
     const { error: accErr } = await admin.from("cg1_access").insert({
-      user_id: newId, display_name: displayName, pages, is_admin: isAdmin,
+      user_id: newId, display_name: displayName, pages, is_admin: isAdmin, office,
     });
     if (accErr) {
       await admin.from("profiles").delete().eq("id", newId);
@@ -177,6 +179,7 @@ Deno.serve(async (req: Request) => {
       }
       patch.is_admin = isAdmin;
     }
+    if ("office" in body) patch.office = !!body.office;
     const { error } = await admin.from("cg1_access").update(patch).eq("user_id", userId);
     if (error) return jsonResponse({ error: "Kunne ikke lagre: " + error.message }, 500);
     return jsonResponse({ ok: true }, 200);
