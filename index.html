@@ -7036,6 +7036,8 @@
     if(view.goodsEditing === g.id) return goodsFormHtml(g);
     var title = escapeHtml(g.supplier || "Mottak") + ' · ' + fmtRange(g.received_on, g.received_on);
     var doneTxt = g.done ? 'Behandlet' + (g.done_by ? ' av ' + escapeHtml(g.done_by) : '') + (g.done_at ? ', ' + fmtRange(g.done_at.slice(0,10), g.done_at.slice(0,10)) : '') : '';
+    var addedTxt = g.created_by_name ? 'Lagt inn av ' + escapeHtml(g.created_by_name) + (g.created_at ? ', ' + fmtRange(g.created_at.slice(0,10), g.created_at.slice(0,10)) : '') : '';
+    var metaTxt = [addedTxt, doneTxt].filter(Boolean).join(' · ');
     return '<div class="goods-row'+(g.done ? ' done' : '')+'">' +
       '<label title="Behandlet" style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--muted); cursor:pointer;"><input type="checkbox" data-goodsdone="'+g.id+'"'+(g.done ? ' checked' : '')+' style="width:18px; height:18px;" />Behandlet</label>' +
       '<div class="gmain"><div class="gtitle">'+title+(g.fag ? ' '+fagBadgeHtml(g.fag) : '')+(g.deviation ? ' <span class="badge" style="background:var(--bad-soft); color:var(--bad-ink);">Avvik</span>' : '')+'</div>' +
@@ -7045,7 +7047,7 @@
         var img = (f.content_type || "").indexOf("image/") === 0;
         return '<span style="display:inline-flex; align-items:center;"><a class="gfile" data-fileurl href="'+escapeHtml(fileUrl("godsmottak", f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Dokument")+'</a><button type="button" class="x" data-goodsdelfile="'+f.id+'" title="Fjern dokumentet" style="border:none; background:none; color:var(--muted); cursor:pointer;">×</button></span>';
       }).join("") + goodsFileButtons('data-goodsaddfile="'+g.id+'"') + '</div>' +
-      (doneTxt ? '<div class="gmeta">'+doneTxt+'</div>' : '') +
+      (metaTxt ? '<div class="gmeta">'+metaTxt+'</div>' : '') +
       '</div>' +
       '<div style="display:flex; flex-direction:column; gap:4px;"><button type="button" class="btn small ghost" data-goodsedit="'+g.id+'">Endre</button><button type="button" class="btn small ghost danger" data-goodsdel="'+g.id+'">Slett</button></div>' +
       '</div>';
@@ -7062,7 +7064,7 @@
       if(f === "open" && g.done) return false;
       if(f === "avvik" && !g.deviation) return false;
       if(q){
-        var hay = [g.supplier, g.description, g.deviation, FAG_LABELS[g.fag] || g.fag].concat(goodsFilesFor(g.id).map(function(x){ return x.file_name; })).join(" ").toLowerCase();
+        var hay = [g.supplier, g.description, g.deviation, g.created_by_name, g.done_by, FAG_LABELS[g.fag] || g.fag].concat(goodsFilesFor(g.id).map(function(x){ return x.file_name; })).join(" ").toLowerCase();
         if(hay.indexOf(q) === -1) return false;
       }
       return true;
