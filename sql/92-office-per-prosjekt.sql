@@ -1,8 +1,8 @@
 -- Office per prosjekt (erstatter «felles på tvers av prosjekter» fra sql/91):
 --  - office_todos får project_id (slettes sammen med prosjektet); ingen uker lenger.
 --  - office_notes: ett notat per prosjekt.
---  - «Saker til møtet» (office_topics) og ukenotater (office_week_notes) brukes ikke lenger og
---    slettes (begge er tomme).
+--  - «Saker til møtet» (office_topics) og ukenotater (office_week_notes) brukes ikke lenger
+--    (begge er tomme), se nederst.
 -- Det ene punktet som finnes («kkk») flyttes til Bø.
 
 alter table public.office_todos add column if not exists project_id uuid references public.projects(id) on delete cascade;
@@ -23,7 +23,10 @@ revoke all on public.office_notes from anon;
 grant select, insert, update, delete on public.office_notes to authenticated;
 alter publication supabase_realtime add table public.office_notes;
 
-drop table if exists public.office_topics;
-drop table if exists public.office_week_notes;
+-- NB: DROP hang i verktøyet (låst av sanntid). Tabellene er tatt ut av sanntid, er tomme og brukes
+-- ikke lenger. Kan slettes i Supabase SQL Editor når det passer:
+--   drop table if exists public.office_topics;
+--   drop table if exists public.office_week_notes;
+alter publication supabase_realtime drop table public.office_topics, public.office_week_notes;
 
 -- Angre (delvis): drop table public.office_notes; alter table public.office_todos drop column project_id;

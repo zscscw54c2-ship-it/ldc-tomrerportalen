@@ -2562,7 +2562,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { officeTopics: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -6733,11 +6733,10 @@
       if(view.cgoEditTexts){ view.cgoEditTexts = false; byId("cgoEditTextsBtn").classList.remove("primary"); byId("cgoEditTextsNote").hidden = true; }
     }
   }
-  // ---------- Office: felles ukentlig møte for CGO, ACGO, Kontor 1 og Kontor 2 (sql/91) ----------
-  // Felles på tvers av prosjekter. Vises øverst på alle fire sidene med samme innhold; «Mine punkter»
-  // er punktene til rollen siden tilhører. Åpne to-do-punkter følger med fra uke til uke til de er
-  // huket av. Navn på rollene hentes fra hvilken person CG1-innloggingen er koblet til (team_logins)
-  // i prosjektet som er valgt.
+  // ---------- Office: møtet for CGO, ACGO, Kontor 1 og Kontor 2 (sql/91 + sql/92) ----------
+  // Én side per prosjekt (følger prosjektet som er valgt), vist øverst på alle fire CG1-sidene med
+  // samme innhold: to-do for prosjektet og ett notat for prosjektet. «Mine punkter» er punktene til
+  // rollen siden tilhører. Navn på rollene hentes fra hvem CG1-innloggingen er koblet til (team_logins).
   var OFFICE_ROLES = [{ key: "cgo", label: "CGO" }, { key: "acgo", label: "ACGO" }, { key: "kontor1", label: "Kontor 1" }, { key: "kontor2", label: "Kontor 2" }];
   function officeRoleLabel(key){ var r = OFFICE_ROLES.find(function(x){ return x.key === key; }); return r ? r.label : ""; }
   function officeRoleName(key){
@@ -6754,35 +6753,17 @@
   function refetchOffice(){
     if(!sb || !isByggeleder()) return;
     Promise.all([
-      sb.from("office_topics").select("*").order("week_start").order("sort_order").order("created_at"),
       sb.from("office_todos").select("*").order("created_at"),
-      sb.from("office_week_notes").select("*")
+      sb.from("office_notes").select("*")
     ]).then(function(r){
-      if(r[0].error || r[1].error || r[2].error){ view.officeMissing = true; scheduleRender(); return; }
+      if(r[0].error || r[1].error){ view.officeMissing = true; scheduleRender(); return; }
       view.officeMissing = false;
-      state.officeTopics = r[0].data || []; state.officeTodos = r[1].data || []; state.officeNotes = r[2].data || [];
+      state.officeTodos = r[0].data || []; state.officeNotes = r[1].data || [];
       scheduleRender();
     });
   }
-  function officeWeek(){ return view.officeWeek || toISODate(mondayOf(fromISODate(osloTodayIso()))); }
-  function officeAddDays(iso, n){ var d = fromISODate(iso); return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); }
-  // Åpne punkter i en uke: laget senest den uken, og ikke huket av før uken begynte.
-  function officeTodosForWeek(week){
-    var next = officeAddDays(week, 7);
-    var open = [], doneThisWeek = [];
-    state.officeTodos.forEach(function(t){
-      if(t.created_week > week) return;
-      var doneDay = t.done && t.done_at ? new Date(t.done_at).toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" }) : null;
-      if(!t.done || (doneDay && doneDay >= next)) open.push(t);
-      else if(doneDay && doneDay >= week && doneDay < next) doneThisWeek.push(t);
-    });
-    var byDue = function(a, b){ return (a.due_date || "9999") < (b.due_date || "9999") ? -1 : (a.due_date || "9999") > (b.due_date || "9999") ? 1 : (a.created_at < b.created_at ? -1 : 1); };
-    return { open: open.sort(byDue), done: doneThisWeek };
-  }
-  function officeTodoRowHtml(t, week){
-    var today = osloTodayIso();
-    var isOpen = !t.done || (t.done_at && new Date(t.done_at).toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" }) >= officeAddDays(week, 7));
-    var late = isOpen && t.due_date && t.due_date < today;
+  function officeTodoRowHtml(t){
+    var late = !t.done && t.due_date && t.due_date < osloTodayIso();
     var sel = '<select data-officeresp="'+t.id+'" aria-label="Ansvarlig"><option value="">Ansvarlig …</option>' + OFFICE_ROLES.map(function(r){
       return '<option value="'+r.key+'"'+(t.responsible === r.key ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("") + '</select>';
     return '<div class="office-row'+(t.done ? ' done' : '')+(late ? ' late' : '')+'">' +
@@ -6794,44 +6775,32 @@
       '<button type="button" class="x" data-officedeltodo="'+t.id+'" title="Slett">×</button></div>';
   }
   function officeHtml(page){
-    if(view.officeMissing) return '<div class="peoplecard office-card"><h2 style="font-size:16px;">Office</h2><p class="empty-note">Databasen mangler Office-tabellene. Kjør sql/91-office.sql i Supabase.</p></div>';
-    var week = officeWeek(), info = isoWeekInfo(fromISODate(week));
-    var thisWeek = toISODate(mondayOf(fromISODate(osloTodayIso())));
-    var todos = officeTodosForWeek(week);
-    var mine = todos.open.filter(function(t){ return t.responsible === page; });
-    var rest = todos.open.filter(function(t){ return t.responsible !== page; });
-    var topics = state.officeTopics.filter(function(t){ return t.week_start === week; });
-    var note = state.officeNotes.find(function(n){ return n.week_start === week; });
+    if(view.officeMissing) return '<div class="peoplecard office-card"><h2 style="font-size:16px;">Office</h2><p class="empty-note">Databasen mangler Office-tabellene. Kjør sql/91-office.sql og sql/92-office-per-prosjekt.sql i Supabase.</p></div>';
+    var pid = currentProjectId();
+    if(!pid) return '<div class="peoplecard office-card"><h2 style="font-size:16px;">Office</h2><p class="empty-note">Velg et prosjekt.</p></div>';
+    var todos = state.officeTodos.filter(function(t){ return t.project_id === pid; });
+    var byDue = function(a, b){ return (a.due_date || "9999") < (b.due_date || "9999") ? -1 : (a.due_date || "9999") > (b.due_date || "9999") ? 1 : (a.created_at < b.created_at ? -1 : 1); };
+    var open = todos.filter(function(t){ return !t.done; }).sort(byDue);
+    var done = todos.filter(function(t){ return t.done; }).sort(function(a, b){ return (b.done_at || "") < (a.done_at || "") ? -1 : 1; });
+    var mine = open.filter(function(t){ return t.responsible === page; });
+    var rest = open.filter(function(t){ return t.responsible !== page; });
+    var note = state.officeNotes.find(function(n){ return n.project_id === pid; });
     var roleOpts = OFFICE_ROLES.map(function(r){ return '<option value="'+r.key+'"'+(r.key === page ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("");
     return '<div class="peoplecard office-card">' +
-      '<div class="office-head"><h2 style="font-size:17px; margin:0;">Office</h2>' +
-        '<div style="display:flex; align-items:center; gap:6px;">' +
-          '<button type="button" class="btn small ghost" data-officeweek="-7" aria-label="Forrige uke">‹</button>' +
-          '<span class="mono" style="font-weight:700; font-size:13.5px;">Uke '+info.week+' · '+fmtRange(week, officeAddDays(week, 4))+'</span>' +
-          '<button type="button" class="btn small ghost" data-officeweek="7" aria-label="Neste uke">›</button>' +
-          (week !== thisWeek ? '<button type="button" class="btn small" data-officeweek="0">Denne uken</button>' : '') +
-        '</div></div>' +
-      '<p class="sub" style="font-size:12.5px; color:var(--muted); margin:0;">Deltakere: '+OFFICE_ROLES.map(function(r){ return escapeHtml(officeRoleWithName(r.key)); }).join(" · ")+'</p>' +
+      '<div class="office-head"><h2 style="font-size:17px; margin:0;">Office</h2></div>' +
       '<div class="office-cols">' +
         '<div class="office-sec"><h3>To-do</h3>' +
           '<div class="office-mine"><div style="font-size:12px; font-weight:700; color:var(--accent); margin-top:4px;">Mine punkter ('+escapeHtml(officeRoleLabel(page))+')</div>' +
-            (mine.length ? mine.map(function(t){ return officeTodoRowHtml(t, week); }).join("") : '<p class="empty-note" style="margin:4px 0 6px;">Ingen åpne punkter.</p>') + '</div>' +
+            (mine.length ? mine.map(officeTodoRowHtml).join("") : '<p class="empty-note" style="margin:4px 0 6px;">Ingen åpne punkter.</p>') + '</div>' +
           '<div style="font-size:12px; font-weight:700; color:var(--muted);">Andre åpne punkter</div>' +
-          (rest.length ? rest.map(function(t){ return officeTodoRowHtml(t, week); }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen.</p>') +
+          (rest.length ? rest.map(officeTodoRowHtml).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen.</p>') +
           '<form class="office-add" data-officeaddtodo><input type="text" maxlength="300" placeholder="Nytt punkt …" required />' +
             '<select aria-label="Ansvarlig">'+roleOpts+'</select><input type="date" aria-label="Frist" title="Frist (valgfritt)" />' +
             '<button type="submit" class="btn small primary">Legg til</button></form>' +
-          (todos.done.length ? '<details style="margin-top:10px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Ferdig denne uken ('+todos.done.length+')</summary>' + todos.done.map(function(t){ return officeTodoRowHtml(t, week); }).join("") + '</details>' : '') +
+          (done.length ? '<details style="margin-top:10px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Ferdige punkter ('+done.length+')</summary>' + done.map(officeTodoRowHtml).join("") + '</details>' : '') +
         '</div>' +
-        '<div class="office-sec"><h3>Saker til møtet</h3>' +
-          (topics.length ? topics.map(function(t){
-            return '<div class="office-row'+(t.done ? ' done' : '')+'"><input type="checkbox" data-officetopic="'+t.id+'"'+(t.done ? ' checked' : '')+' aria-label="Behandlet" />' +
-              '<div class="otext">'+escapeHtml(t.text)+'<textarea class="office-topic-note" rows="1" data-officetopicnote="'+t.id+'" maxlength="2000" placeholder="Notat fra møtet …">'+escapeHtml(t.note || "")+'</textarea></div>' +
-              '<button type="button" class="x" data-officedeltopic="'+t.id+'" title="Slett">×</button></div>';
-          }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen saker ennå.</p>') +
-          '<form class="office-add" data-officeaddtopic><input type="text" maxlength="300" placeholder="Ny sak …" required /><button type="submit" class="btn small primary">Legg til</button></form>' +
-          '<h3 style="margin-top:16px;">Notat for uka</h3>' +
-          '<textarea class="office-note" data-officenote maxlength="8000" placeholder="Referat, beslutninger …">'+escapeHtml(note && note.body || "")+'</textarea>' +
+        '<div class="office-sec"><h3>Notat for prosjektet</h3>' +
+          '<textarea class="office-note" data-officenote maxlength="8000" placeholder="Notater, beslutninger …" style="min-height:180px;">'+escapeHtml(note && note.body || "")+'</textarea>' +
         '</div>' +
       '</div></div>';
   }
@@ -6845,16 +6814,15 @@
       var html = officeHtml(page);
       if(officeRenderedSig[page] === html) return;
       var ae = document.activeElement;
-      var refocus = null;
+      var refocus = false;
       if(ae && box.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox"){
         // Tomt «legg til»-felt (rett etter Legg til): tegn på nytt og sett markøren tilbake.
-        var addForm = ae.closest("[data-officeaddtodo], [data-officeaddtopic]");
-        if(addForm && ae.type === "text" && !ae.value){ refocus = addForm.hasAttribute("data-officeaddtodo") ? "[data-officeaddtodo] input[type=text]" : "[data-officeaddtopic] input"; }
+        if(ae.closest("[data-officeaddtodo]") && ae.type === "text" && !ae.value) refocus = true;
         else { view.officePendingRender = true; return; }
       }
       box.innerHTML = html;
       officeRenderedSig[page] = html;
-      if(refocus){ var el = box.querySelector(refocus); if(el) el.focus(); }
+      if(refocus){ var el = box.querySelector("[data-officeaddtodo] input[type=text]"); if(el) el.focus(); }
     });
   }
   function officeWrite(promise){
@@ -6865,16 +6833,9 @@
     var t = ev.target;
     if(!t.closest || !t.closest(".office-shared")) return;
     var b;
-    if((b = t.closest("[data-officeweek]"))){
-      var d = parseInt(b.dataset.officeweek, 10);
-      view.officeWeek = d === 0 ? null : officeAddDays(officeWeek(), d);
-      renderOfficeShared();
-    } else if((b = t.closest("[data-officedeltodo]"))){
+    if((b = t.closest("[data-officedeltodo]"))){
       var id = b.dataset.officedeltodo;
       askConfirm("Punktet slettes for alle fire.", function(){ officeWrite(sb.from("office_todos").delete().eq("id", id)); }, { title: "Slette punktet?" });
-    } else if((b = t.closest("[data-officedeltopic]"))){
-      var tid = b.dataset.officedeltopic;
-      askConfirm("Saken og notatet på den slettes for alle fire.", function(){ officeWrite(sb.from("office_topics").delete().eq("id", tid)); }, { title: "Slette saken?" });
     } else if((b = t.closest("[data-officeedit]"))){
       var todo = state.officeTodos.find(function(x){ return x.id === b.dataset.officeedit; });
       if(!todo) return;
@@ -6899,9 +6860,7 @@
     if(t.dataset.officetodo) officeUpdateTodo(t.dataset.officetodo, { done: t.checked, done_at: t.checked ? new Date().toISOString() : null });
     else if(t.dataset.officeresp !== undefined) officeUpdateTodo(t.dataset.officeresp, { responsible: t.value || null });
     else if(t.dataset.officedue !== undefined) officeUpdateTodo(t.dataset.officedue, { due_date: t.value || null });
-    else if(t.dataset.officetopic) officeWrite(sb.from("office_topics").update({ done: t.checked }).eq("id", t.dataset.officetopic));
-    else if(t.dataset.officetopicnote) officeWrite(sb.from("office_topics").update({ note: t.value.trim() || null }).eq("id", t.dataset.officetopicnote));
-    else if(t.hasAttribute("data-officenote")) officeWrite(sb.from("office_week_notes").upsert({ week_start: officeWeek(), body: t.value.trim() || null, updated_at: new Date().toISOString() }, { onConflict: "week_start" }));
+    else if(t.hasAttribute("data-officenote") && currentProjectId()) officeWrite(sb.from("office_notes").upsert({ project_id: currentProjectId(), body: t.value.trim() || null, updated_at: new Date().toISOString() }, { onConflict: "project_id" }));
   });
   document.addEventListener("focusout", function(ev){
     if(!view.officePendingRender || !ev.target.closest || !ev.target.closest(".office-shared")) return;
@@ -6909,22 +6868,12 @@
   });
   document.addEventListener("submit", function(ev){
     var f = ev.target;
-    if(!f.closest || !f.closest(".office-shared")) return;
-    if(f.hasAttribute("data-officeaddtodo")){
-      ev.preventDefault();
-      var text = f.querySelector('input[type="text"]').value.trim();
-      if(!text) return;
-      officeWrite(sb.from("office_todos").insert({ text: text, responsible: f.querySelector("select").value || null, due_date: f.querySelector('input[type="date"]').value || null, created_week: officeWeek() }));
-      f.querySelector('input[type="text"]').value = ""; f.querySelector('input[type="date"]').value = "";
-    } else if(f.hasAttribute("data-officeaddtopic")){
-      ev.preventDefault();
-      var tx = f.querySelector("input").value.trim();
-      if(!tx) return;
-      var week = officeWeek();
-      var n = state.officeTopics.filter(function(x){ return x.week_start === week; }).length;
-      officeWrite(sb.from("office_topics").insert({ week_start: week, text: tx, sort_order: n }));
-      f.querySelector("input").value = "";
-    }
+    if(!f.closest || !f.closest(".office-shared") || !f.hasAttribute("data-officeaddtodo")) return;
+    ev.preventDefault();
+    var text = f.querySelector('input[type="text"]').value.trim();
+    if(!text || !currentProjectId()) return;
+    officeWrite(sb.from("office_todos").insert({ project_id: currentProjectId(), text: text, responsible: f.querySelector("select").value || null, due_date: f.querySelector('input[type="date"]').value || null }));
+    f.querySelector('input[type="text"]').value = ""; f.querySelector('input[type="date"]').value = "";
   });
 
   function renderAll(){
@@ -12332,9 +12281,8 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "site_codes" }, refetchSiteCodes)
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, refetchDeliveries)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_boxes" }, refetchOfficeBoxes)
-      .on("postgres_changes", { event: "*", schema: "public", table: "office_topics" }, refetchOffice)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_todos" }, refetchOffice)
-      .on("postgres_changes", { event: "*", schema: "public", table: "office_week_notes" }, refetchOffice)
+      .on("postgres_changes", { event: "*", schema: "public", table: "office_notes" }, refetchOffice)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_links" }, refetchOfficeBoxLinks)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_contacts" }, refetchOfficeBoxContacts)
