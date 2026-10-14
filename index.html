@@ -514,6 +514,17 @@
   .g-days div.today span{color:var(--accent);}
   .g-group{background:var(--surface-alt); font-weight:700; font-size:12px; height:28px;}
   .g-group .g-name{background:var(--surface-alt); cursor:default;}
+  /* Mat: ukestabell */
+  .mat-week{ width:100%; border-collapse:collapse; font-size:13px; }
+  .mat-week th, .mat-week td{ padding:6px 6px; border-bottom:1px solid var(--border); text-align:center; vertical-align:middle; }
+  .mat-week th{ font-size:12px; color:var(--muted); font-weight:700; }
+  .mat-week th span{ font-weight:500; font-size:11px; }
+  .mat-week th.today{ color:var(--accent); }
+  .mat-week td:first-child, .mat-week th:first-child{ text-align:left; width:52%; }
+  .mat-week .mat-total td{ font-weight:700; background:var(--surface-alt); }
+  .mat-week .mat-yes{ color:var(--good); font-weight:700; }
+  .mat-week .mat-off{ color:var(--faint, #a7b0bc); }
+  @media (max-width: 600px){ .mat-week{ font-size:12px; } .mat-week th, .mat-week td{ padding:5px 3px; } .mat-week td:first-child{ width:auto; } }
   /* Logi-rutenettet: kategori (Ektepar/Familie/osv.) er den øverste overskriften, med hver enkelt
      logi-gruppe (f.eks. "Jieboldt") som en lysere, innrykket underoverskrift inni kategorien. */
   .g-category .g-name{background:var(--accent-soft); color:var(--accent); font-weight:800;}
@@ -980,11 +991,10 @@
 
     <div id="kontaktMatWrap" hidden>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-        <p class="sub" style="font-size:13px; color:var(--muted); margin:0; flex:1; min-width:200px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, dag for dag.</p>
+        <p class="sub" style="font-size:13px; color:var(--muted); margin:0; flex:1; min-width:200px;">Antall personer på byggeplassen og hvilke allergier/diett dere må ta hensyn til, uke for uke (✓ = personen er der den dagen).</p>
         <button type="button" class="btn small" id="kontaktMatAllDaysBtn">Vis alle dager</button>
-        <button type="button" class="btn small" id="kontaktPrintMatBtn">Skriv ut matliste for uken</button>
+        <button type="button" class="btn small" id="kontaktPrintMatBtn">Skriv ut matliste …</button>
       </div>
-      <div id="kontaktMatChart"></div>
       <div id="kontaktMatList"></div>
     </div>
   </div>
@@ -1601,7 +1611,7 @@
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <input type="date" id="printDate" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />
         <button type="button" class="btn small" id="printAttendanceBtn">Oppmøteliste (dag)</button>
-        <button type="button" class="btn small" id="printMatBtn">Matliste (uke)</button>
+        <button type="button" class="btn small" id="printMatBtn">Matliste (velg uker)</button>
         <button type="button" class="btn small" id="printPhoneBtn">Telefonliste</button>
       </div>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
@@ -2058,6 +2068,18 @@
     <div class="det-days" id="staffDays"></div>
     <div class="dlg-actions">
       <button type="button" class="btn primary" id="staffClose">Ferdig</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="matPrintDialog">
+  <div class="dlg-body">
+    <h3>Skriv ut matliste</h3>
+    <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0 0 10px;">Kryss av ukene som skal være med. PDF-en får én tabell per uke.</p>
+    <div id="matPrintWeeks" style="display:flex; flex-direction:column; gap:6px; max-height:50vh; overflow-y:auto; margin-bottom:10px;"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="matPrintCancel">Avbryt</button>
+      <button type="button" class="btn primary" id="matPrintGo">Lag PDF</button>
     </div>
   </div>
 </dialog>
@@ -7874,22 +7896,61 @@
     listTable(doc, ["Navn", "Fag", "Telefon", "Menighet", "Inn", "Ut"], rows.map(function(r){ return [r.name, r.fag, r.phone, r.menighet, "", ""]; }));
     doc.save(pdfFileName("Oppmote", cur, iso));
   }
-  function printMatList(iso){
+  // Matliste: velg én eller flere uker; samme ukestabell som på Mat-siden, én tabell per uke.
+  function printMatWeeks(mondays){
     var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
-    if(!cur || !iso){ showError("Velg en dato først."); return; }
-    var days = weekDays(mondayOf(fromISODate(iso)));
-    var body = days.map(function(d, i){
-      var dIso = toISODate(d);
-      var sum = dayStaffingSummary(dIso);
-      return [DAY_FULL[i].charAt(0).toUpperCase() + DAY_FULL[i].slice(1) + " " + fmtRange(dIso, dIso), String(sum.total),
-        sum.allergies.length ? sum.allergies.map(function(a){ return a.name + ": " + a.text; }).join("\n") : "–"];
-    });
-    var wk = isoWeekInfo(days[0]).week;
-    var doc = newListPdf("Matliste – " + cur.name, "Uke " + wk + " · " + fmtRange(toISODate(days[0]), toISODate(days[4])));
+    if(!cur || !mondays.length){ showError("Velg minst én uke."); return; }
+    mondays = mondays.slice().sort();
+    var weeks = mondays.map(function(m){ return matWeekData(cur, fromISODate(m)); });
+    var sub = weeks.length === 1 ? "Uke " + weeks[0].week + " · " + fmtRange(weeks[0].days[0], weeks[0].days[4])
+      : "Uke " + weeks.map(function(w){ return w.week; }).join(", ");
+    var doc = newListPdf("Matliste – " + cur.name, sub);
     if(!doc) return;
-    listTable(doc, ["Dag", "Antall", "Allergier / diett"], body);
-    doc.save(pdfFileName("Matliste", cur, "uke" + wk));
+    var y = 88;
+    weeks.forEach(function(w, wi){
+      if(wi > 0){ y = doc.lastAutoTable.finalY + 26; if(y > doc.internal.pageSize.getHeight() - 120){ doc.addPage(); y = 54; } }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12.5); doc.setTextColor(30,42,58);
+      doc.text("Uke " + w.week + " · " + fmtRange(w.days[0], w.days[4]), 40, y);
+      var head = ["Allergi / diett"].concat(w.days.map(function(iso, i){ var d = fromISODate(iso); return DAY_ABBR[i] + " " + d.getDate() + "." + (d.getMonth()+1) + "."; }));
+      var body = [["Antall personer"].concat(w.totals.map(function(t){ return t === null ? "–" : String(t); }))];
+      if(w.persons.length){
+        w.persons.forEach(function(p){ body.push([p.name + " – " + p.text].concat(w.days.map(function(iso){ return p.days[iso] ? "X" : ""; }))); });
+      } else {
+        body.push(["Ingen oppførte allergier/diett", "", "", "", "", ""]);
+      }
+      doc.autoTable({ head: [head], body: body, startY: y + 8, theme: "grid",
+        headStyles: { fillColor: [47,127,217], textColor: 255, fontSize: 10, halign: "center" },
+        styles: { fontSize: 10, cellPadding: 5, textColor: [30,42,58], overflow: "linebreak", halign: "center" },
+        columnStyles: { 0: { halign: "left", cellWidth: 220 } },
+        didParseCell: function(data){ if(data.section === "body" && data.row.index === 0){ data.cell.styles.fontStyle = "bold"; data.cell.styles.fillColor = [238,241,245]; } },
+        margin: { left: 40, right: 40 } });
+    });
+    doc.save(pdfFileName("Matliste", cur, "uke" + weeks.map(function(w){ return w.week; }).join("-")));
   }
+  var matPrintDialog = byId("matPrintDialog");
+  function openMatPrintDialog(selectedIso){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur){ showError("Velg et prosjekt først."); return; }
+    var mondays = matProjectMondays(cur);
+    if(!mondays.length){ showError("Prosjektet mangler datoer."); return; }
+    var thisMonday = toISODate(mondayOf(new Date()));
+    var pre = toISODate(mondayOf(fromISODate(selectedIso || toISODate(new Date()))));
+    if(mondays.indexOf(pre) === -1) pre = mondays.find(function(m){ return m >= thisMonday; }) || mondays[0];
+    byId("matPrintWeeks").innerHTML = mondays.map(function(m){
+      var md = fromISODate(m);
+      var fri = toISODate(new Date(md.getFullYear(), md.getMonth(), md.getDate()+4));
+      return '<label class="checkrow" style="margin:0;"><input type="checkbox" data-matweek="'+m+'"'+(m===pre?' checked':'')+' /> Uke '+isoWeekInfo(md).week+' · '+fmtRange(m, fri)+(m===thisMonday?' <span style="color:var(--muted);">(denne uken)</span>':'')+'</label>';
+    }).join("");
+    matPrintDialog.showModal();
+  }
+  byId("matPrintCancel").addEventListener("click", function(){ matPrintDialog.close(); });
+  matPrintDialog.addEventListener("click", function(ev){ if(ev.target === matPrintDialog) matPrintDialog.close(); });
+  byId("matPrintGo").addEventListener("click", function(){
+    var picked = Array.prototype.map.call(byId("matPrintWeeks").querySelectorAll("[data-matweek]:checked"), function(cb){ return cb.dataset.matweek; });
+    if(!picked.length){ showError("Velg minst én uke."); return; }
+    matPrintDialog.close();
+    printMatWeeks(picked);
+  });
   function printPhoneList(){
     var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
     if(!cur){ showError("Velg et prosjekt først."); return; }
@@ -7901,10 +7962,10 @@
   }
   byId("printDate").value = toISODate(new Date());
   byId("printAttendanceBtn").addEventListener("click", function(){ printAttendanceList(byId("printDate").value); });
-  byId("printMatBtn").addEventListener("click", function(){ printMatList(byId("printDate").value); });
+  byId("printMatBtn").addEventListener("click", function(){ openMatPrintDialog(byId("printDate").value); });
   byId("printPhoneBtn").addEventListener("click", printPhoneList);
   byId("kontaktMatAllDaysBtn").addEventListener("click", function(){ view.matAllDays = !view.matAllDays; renderKontaktView(); });
-  byId("kontaktPrintMatBtn").addEventListener("click", function(){ printMatList(toISODate(new Date())); });
+  byId("kontaktPrintMatBtn").addEventListener("click", function(){ openMatPrintDialog(toISODate(new Date())); });
 
   // ---------- eksport av hele prosjektet (Excel) ----------
   // Henter rett fra databasen (ikke fra det som er lastet i siden), ett ark per tabell, med alle
@@ -9625,7 +9686,7 @@
       var info = logiInfoForPerson(id);
       if(info && ((info.allergiMatTekst && info.allergiMatTekst.trim()) || info.allergiMat)){
         var p = state.people.find(function(x){ return x.id === id; });
-        allergies.push({ name: p ? p.name : "?", text: (info.allergiMatTekst || "").trim() || "Allergi (ikke beskrevet)", updatedAt: info.updatedAt });
+        allergies.push({ id: id, name: p ? p.name : "?", text: (info.allergiMatTekst || "").trim() || "Allergi (ikke beskrevet)", updatedAt: info.updatedAt });
       }
     });
     allergies.sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
@@ -9641,61 +9702,69 @@
   function kontaktMarkMatSeen(){
     try{ localStorage.setItem(kontaktMatSeenKey(), new Date().toISOString()); }catch(e){}
   }
+  // Mat: én tabell per uke - dagene bortover, antall personer øverst og hver person med
+  // allergi/diett én gang (✓ de dagene personen er der). Inneværende og neste uke som standard,
+  // «Vis alle uker» viser resten av prosjektet.
+  function matWeekData(cur, monday){
+    var workdays = {};
+    projectWorkdayIsoList(cur).forEach(function(d){ workdays[d] = true; });
+    var days = weekDays(monday).map(function(d){ return toISODate(d); });
+    var inProject = days.map(function(d){ return !!workdays[d]; });
+    var totals = [], persons = {}, order = [];
+    days.forEach(function(iso, i){
+      if(!inProject[i]){ totals.push(null); return; }
+      var sum = dayStaffingSummary(iso);
+      totals.push(sum.total);
+      sum.allergies.forEach(function(a){
+        if(!persons[a.id]){ persons[a.id] = { id: a.id, name: a.name, text: a.text, updatedAt: a.updatedAt, days: {} }; order.push(a.id); }
+        persons[a.id].days[iso] = true;
+      });
+    });
+    var list = order.map(function(id){ return persons[id]; }).sort(function(a,b){ return a.name.localeCompare(b.name, "no"); });
+    return { monday: monday, days: days, inProject: inProject, totals: totals, persons: list, week: isoWeekInfo(monday).week };
+  }
+  function matProjectMondays(cur){
+    var seen = {}, out = [];
+    projectWorkdayIsoList(cur).forEach(function(d){
+      var m = toISODate(mondayOf(fromISODate(d)));
+      if(!seen[m]){ seen[m] = true; out.push(m); }
+    });
+    return out;
+  }
   function renderKontaktMat(cur){
-    if(!cur){ byId("kontaktMatChart").innerHTML = ""; byId("kontaktMatList").innerHTML = ""; return; }
+    if(!cur){ byId("kontaktMatList").innerHTML = ""; return; }
     var todayIso = toISODate(new Date());
-    // Standard: de neste 10 arbeidsdagene. «Vis alle dager»: resten av prosjektet.
-    var allUpcoming = projectWorkdayIsoList(cur).filter(function(d){ return d >= todayIso; });
-    var upcoming = view.matAllDays ? allUpcoming : allUpcoming.slice(0, 10);
-    byId("kontaktMatAllDaysBtn").hidden = allUpcoming.length <= 10;
-    byId("kontaktMatAllDaysBtn").textContent = view.matAllDays ? "Vis bare de neste 10 dagene" : "Vis alle dager (" + allUpcoming.length + ")";
-    if(!upcoming.length){
-      byId("kontaktMatChart").innerHTML = "";
+    var thisMonday = toISODate(mondayOf(new Date()));
+    var weeks = matProjectMondays(cur).filter(function(m){ return m >= thisMonday; });
+    byId("kontaktMatAllDaysBtn").hidden = weeks.length <= 2;
+    byId("kontaktMatAllDaysBtn").textContent = view.matAllDays ? "Vis bare denne og neste uke" : "Vis alle uker (" + weeks.length + ")";
+    if(!view.matAllDays) weeks = weeks.slice(0, 2);
+    if(!weeks.length){
       byId("kontaktMatList").innerHTML = '<p class="empty-note">Ingen kommende dager i prosjektperioden.</p>';
       return;
     }
     var lastSeen = kontaktMatLastSeen();
-    var summaries = upcoming.map(dayStaffingSummary);
-
-    // Ukesoversikt: enkel søylegraf over antall personer de kommende dagene (ett tall per
-    // søyle holder som forklaring - trenger ingen forklaring/legende for én serie).
-    var maxTotal = Math.max(1, Math.max.apply(null, summaries.map(function(s){ return s.total; })));
-    var bars = upcoming.map(function(iso, i){
-      var s = summaries[i];
-      var d = fromISODate(iso);
-      var dayAbbr = DAY_ABBR[(d.getDay()+6)%7];
-      var heightPct = s.total > 0 ? Math.max(6, Math.round((s.total / maxTotal) * 100)) : 2;
-      return '<div style="display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:'+(upcoming.length > 14 ? 30 : 0)+'px;">' +
-        '<div style="font-size:11px; color:var(--text); font-weight:700;">'+(s.total || "")+'</div>' +
-        '<div style="width:100%; max-width:30px; height:64px; display:flex; align-items:flex-end;">' +
-        '<div style="width:100%; height:'+heightPct+'%; background:var(--accent); border-radius:4px 4px 2px 2px;" title="'+escapeHtml(dayAbbr)+' '+d.getDate()+'.: '+s.total+' personer"></div>' +
-        '</div>' +
-        '<div style="font-size:10.5px; color:var(--muted); font-weight:600;">'+dayAbbr+'</div>' +
-        '<div style="font-size:9.5px; color:var(--muted);">'+d.getDate()+'.'+(d.getMonth()+1)+'.</div>' +
-        '</div>';
-    }).join("");
-    byId("kontaktMatChart").innerHTML = '<div class="peoplecard" style="margin-bottom:14px;"><h3 style="font-size:14px; margin:0 0 10px;">Antall personer - '+(view.matAllDays ? 'resten av prosjektet' : 'neste dager')+'</h3>' +
-      '<div style="overflow-x:auto;"><div style="display:flex; gap:4px; align-items:flex-end;">'+bars+'</div></div></div>';
-
-    byId("kontaktMatList").innerHTML = upcoming.map(function(iso, i){
-      var sum = summaries[i];
-      var d = fromISODate(iso);
-      var dayName = DAY_FULL[(d.getDay()+6)%7];
-      var label = (i === 0 ? "I dag · " : "") + dayName.charAt(0).toUpperCase() + dayName.slice(1) + " " + d.getDate() + ". " + NB_MONTHS[d.getMonth()];
-      var allergyHtml = sum.allergies.length
-        ? sum.allergies.map(function(a){
-            var isNew = a.updatedAt && a.updatedAt > lastSeen;
-            return '<div style="font-size:13px; display:flex; align-items:center; gap:6px;">' +
-              (isNew ? '<span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;">Ny</span>' : '') +
-              '<span><strong>'+escapeHtml(a.name)+':</strong> '+escapeHtml(a.text)+'</span></div>';
-          }).join("")
-        : '<p class="empty-note" style="margin:4px 0 0;">Ingen oppførte allergier/diett denne dagen.</p>';
-      return '<div class="peoplecard" style="margin-bottom:10px;'+(i===0?' border:1px solid var(--accent);':'')+'">' +
-        '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px;"><h3 style="font-size:14.5px; margin:0;">'+label+'</h3>' +
-        '<span class="badge" style="background:var(--accent-soft); color:var(--accent); font-weight:700;">'+sum.total+' personer</span></div>' +
-        '<div style="margin-top:8px;">'+allergyHtml+'</div></div>';
+    byId("kontaktMatList").innerHTML = weeks.map(function(mIso){
+      var w = matWeekData(cur, fromISODate(mIso));
+      var fri = w.days[4];
+      var head = '<tr><th style="text-align:left;"></th>' + w.days.map(function(iso, i){
+        var d = fromISODate(iso);
+        var isToday = iso === todayIso;
+        return '<th class="mat-day'+(isToday?' today':'')+'">'+DAY_ABBR[i]+'<br><span>'+d.getDate()+'.'+(d.getMonth()+1)+'.</span></th>';
+      }).join("") + '</tr>';
+      var totalRow = '<tr class="mat-total"><td>Antall personer</td>' + w.totals.map(function(t){ return '<td>'+(t === null ? '<span class="mat-off">–</span>' : t)+'</td>'; }).join("") + '</tr>';
+      var personRows = w.persons.length ? w.persons.map(function(p){
+        var isNew = p.updatedAt && p.updatedAt > lastSeen;
+        return '<tr><td class="mat-person">' + (isNew ? '<span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700; margin-right:4px;">Ny</span>' : '') +
+          '<strong>'+escapeHtml(p.name)+'</strong> – '+escapeHtml(p.text)+'</td>' +
+          w.days.map(function(iso){ return '<td>'+(p.days[iso] ? '<span class="mat-yes">✓</span>' : '<span class="mat-off">–</span>')+'</td>'; }).join("") + '</tr>';
+      }).join("") : '<tr><td colspan="6" class="empty-note" style="text-align:left;">Ingen oppførte allergier/diett denne uken.</td></tr>';
+      return '<div class="peoplecard" style="margin-bottom:12px;'+(mIso===thisMonday?' border:1px solid var(--accent);':'')+'">' +
+        '<h3 style="font-size:14.5px; margin:0 0 8px;">Uke '+w.week+' · '+fmtRange(mIso, fri)+(mIso===thisMonday?' <span class="badge" style="background:var(--accent-soft); color:var(--accent); font-weight:700;">Denne uken</span>':'')+'</h3>' +
+        '<div style="overflow-x:auto;"><table class="mat-week"><thead>'+head+'</thead><tbody>'+totalRow+personRows+'</tbody></table></div></div>';
     }).join("");
   }
+
   function kontaktToggleFullView(){
     view.frivilligeFullView = !view.frivilligeFullView;
     byId("kontaktLogiList").dataset.scrolled = "";
