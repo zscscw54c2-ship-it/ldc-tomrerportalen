@@ -1650,6 +1650,15 @@
       </div>
     </div>
     <div class="peoplecard" style="margin-bottom:16px;">
+      <h2 style="font-size:16px; margin-bottom:2px;">CG1-sider</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Sidene under CG1. Lag nye sider (f.eks. «Kontor 3») som starter blanke med egne tavler, og kryss av hvem som har Office. Hvem som ser hvilken side, velges per bruker under Brukere og tilganger.</p>
+      <div id="cg1PageAdminList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+      <form class="inline-add" id="cg1PageAddForm">
+        <input type="text" id="cg1PageAddName" maxlength="40" placeholder="Navn på ny side, f.eks. Kontor 3" required style="flex:1; min-width:200px;" />
+        <button class="btn primary small" type="submit">+ Ny side</button>
+      </form>
+    </div>
+    <div class="peoplecard" style="margin-bottom:16px;">
       <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CGO, ACGO, Kontor 1 og Kontor 2 (e-post + passord). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
       <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
@@ -1828,6 +1837,28 @@
       <div id="portalSuggestionList-kontor1" style="display:flex; flex-direction:column; gap:8px;"></div>
       <form class="inline-add" id="addPortalSuggestionForm-kontor1" style="margin-top:10px;">
         <textarea id="newPortalSuggestionText-kontor1" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
+        <button class="btn primary" type="submit">Legg til</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="panel-cg1side" class="panel">
+    <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
+    <div class="office-shared" data-officepage="" id="cg1sideOffice"></div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+      <h2 style="font-size:18px;" id="cg1sideTitle">Side</h2>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn small primary" data-opencreatebox="" id="cg1sideCreateBox" data-editonly>+ Opprett tavle</button>
+        <button type="button" class="btn small" id="cg1sideEditBtn">Rediger</button>
+      </div>
+    </div>
+    <div id="officeBoxes-cg1side" class="board-grid"></div>
+    <div class="peoplecard" style="margin-top:16px;">
+      <h2 style="font-size:16px; margin-bottom:4px;">Forslag til endringer i portalen</h2>
+      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Skriv ned ønsker eller forslag til hva som bør legges til eller endres i portalen.</p>
+      <div id="portalSuggestionList-cg1side" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <form class="inline-add" id="addPortalSuggestionForm-cg1side" style="margin-top:10px;">
+        <textarea id="newPortalSuggestionText-cg1side" placeholder="F.eks. Legg til påminnelse for... (lengre beskjeder og flere linjer går fint)" required maxlength="4000" rows="3" style="flex:1; min-width:220px; resize:vertical; font:inherit; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--surface);"></textarea>
         <button class="btn primary" type="submit">Legg til</button>
       </form>
     </div>
@@ -2562,7 +2593,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -2608,6 +2639,22 @@
   // admin (ser Administrasjon). Før tabellen er hentet vises ingen av sidene/Administrasjon; mangler
   // tabellen helt (gammel database) faller vi tilbake til at alle byggeledere ser alt, som før.
   var CG1_PAGES = [{ key:"cgo", label:"CGO" }, { key:"acgo", label:"ACGO" }, { key:"kontor1", label:"Kontor 1" }, { key:"kontor2", label:"Kontor 2" }];
+  // CG1-sidene fra databasen (sql/94: cg1_pages) - de fire faste + sider admin har laget. Før de er
+  // hentet (eller hvis tabellen mangler) brukes de fire faste, alle med Office.
+  function cg1PagesList(){
+    if(state.cg1Pages && state.cg1Pages.length) return state.cg1Pages;
+    return CG1_PAGES.map(function(p, i){ return { key: p.key, label: p.label, hasOffice: true, fixed: true, sortOrder: i + 1 }; });
+  }
+  function cg1PageByKey(key){ return cg1PagesList().find(function(p){ return p.key === key; }) || null; }
+  function cg1PageLabel(key){ var p = cg1PageByKey(key); return p ? p.label : key; }
+  // Office vises bare for brukere som har minst én side med Office krysset av (låst i databasen også).
+  function userHasOffice(){
+    if(!isByggeleder()) return false;
+    if(view.cg1AccessMissing) return true;
+    var a = myCg1Access();
+    if(!a || !a.active) return false;
+    return (a.pages || []).some(function(k){ var p = cg1PageByKey(k); return p && p.hasOffice; });
+  }
   function myCg1Access(){
     if(!state.me) return null;
     return state.cg1Access.find(function(a){ return a.user_id === state.me.id; }) || null;
@@ -6444,10 +6491,21 @@
   ];
   function renderCg1HomeGrid(){
     var grid = byId("cg1HomeGrid");
-    var tiles = CG1_HOME_TILES.filter(function(t){
+    var custom = cg1PagesList().filter(function(p){ return !p.fixed; }).map(function(p){
+      return { key: "side:" + p.key, page: p.key, name: p.label, color: "var(--good)",
+        icon: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18"/></svg>',
+        status: function(){ return { badge: 0, text: officeBoxesFor(p.key).length + " tavle(r)" }; } };
+    });
+    var all = [];
+    CG1_HOME_TILES.forEach(function(t){
+      if(t.key === "menighet") all = all.concat(custom);
+      var pg = cg1PageByKey(t.key);
+      all.push(pg ? Object.assign({}, t, { name: pg.label }) : t);
+    });
+    var tiles = all.filter(function(t){
       if(t.key === "prosjekt") return isCg1Admin();
       if(t.key === "menighet") return true;
-      return canSeeCg1Page(t.key);
+      return canSeeCg1Page(t.page || t.key);
     });
     grid.innerHTML = tiles.map(function(t){
       var st = t.status();
@@ -6460,6 +6518,7 @@
     grid.querySelectorAll("[data-cg1tile]").forEach(function(b){
       b.addEventListener("click", function(){
         if(this.dataset.cg1tile === "menighet"){ openMenighetPreview(); return; }
+        if(this.dataset.cg1tile.indexOf("side:") === 0){ openCg1Side(this.dataset.cg1tile.slice(5)); return; }
         switchTab(this.dataset.cg1tile);
       });
     });
@@ -6485,8 +6544,9 @@
     if(d < 0) return Math.abs(d)+" dag"+(Math.abs(d)===1?"":"er")+" siden fristen";
     return d+" dag"+(d===1?"":"er")+" igjen";
   }
-  function renderOfficeBoxes(office){
-    var box = byId("officeBoxes-"+office);
+  function renderOfficeBoxes(office, boxEl){
+    var box = boxEl || byId("officeBoxes-"+office);
+    if(!box) return;
     var boxes = officeBoxesFor(office);
     if(!boxes.length){
       box.innerHTML = '<p class="empty-note">Ingen tavler lagt til ennå - trykk «Opprett tavle» over for å lage din egen.</p>';
@@ -6659,8 +6719,33 @@
   // prosjekter - de følger med videre når et nytt prosjekt opprettes (se sql/78).
   var BOARD_OFFICES = ["cgo","acgo","kontor1","kontor2"];
   function renderKontorTabs(){
-    BOARD_OFFICES.forEach(renderOfficeBoxes);
+    BOARD_OFFICES.forEach(function(o){ renderOfficeBoxes(o); });
+    renderCg1Side();
   }
+  // Egne CG1-sider (laget i Administrasjon) deler ett panel; view.cg1Side sier hvilken.
+  function openCg1Side(key){
+    view.cg1Side = key;
+    try{ localStorage.setItem("ldc_cg1side", key); }catch(e){}
+    officeRenderedSig = {};
+    switchTab("cg1side");
+    renderCg1Side();
+    renderOfficeShared();
+  }
+  function renderCg1Side(){
+    var key = view.cg1Side;
+    var pg = key ? cg1PageByKey(key) : null;
+    byId("cg1sideTitle").textContent = pg ? pg.label : "";
+    byId("cg1sideCreateBox").dataset.opencreatebox = key || "";
+    byId("cg1sideOffice").dataset.officepage = key || "";
+    if(pg) renderOfficeBoxes(key, byId("officeBoxes-cg1side"));
+    else byId("officeBoxes-cg1side").innerHTML = "";
+  }
+  byId("cg1sideEditBtn").addEventListener("click", function(){
+    if(!isCg1Admin()) return;
+    var editing = byId("panel-cg1side").classList.toggle("editing");
+    this.textContent = editing ? "Ferdig" : "Rediger";
+    this.classList.toggle("primary", editing);
+  });
   BOARD_OFFICES.forEach(function(office){
     byId(office+"EditBtn").addEventListener("click", function(){
     if(!isCg1Admin()) return;
@@ -6717,7 +6802,7 @@
   // «Rediger»-knappene (tekster og innhold i redigeringsmodus) vises bare for admin. Databasen
   // avviser uansett lagring fra andre (sql/88).
   var ADMIN_EDIT_BUTTONS = [["drawingsEditBtn","panel-tegninger"], ["dokuEditBtn","panel-dokumentasjon"], ["andeligEditBtn","panel-andelig"],
-    ["acgoEditBtn","panel-acgo"], ["cgoEditBtn","panel-cgo"], ["kontor1EditBtn","panel-kontor1"], ["kontor2EditBtn","panel-kontor2"], ["cgoEditTextsBtn", null]];
+    ["acgoEditBtn","panel-acgo"], ["cgoEditBtn","panel-cgo"], ["kontor1EditBtn","panel-kontor1"], ["kontor2EditBtn","panel-kontor2"], ["cg1sideEditBtn","panel-cg1side"], ["cgoEditTextsBtn", null]];
   function updateAdminEditButtons(){
     var admin = isCg1Admin();
     ADMIN_EDIT_BUTTONS.forEach(function(pair){
@@ -6737,8 +6822,9 @@
   // Én side per prosjekt (følger prosjektet som er valgt), vist øverst på alle fire CG1-sidene med
   // samme innhold: to-do for prosjektet og ett notat for prosjektet. «Mine punkter» er punktene til
   // rollen siden tilhører. Navn på rollene hentes fra hvem CG1-innloggingen er koblet til (team_logins).
-  var OFFICE_ROLES = [{ key: "cgo", label: "CGO" }, { key: "acgo", label: "ACGO" }, { key: "kontor1", label: "Kontor 1" }, { key: "kontor2", label: "Kontor 2" }];
-  function officeRoleLabel(key){ var r = OFFICE_ROLES.find(function(x){ return x.key === key; }); return r ? r.label : ""; }
+  // Rollene i Office = CG1-sidene med Office krysset av (Administrasjon → CG1-sider).
+  function officeRoles(){ return cg1PagesList().filter(function(p){ return p.hasOffice; }).map(function(p){ return { key: p.key, label: p.label }; }); }
+  function officeRoleLabel(key){ var p = cg1PageByKey(key); return p ? p.label : ""; }
   function officeRoleName(key){
     var label = officeRoleLabel(key).toLowerCase();
     var acc = (state.cg1Access || []).filter(function(a){ return a.active !== false; });
@@ -6751,7 +6837,7 @@
   }
   function officeRoleWithName(key){ var n = officeRoleName(key); return officeRoleLabel(key) + (n ? " – " + n : ""); }
   function refetchOffice(){
-    if(!sb || !isByggeleder()) return;
+    if(!sb || !isByggeleder() || !userHasOffice()) return;
     Promise.all([
       sb.from("office_todos").select("*").order("created_at"),
       sb.from("office_notes").select("*")
@@ -6764,7 +6850,7 @@
   }
   function officeTodoRowHtml(t){
     var late = !t.done && t.due_date && t.due_date < osloTodayIso();
-    var sel = '<select data-officeresp="'+t.id+'" aria-label="Ansvarlig"><option value="">Ansvarlig …</option>' + OFFICE_ROLES.map(function(r){
+    var sel = '<select data-officeresp="'+t.id+'" aria-label="Ansvarlig"><option value="">Ansvarlig …</option>' + officeRoles().map(function(r){
       return '<option value="'+r.key+'"'+(t.responsible === r.key ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("") + '</select>';
     return '<div class="office-row'+(t.done ? ' done' : '')+(late ? ' late' : '')+'">' +
       '<input type="checkbox" data-officetodo="'+t.id+'"'+(t.done ? ' checked' : '')+' aria-label="Ferdig" />' +
@@ -6785,7 +6871,7 @@
     var mine = open.filter(function(t){ return t.responsible === page; });
     var rest = open.filter(function(t){ return t.responsible !== page; });
     var note = state.officeNotes.find(function(n){ return n.project_id === pid; });
-    var roleOpts = OFFICE_ROLES.map(function(r){ return '<option value="'+r.key+'"'+(r.key === page ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("");
+    var roleOpts = officeRoles().map(function(r){ return '<option value="'+r.key+'"'+(r.key === page ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("");
     return '<div class="peoplecard office-card">' +
       '<div class="office-head"><h2 style="font-size:17px; margin:0;">Office</h2></div>' +
       '<div class="office-cols">' +
@@ -6811,7 +6897,8 @@
     if(!isByggeleder()) return;
     document.querySelectorAll(".office-shared").forEach(function(box){
       var page = box.dataset.officepage;
-      var html = officeHtml(page);
+      var pg = page ? cg1PageByKey(page) : null;
+      var html = (pg && pg.hasOffice && userHasOffice()) ? officeHtml(page) : "";
       if(officeRenderedSig[page] === html) return;
       var ae = document.activeElement;
       var refocus = false;
@@ -6922,10 +7009,11 @@
   function updateCg1TabVisibility(){
     var btn = document.querySelector('nav.tabs button[data-tab="cg1"]');
     if(btn) btn.hidden = !isByggeleder();
-    if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2","prosjekt"].indexOf(view.tab) !== -1) switchTab("kalender");
+    if(!isByggeleder() && ["cg1","acgo","cgo","kontor1","kontor2","cg1side","prosjekt"].indexOf(view.tab) !== -1) switchTab("kalender");
     if(isByggeleder() && view.cg1AccessLoaded){
       var page = view.tab === "prosjekt" ? null : view.tab;
-      var blocked = view.tab === "prosjekt" ? !isCg1Admin() : (CG1_PAGES.some(function(p){ return p.key === page; }) && !canSeeCg1Page(page));
+      if(view.tab === "cg1side") page = view.cg1Side;
+      var blocked = view.tab === "prosjekt" ? !isCg1Admin() : (view.tab === "cg1side" ? (!cg1PageByKey(page) || !canSeeCg1Page(page)) : (cg1PagesList().some(function(p){ return p.key === page; }) && !canSeeCg1Page(page)));
       if(blocked) switchTab("cg1");
     }
   }
@@ -7087,7 +7175,7 @@
     if(p && p.name === "Sakkestad") return "CGO";
     if(p && p.name === "Ridderberg") return "ACGO";
     // Uten visningsnavn: bruk den første CG1-siden brukeren har (ikke alltid «ACGO»).
-    var firstPage = acc && acc.pages && CG1_PAGES.find(function(pg){ return acc.pages.indexOf(pg.key) !== -1; });
+    var firstPage = acc && acc.pages && cg1PagesList().find(function(pg){ return acc.pages.indexOf(pg.key) !== -1; });
     return firstPage ? firstPage.label : FAG_LABELS.byggeleder;
   }
   // Flex gjelder ektepar som én enhet: en forespørsel fra den ene er også den andres (vises med
@@ -7624,6 +7712,81 @@
 
   // ---------- ACGO-siden ----------
   var didCg1Landing = false;
+  // ---------- CG1-sider (sql/94) ----------
+  function rowToCg1Page(row){ return { key: row.key, label: row.label, hasOffice: !!row.has_office, fixed: !!row.fixed, sortOrder: row.sort_order || 0 }; }
+  function refetchCg1Pages(){
+    if(!sb || !isByggeleder()) return;
+    sb.from("cg1_pages").select("*").order("sort_order").order("created_at").then(function(res){
+      if(res.error) return; // tabellen finnes ikke ennå -> de fire faste brukes
+      state.cg1Pages = (res.data || []).map(rowToCg1Page);
+      // Avkrysningene for ny bruker følger sidelisten (beholder det som er krysset av).
+      var keep = Array.prototype.filter.call(document.querySelectorAll("[data-cg1newpage]"), function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
+      byId("cg1NewPages").innerHTML = cg1PageCheckboxesHtml("data-cg1newpage", "new", keep);
+      officeRenderedSig = {};
+      refetchOffice();
+      scheduleRender();
+    });
+  }
+  function cg1PageKeyFor(label){
+    var base = (label || "").toLowerCase().replace(/æ/g,"ae").replace(/ø/g,"o").replace(/å/g,"a")
+      .replace(/[^a-z0-9]+/g,"").slice(0, 30);
+    if(base.length < 2) base = "side";
+    var key = base, n = 2;
+    while(cg1PageByKey(key)) key = base + n++;
+    return key;
+  }
+  function renderCg1PageAdmin(){
+    var box = byId("cg1PageAdminList");
+    if(!box || !isCg1Admin()) return;
+    var html = cg1PagesList().map(function(p){
+      return '<div class="shoprow" style="align-items:center; gap:10px;">' +
+        '<input type="text" data-cg1pagelabel="'+p.key+'" value="'+escapeHtml(p.label)+'" maxlength="40" style="border:1px solid var(--border); border-radius:7px; padding:4px 8px; font-weight:700; width:160px; background:var(--surface);" />' +
+        '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:13px;"><input type="checkbox" data-cg1pageoffice="'+p.key+'"'+(p.hasOffice ? ' checked' : '')+' /> Office</label>' +
+        '<span style="flex:1;"></span>' +
+        (p.fixed ? '<span class="badge group" title="Faste sider kan ikke slettes">Fast</span>' : '<button type="button" class="btn small danger" data-cg1pagedel="'+p.key+'">Slett</button>') +
+        '</div>';
+    }).join("");
+    if(box.dataset.sig === html) return;
+    if(document.activeElement && box.contains(document.activeElement) && document.activeElement.type === "text") return;
+    box.dataset.sig = html;
+    box.innerHTML = html;
+  }
+  function cg1PageWrite(promise, okMsg){
+    return promise.then(function(res){
+      if(res.error){ showError(/cg1_pages/.test(res.error.message || "") ? "Databasen mangler CG1-sider. Kjør sql/94-cg1-sider.sql i Supabase." : "Kunne ikke lagre: " + res.error.message); }
+      else if(okMsg) showInfo(okMsg);
+      refetchCg1Pages(); refetchCg1Access();
+      if(isCg1Admin()) refetchCg1Users();
+    });
+  }
+  byId("cg1PageAdminList").addEventListener("change", function(ev){
+    var t = ev.target;
+    if(t.dataset.cg1pageoffice) cg1PageWrite(sb.from("cg1_pages").update({ has_office: t.checked }).eq("key", t.dataset.cg1pageoffice), t.checked ? "Office slått på ✓" : "Office slått av ✓");
+    else if(t.dataset.cg1pagelabel){
+      var v = t.value.trim().slice(0, 40);
+      if(!v){ t.value = cg1PageLabel(t.dataset.cg1pagelabel); return; }
+      cg1PageWrite(sb.from("cg1_pages").update({ label: v }).eq("key", t.dataset.cg1pagelabel), "Navn lagret ✓");
+    }
+  });
+  byId("cg1PageAdminList").addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-cg1pagedel]");
+    if(!b) return;
+    var key = b.dataset.cg1pagedel, label = cg1PageLabel(key);
+    var n = officeBoxesFor(key).length;
+    askConfirm("Siden «" + label + "» slettes" + (n ? ", sammen med " + n + " tavle(r) på den" : "") + ". Den fjernes fra brukernes tilganger, og Office-punkter med «" + label + "» som ansvarlig blir uten ansvarlig.", function(){
+      if(view.tab === "cg1side" && view.cg1Side === key) switchTab("cg1");
+      cg1PageWrite(sb.from("cg1_pages").delete().eq("key", key), "Siden er slettet ✓");
+    }, { title: "Slette siden?", confirmLabel: "Slett siden" });
+  });
+  byId("cg1PageAddForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = byId("cg1PageAddName").value.trim().slice(0, 40);
+    if(!name) return;
+    if(cg1PagesList().some(function(p){ return p.label.toLowerCase() === name.toLowerCase(); })){ showError("Det finnes allerede en side som heter «" + name + "»."); return; }
+    var maxSort = cg1PagesList().reduce(function(m, p){ return Math.max(m, p.sortOrder || 0); }, 0);
+    cg1PageWrite(sb.from("cg1_pages").insert({ key: cg1PageKeyFor(name), label: name, has_office: false, sort_order: maxSort + 1 }), "Siden «" + name + "» er laget ✓ – kryss den av på brukerne som skal se den.");
+    byId("cg1PageAddName").value = "";
+  });
   function refetchCg1Access(){
     if(!isByggeleder()) return;
     sb.from("cg1_access").select("*").then(function(res){
@@ -7643,9 +7806,12 @@
       // Første innlasting uten lagret fane: en bruker med nøyaktig én CG1-side lander rett på den.
       if(!didCg1Landing){
         didCg1Landing = true;
-        if(!hadSavedTabAtLogin && mine && (mine.pages || []).length === 1) switchTab(mine.pages[0]);
+        if(!hadSavedTabAtLogin && mine && (mine.pages || []).length === 1){
+          if(byId("panel-" + mine.pages[0])) switchTab(mine.pages[0]); else openCg1Side(mine.pages[0]);
+        }
       }
       if(isCg1Admin() && !view.cg1UsersLoaded) refetchCg1Users();
+      refetchOffice();
       scheduleRender();
     });
   }
@@ -7795,7 +7961,7 @@
   }
   // Forslagsboksen er global (ikke prosjekt- eller kontorspesifikk) og vises identisk i alle
   // CG1-boksene (ACGO/CGO/Kontor 1/Kontor 2) - samme liste og samme lagring overalt.
-  var PORTAL_SUGGESTION_LIST_IDS = ["portalSuggestionList", "portalSuggestionList-cgo", "portalSuggestionList-kontor1", "portalSuggestionList-kontor2"];
+  var PORTAL_SUGGESTION_LIST_IDS = ["portalSuggestionList", "portalSuggestionList-cgo", "portalSuggestionList-kontor1", "portalSuggestionList-kontor2", "portalSuggestionList-cg1side"];
   function renderPortalSuggestionList(listId){
     var box = byId(listId);
     if(!box) return;
@@ -7842,11 +8008,12 @@
   wirePortalSuggestionForm("addPortalSuggestionForm-cgo", "newPortalSuggestionText-cgo");
   wirePortalSuggestionForm("addPortalSuggestionForm-kontor1", "newPortalSuggestionText-kontor1");
   wirePortalSuggestionForm("addPortalSuggestionForm-kontor2", "newPortalSuggestionText-kontor2");
+  wirePortalSuggestionForm("addPortalSuggestionForm-cg1side", "newPortalSuggestionText-cg1side");
 
   // ---------- Brukere og tilganger (CG1) ----------
   function cg1PageCheckboxesHtml(attr, id, pages){
-    return CG1_PAGES.map(function(p){
-      return '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" '+attr+'="'+id+'" data-page="'+p.key+'"'+(pages.indexOf(p.key)!==-1?' checked':'')+' /> '+p.label+'</label>';
+    return cg1PagesList().map(function(p){
+      return '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" '+attr+'="'+id+'" data-page="'+p.key+'"'+(pages.indexOf(p.key)!==-1?' checked':'')+' /> '+escapeHtml(p.label)+'</label>';
     }).join("");
   }
   function renderCg1UserList(peopleSorted){
@@ -8250,6 +8417,7 @@
     var pfList = projectFagsForCurrentProject();
     var peopleSorted = peopleForCurrentProject().slice().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
     renderCg1UserList(peopleSorted);
+    renderCg1PageAdmin();
 
     byId("unifiedFagList").innerHTML = state.fags.length ? state.fags.map(function(f){
       var pf = pfList.find(function(x){ return x.fag === f.key; });
@@ -12244,6 +12412,7 @@
     refetchFags();
     refetchFagAccounts();
     refetchCg1Access();
+    refetchCg1Pages();
     refetchBehovSlots();
     refetchBehovDays();
     refetchPortalSuggestions();
@@ -12299,6 +12468,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "fags" }, refetchFags)
       .on("postgres_changes", { event: "*", schema: "public", table: "fag_accounts" }, refetchFagAccounts)
       .on("postgres_changes", { event: "*", schema: "public", table: "cg1_access" }, refetchCg1Access)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cg1_pages" }, refetchCg1Pages)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_slot" }, refetchBehovSlots)
       .on("postgres_changes", { event: "*", schema: "public", table: "behov_day" }, refetchBehovDays)
       .on("postgres_changes", { event: "*", schema: "public", table: "portal_suggestions" }, refetchPortalSuggestions)

@@ -12,7 +12,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 //
 // Handlinger (body.action):
 //   list                                         -> alle CG1-brukere med e-post og sist innlogget
-//   create      { email, password, displayName, pages, isAdmin }
+//   create      { email, password, displayName, pages, isAdmin }   (pages = nøkler fra cg1_pages)
 //   update      { userId, displayName?, pages?, isAdmin? }
 //   setPassword { userId, password }
 //   setActive   { userId, active }
@@ -22,7 +22,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-const PAGES = ["cgo", "acgo", "kontor1", "kontor2"];
+// CG1-sidene hentes fra cg1_pages (sql/94) - admin kan lage nye. Faller tilbake til de fire faste.
+const FALLBACK_PAGES = ["cgo", "acgo", "kontor1", "kontor2"];
+let PAGES: string[] = FALLBACK_PAGES;
 const BAN_FOREVER = "876000h"; // ~100 år - Supabase Auth har ingen egen "deaktivert"-status
 
 const corsHeaders = {
@@ -81,6 +83,10 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Ugyldig forespørsel." }, 400);
   }
   const action = String(body.action || "");
+  {
+    const { data: pageRows, error: pageErr } = await admin.from("cg1_pages").select("key");
+    PAGES = !pageErr && pageRows && pageRows.length ? pageRows.map((r: { key: string }) => r.key) : FALLBACK_PAGES;
+  }
 
   // Minst én aktiv admin må alltid finnes igjen, ellers kan ingen styre tilgangene lenger.
   async function otherActiveAdmins(exceptUserId: string): Promise<number> {
