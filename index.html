@@ -7346,7 +7346,7 @@
     return state.toAgenda.filter(function(a){ return a.project_id === pid; });
   }
   function rowToPortalSuggestion(row){
-    return { id: row.id, text: row.text, createdAt: row.created_at };
+    return { id: row.id, text: row.text, done: !!row.done, doneAt: row.done_at || null, createdAt: row.created_at };
   }
   function rowToFagRequest(row){
     return { id: row.id, project_id: row.project_id, fag: row.fag, personId: row.person_id, day: row.day, desiredPresent: !!row.desired_present, status: row.status, requestedBy: row.requested_by || "", createdAt: row.created_at, resolvedAt: row.resolved_at };
@@ -7799,10 +7799,20 @@
   function renderPortalSuggestionList(listId){
     var box = byId(listId);
     if(!box) return;
-    var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return a.createdAt < b.createdAt ? 1 : -1; });
+    // Åpne forslag først (nyeste øverst), deretter de som er krysset av.
+    var suggestions = state.portalSuggestions.slice().sort(function(a,b){ return (a.done?1:0) - (b.done?1:0) || (a.createdAt < b.createdAt ? 1 : -1); });
     box.innerHTML = suggestions.length ? suggestions.map(function(s){
-      return '<div class="shoprow" style="align-items:flex-start;"><span class="sname" style="white-space:pre-wrap; word-break:break-word;">'+escapeHtml(s.text)+'</span><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
+      var left = "";
+      if(s.done && s.doneAt){
+        var h = Math.max(1, Math.ceil((new Date(s.doneAt).getTime() + 24*3600*1000 - Date.now()) / 3600000));
+        left = '<div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Gjort – forsvinner om ca. '+h+' t</div>';
+      }
+      return '<div class="shoprow'+(s.done ? ' bought' : '')+'" style="align-items:flex-start;"><input type="checkbox" data-toggleportalsuggestion="'+s.id+'"'+(s.done ? ' checked' : '')+' title="Gjort" style="margin-top:3px;" />' +
+        '<div style="flex:1; min-width:0;"><span class="sname" style="white-space:pre-wrap; word-break:break-word;">'+escapeHtml(s.text)+'</span>'+left+'</div><button class="del" data-delportalsuggestion="'+s.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen forslag lagt til ennå.</p>';
+    box.querySelectorAll("[data-toggleportalsuggestion]").forEach(function(cb){
+      cb.addEventListener("change", function(){ togglePortalSuggestion(this.dataset.toggleportalsuggestion, this.checked); });
+    });
     box.querySelectorAll("[data-delportalsuggestion]").forEach(function(b){
       b.addEventListener("click", function(){
         if(confirm("Slette dette forslaget?")) deletePortalSuggestion(this.dataset.delportalsuggestion);
@@ -10142,7 +10152,19 @@
       if(res.error){ return; }
       state.portalSuggestions = res.data.map(rowToPortalSuggestion);
       scheduleRender();
+      sweepDonePortalSuggestions();
     });
+  }
+  // Avkryssede forslag slettes 24 timer etter avkrysning (done_at, sql/93). Bare CG1 rydder, og
+  // hvert forslag forsøkes bare én gang per økt (ingen evig løkke hvis slettingen avvises).
+  var portalSuggestionSweepTried = {};
+  function sweepDonePortalSuggestions(){
+    if(!sb || !isByggeleder()) return;
+    var cutoff = Date.now() - 24*3600*1000;
+    var old = state.portalSuggestions.filter(function(x){ return x.done && x.doneAt && new Date(x.doneAt).getTime() < cutoff && !portalSuggestionSweepTried[x.id]; });
+    if(!old.length) return;
+    old.forEach(function(x){ portalSuggestionSweepTried[x.id] = true; });
+    sb.from("portal_suggestions").delete().in("id", old.map(function(x){ return x.id; })).then(function(res){ if(!res.error) refetchPortalSuggestions(); });
   }
   function refetchOpenAccounts(){
     sb.from("open_accounts").select("*").order("leverandor").then(function(res){
@@ -11569,6 +11591,13 @@
     if(!sb) return;
     sb.from("portal_suggestions").insert({ text: text.slice(0,4000) }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("portal_suggestions") !== -1 ? "Databasen mangler tabellen for portal-forslag. Kjør sql/22-portal-forslag.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
+      refetchPortalSuggestions();
+    });
+  }
+  function togglePortalSuggestion(id, done){
+    if(!sb) return;
+    sb.from("portal_suggestions").update({ done: done, done_at: done ? new Date().toISOString() : null }).eq("id", id).then(function(res){
+      if(res.error){ showError(/done/.test(res.error.message || "") ? "Databasen mangler avkrysning for forslag. Kjør sql/93-forslag-avkrysning.sql i Supabase." : "Kunne ikke oppdatere: "+res.error.message); }
       refetchPortalSuggestions();
     });
   }
