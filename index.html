@@ -8315,10 +8315,15 @@
     if(!isByggeleder()) return;
     sb.from("cg1_access").select("*").then(function(res){
       if(res.error){
+        var msg = res.error.message || "";
         // Tabellen finnes ikke (sql/79 ikke kjørt) -> oppfør oss som før: alle ser alt.
-        if(/cg1_access/.test(res.error.message || "")){ view.cg1AccessMissing = true; view.cg1AccessLoaded = true; scheduleRender(); }
+        if(/cg1_access/.test(msg) && /does not exist|Could not find|not find the table/i.test(msg)){ view.cg1AccessMissing = true; view.cg1AccessLoaded = true; scheduleRender(); }
+        // Ellers (f.eks. «permission denied» når innloggingen fornyes etter at fanen har ligget i
+        // bakgrunnen): prøv igjen litt senere i stedet for å tro at tabellen mangler.
+        else if(!view.cg1AccessRetry){ view.cg1AccessRetry = true; setTimeout(function(){ view.cg1AccessRetry = false; refetchCg1Access(); }, 3000); }
         return;
       }
+      view.cg1AccessMissing = false;
       state.cg1Access = res.data || [];
       view.cg1AccessLoaded = true;
       var mine = myCg1Access();
