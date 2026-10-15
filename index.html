@@ -541,6 +541,9 @@
   #reqAskBox:empty{ display:none; }
   #reqAskBox{ margin-top:14px; }
   .reqask-card{ border:2px solid var(--bad); }
+  .reqask-card .card-toggle{ flex-wrap:wrap; row-gap:0; }
+  .reqask-card .card-toggle h2{ font-size:15px; white-space:nowrap; }
+  .reqask-card .card-toggle .ct-sum{ order:3; flex-basis:100%; font-weight:500; }
   .peoplecard.collapsed{ padding-top:10px; padding-bottom:10px; }
   @media (max-width:640px){
     .goods-row{ flex-wrap:wrap; }
@@ -6920,7 +6923,7 @@
     try{ localStorage.setItem("ldc_cardopen", JSON.stringify(cardOpen)); }catch(e){}
     if(key === "office"){ officeRenderedSig = {}; renderOfficeShared(); }
     else if(key === "goods"){ goodsRerender(); }
-    else if(key === "req"){ reqRerender(); }
+    else if(key === "req" || key === "reqask"){ reqRerender(); }
   });
   function officeTodoRowHtml(t){
     var late = !t.done && t.due_date && t.due_date < osloTodayIso();
@@ -7376,7 +7379,12 @@
   function reqAskHtml(){
     var qs = myOpenReqQuestions();
     if(!qs.length) return "";
-    return '<div class="peoplecard reqask-card"><h2 style="font-size:16px; margin:0 0 6px;">Spørsmål om Req prepp ('+qs.length+')</h2>' + qs.map(function(q){
+    // Kompakt linje til man trykker på den (huskes per enhet, som Office/Godsmottaker).
+    var from = [];
+    qs.forEach(function(q){ var n = q.asked_by_name || "CG1"; if(from.indexOf(n) === -1) from.push(n); });
+    var head = '<div class="office-head">'+cardToggleHtml("reqask", "Forespørsel fra Req prepp ("+qs.length+")", "fra " + escapeHtml(from.join(", ")))+'</div>';
+    if(!cardOpen.reqask) return '<div class="peoplecard reqask-card collapsed">' + head + '</div>';
+    return '<div class="peoplecard reqask-card">' + head + qs.map(function(q){
       var chosen = reqAnsFiles[q.id] || [];
       return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
         '<div class="gmeta">Fra '+escapeHtml(q.asked_by_name || "CG1")+', '+reqDateTxt(q.created_at)+'</div>' +
