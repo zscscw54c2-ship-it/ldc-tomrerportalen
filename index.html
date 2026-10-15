@@ -2741,8 +2741,28 @@
   function userHasOffice(){
     if(!isByggeleder()) return false;
     if(view.cg1AccessMissing) return true;
-    var a = myCg1Access();
-    return !!(a && a.active && a.office);
+    return cg1FlagVisible("office");
+  }
+  // En CG1-side speiler eieren (sql/102): Office, Godsmottaker og Req prepp vises på siden etter
+  // avkrysningene til brukeren som eier siden (cg1_pages.owner_user), uansett hvem som ser på.
+  // Den som har siden krysset av under «Sider», ser den nøyaktig slik eieren ser den.
+  function cg1PageOwnerAccess(key){
+    var pg = key ? cg1PageByKey(key) : null;
+    if(!pg || !pg.ownerUser) return null;
+    return state.cg1Access.find(function(a){ return a.user_id === pg.ownerUser; }) || null;
+  }
+  function cg1PageShows(key, flag){
+    var o = cg1PageOwnerAccess(key);
+    if(o) return !!(o.active && o[flag]);
+    var me = myCg1Access(); // side uten eier: som før, etter den som ser på
+    return !!(me && me.active && me[flag]);
+  }
+  // Har den innloggede flagget selv, eller tilgang til en side der eieren har det? (= databasens regel)
+  function cg1FlagVisible(flag){
+    var me = myCg1Access();
+    if(!me || !me.active) return false;
+    if(me[flag]) return true;
+    return (me.pages || []).some(function(k){ var o = cg1PageOwnerAccess(k); return !!(o && o.active && o[flag]); });
   }
   function myCg1Access(){
     if(!state.me) return null;
@@ -6980,7 +7000,9 @@
     var byDue = function(a, b){ return (a.due_date || "9999") < (b.due_date || "9999") ? -1 : (a.due_date || "9999") > (b.due_date || "9999") ? 1 : (a.created_at < b.created_at ? -1 : 1); };
     var open = todos.filter(function(t){ return !t.done; }).sort(byDue);
     var done = todos.filter(function(t){ return t.done; }).sort(function(a, b){ return (b.done_at || "") < (a.done_at || "") ? -1 : 1; });
-    var me = state.me ? state.me.id : null;
+    // «Mine punkter» = sidens eier (speiler eieren), ellers den innloggede.
+    var owner = cg1PageOwnerAccess(page);
+    var me = owner ? owner.user_id : (state.me ? state.me.id : null);
     var mine = open.filter(function(t){ return t.responsible_user === me; });
     var rest = open.filter(function(t){ return t.responsible_user !== me; });
     var note = state.officeNotes.find(function(n){ return n.project_id === pid; });
@@ -7013,7 +7035,7 @@
     document.querySelectorAll(".office-shared").forEach(function(box){
       var page = box.dataset.officepage;
       var pg = page ? cg1PageByKey(page) : null;
-      var html = (pg && userHasOffice()) ? officeHtml(page) : "";
+      var html = (pg && userHasOffice() && (view.cg1AccessMissing || cg1PageShows(page, "office"))) ? officeHtml(page) : "";
       if(officeRenderedSig[page] === html) return;
       var ae = document.activeElement;
       var refocus = false;
@@ -7085,8 +7107,7 @@
   function userHasGoods(){
     if(!isByggeleder()) return false;
     if(view.cg1AccessMissing) return false;
-    var a = myCg1Access();
-    return !!(a && a.active && a.godsmottak);
+    return cg1FlagVisible("godsmottak");
   }
   function refetchGoods(){
     if(!sb || !isByggeleder() || !userHasGoods()) return;
@@ -7185,7 +7206,7 @@
     if(!isByggeleder()) return;
     document.querySelectorAll(".goods-shared").forEach(function(box){
       var page = box.dataset.goodspage;
-      var html = (page && cg1PageByKey(page) && userHasGoods()) ? goodsHtml() : "";
+      var html = (page && cg1PageByKey(page) && userHasGoods() && cg1PageShows(page, "godsmottak")) ? goodsHtml() : "";
       if(goodsRenderedSig[page] === html) return;
       var ae = document.activeElement;
       if(ae && box.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox"){
@@ -7317,8 +7338,7 @@
   function userHasReqprep(){
     if(!isByggeleder()) return false;
     if(view.cg1AccessMissing) return false;
-    var a = myCg1Access();
-    return !!(a && a.active && a.reqprep);
+    return cg1FlagVisible("reqprep");
   }
   function refetchReq(){
     if(!sb || !state.me) return;
@@ -7448,7 +7468,7 @@
   function renderReqShared(){
     document.querySelectorAll(".reqprep-shared").forEach(function(box){
       var page = box.dataset.reqpage;
-      reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep()) ? reqHtml() : "");
+      reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep() && cg1PageShows(page, "reqprep")) ? reqHtml() : "");
     });
     var ask = byId("reqAskBox");
     if(ask) reqRenderBox(ask, "ask", reqAskHtml());
@@ -8343,6 +8363,8 @@
       byId("cg1NewPages").innerHTML = cg1PageCheckboxesHtml("data-cg1newpage", "new", keep);
       officeRenderedSig = {};
       refetchOffice();
+      refetchGoods();
+      refetchReq();
       scheduleRender();
     });
   }
