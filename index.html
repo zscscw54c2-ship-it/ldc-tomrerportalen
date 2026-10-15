@@ -9400,9 +9400,9 @@
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(activeOverviewFags().filter(function(f){ return f !== "team"; }));
     var tagOk = function(p){ return !opts.tagFilter || (p.tag || "").trim() === opts.tagFilter; };
     var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamMemberPeopleForCurrentProject().filter(tagOk).map(function(p){ return p.id; }) : [];
-    // «Ny»: lagt til (f.eks. importert) de siste sju dagene - så nye ikke blir oversett.
-    var newSince = Date.now() - 7*24*3600*1000;
-    var newBadge = function(p){ return p.createdAt && new Date(p.createdAt).getTime() > newSince ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;" title="Lagt til de siste sju dagene">Ny</span>' : ''; };
+    // «Ny»: lagt til (f.eks. importert) de siste tre dagene - så nye ikke blir oversett.
+    var newSince = Date.now() - 3*24*3600*1000;
+    var newBadge = function(p){ return p.createdAt && new Date(p.createdAt).getTime() > newSince ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;" title="Lagt til de siste tre dagene">Ny</span>' : ''; };
     // Finner personene per fag FØR noe HTML bygges, slik at Totalt-summen (som trenger å ha
     // sett alle fag) kan skrives øverst i rutenettet i stedet for nederst.
     var fagGroups = fagsToList.map(function(fag){
