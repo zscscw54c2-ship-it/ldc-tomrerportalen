@@ -7325,7 +7325,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at, cardEditedAt: row.card_edited_at || null };
   }
   function rowToElement(row){
     return {
@@ -9400,9 +9400,9 @@
     var fagsToList = opts.fagFilter ? [opts.fagFilter] : ["team"].concat(activeOverviewFags().filter(function(f){ return f !== "team"; }));
     var tagOk = function(p){ return !opts.tagFilter || (p.tag || "").trim() === opts.tagFilter; };
     var teamPersonIds = fagsToList.indexOf("team") !== -1 ? teamMemberPeopleForCurrentProject().filter(tagOk).map(function(p){ return p.id; }) : [];
-    // «Ny»: lagt til (f.eks. importert) de siste tre dagene - så nye ikke blir oversett.
+    // «Ny»: lagt til (f.eks. importert) de siste tre dagene, og personkortet er ikke lagret etterpå - så nye ikke blir oversett.
     var newSince = Date.now() - 3*24*3600*1000;
-    var newBadge = function(p){ return p.createdAt && new Date(p.createdAt).getTime() > newSince ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;" title="Lagt til de siste tre dagene">Ny</span>' : ''; };
+    var newBadge = function(p){ return p.createdAt && !p.cardEditedAt && new Date(p.createdAt).getTime() > newSince ? ' <span class="badge" style="background:var(--warn-soft); color:var(--warn-ink); font-size:9.5px; font-weight:700;" title="Lagt til de siste tre dagene (forsvinner når personkortet lagres)">Ny</span>' : ''; };
     // Finner personene per fag FØR noe HTML bygges, slik at Totalt-summen (som trenger å ha
     // sett alle fag) kan skrives øverst i rutenettet i stedet for nederst.
     var fagGroups = fagsToList.map(function(fag){
@@ -11073,7 +11073,8 @@
       phone: byId("peTelefonInput").value.trim().slice(0,40) || null,
       address: byId("peAdresseInput").value.trim().slice(0,200) || null,
       tag: byId("peTagInput").value.trim().slice(0,30) || null,
-      on_team: onTeamChecked
+      on_team: onTeamChecked,
+      card_edited_at: new Date().toISOString()
     });
     // Nettopp huket PÅ "med i teamet" - sett tilgjengelig hele prosjektet (fag "team"), samme
     // automatikk som når man huker av dette ved opprettelse. Huker man AV, røres ikke
