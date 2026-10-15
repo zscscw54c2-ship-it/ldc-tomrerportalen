@@ -517,6 +517,21 @@
   /* Office (felles for CGO/ACGO/Kontor 1/Kontor 2) */
   .office-card{ margin-bottom:16px; }
   .office-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  /* Office og Godsmottaker er sammenlagt til man trykker på overskriften (huskes per enhet). */
+  .card-toggle{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; border:none; background:none; padding:2px 0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+  .card-toggle h2{ font-size:17px; margin:0; }
+  .card-toggle .ct-sum{ font-size:12.5px; color:var(--muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .card-toggle .ct-sum .warn{ color:var(--bad-ink); }
+  .card-toggle .ct-chev{ margin-left:auto; color:var(--muted); font-size:13px; transition:transform .15s ease; flex:none; }
+  .card-toggle[aria-expanded="true"] .ct-chev{ transform:rotate(180deg); }
+  .peoplecard.collapsed .office-head{ margin-bottom:0; }
+  .peoplecard.collapsed{ padding-top:10px; padding-bottom:10px; }
+  @media (max-width:640px){
+    .goods-row{ flex-wrap:wrap; }
+    .goods-row .gacts{ flex-direction:row !important; width:100%; justify-content:flex-end; }
+    .goods-form .grow2 > *{ flex:1 1 100%; }
+    .office-add input[type="text"]{ flex:1 1 100%; }
+  }
   .office-cols{ display:grid; grid-template-columns: 1.2fr 1fr; gap:18px; margin-top:12px; }
   @media (max-width: 860px){ .office-cols{ grid-template-columns: 1fr; } }
   .office-sec h3{ font-size:13px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin:0 0 6px; }
@@ -6864,6 +6879,22 @@
       scheduleRender();
     });
   }
+  var cardOpen = {};
+  try{ cardOpen = JSON.parse(localStorage.getItem("ldc_cardopen") || "{}") || {}; }catch(e){ cardOpen = {}; }
+  function cardToggleHtml(key, title, sumHtml){
+    var open = !!cardOpen[key];
+    return '<button type="button" class="card-toggle" data-cardtoggle="'+key+'" aria-expanded="'+open+'"><h2>'+title+'</h2>' +
+      (sumHtml ? '<span class="ct-sum">'+sumHtml+'</span>' : '') + '<span class="ct-chev">▾</span></button>';
+  }
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-cardtoggle]");
+    if(!b) return;
+    var key = b.dataset.cardtoggle;
+    cardOpen[key] = !cardOpen[key];
+    try{ localStorage.setItem("ldc_cardopen", JSON.stringify(cardOpen)); }catch(e){}
+    if(key === "office"){ officeRenderedSig = {}; renderOfficeShared(); }
+    else if(key === "goods"){ goodsRerender(); }
+  });
   function officeTodoRowHtml(t){
     var late = !t.done && t.due_date && t.due_date < osloTodayIso();
     var sel = '<select data-officeresp="'+t.id+'" aria-label="Ansvarlig"><option value="">Ansvarlig …</option>' + officeRoles().map(function(r){
@@ -6888,9 +6919,11 @@
     var mine = open.filter(function(t){ return t.responsible_user === me; });
     var rest = open.filter(function(t){ return t.responsible_user !== me; });
     var note = state.officeNotes.find(function(n){ return n.project_id === pid; });
+    var oSum = open.length ? open.length + ' åpne' + (mine.length ? ' · ' + mine.length + ' mine' : '') : 'Ingen åpne punkter';
+    if(!cardOpen.office) return '<div class="peoplecard office-card collapsed"><div class="office-head">'+cardToggleHtml("office", "Office", oSum)+'</div></div>';
     var roleOpts = officeRoles().map(function(r){ return '<option value="'+r.key+'"'+(r.key === me ? ' selected' : '')+'>'+escapeHtml(officeRoleWithName(r.key))+'</option>'; }).join("");
     return '<div class="peoplecard office-card">' +
-      '<div class="office-head"><h2 style="font-size:17px; margin:0;">Office</h2></div>' +
+      '<div class="office-head">'+cardToggleHtml("office", "Office", oSum)+'</div>' +
       '<div class="office-cols">' +
         '<div class="office-sec"><h3>To-do</h3>' +
           '<div class="office-mine"><div style="font-size:12px; font-weight:700; color:var(--accent); margin-top:4px;">Mine punkter ('+escapeHtml(officeRoleLabel(me))+')</div>' +
@@ -7049,7 +7082,7 @@
       }).join("") + goodsFileButtons('data-goodsaddfile="'+g.id+'"') + '</div>' +
       (metaTxt ? '<div class="gmeta">'+metaTxt+'</div>' : '') +
       '</div>' +
-      '<div style="display:flex; flex-direction:column; gap:4px;"><button type="button" class="btn small ghost" data-goodsedit="'+g.id+'">Endre</button><button type="button" class="btn small ghost danger" data-goodsdel="'+g.id+'">Slett</button></div>' +
+      '<div class="gacts" style="display:flex; flex-direction:column; gap:4px;"><button type="button" class="btn small ghost" data-goodsedit="'+g.id+'">Endre</button><button type="button" class="btn small ghost danger" data-goodsdel="'+g.id+'">Slett</button></div>' +
       '</div>';
   }
   function goodsHtml(){
@@ -7070,8 +7103,11 @@
       return true;
     });
     var chip = function(key, label){ return '<button type="button" class="chip'+(f === key ? ' on' : '')+'" data-goodsfilter="'+key+'">'+label+'</button>'; };
+    var gSum = (open ? open + ' ikke behandlet' : 'Alt behandlet') + (all.filter(function(g){ return g.deviation && !g.done; }).length ? ' · <span class="warn">' + all.filter(function(g){ return g.deviation && !g.done; }).length + ' med avvik</span>' : '');
+    if(!all.length) gSum = 'Ingen mottak ennå';
+    if(!cardOpen.goods) return '<div class="peoplecard goods-card collapsed"><div class="office-head">'+cardToggleHtml("goods", "Godsmottaker", gSum)+'</div></div>';
     return '<div class="peoplecard goods-card">' +
-      '<div class="office-head"><h2 style="font-size:17px; margin:0;">Godsmottaker</h2>' +
+      '<div class="office-head">'+cardToggleHtml("goods", "Godsmottaker", gSum)+
       (view.goodsAddOpen ? '' : '<button type="button" class="btn small primary" data-goodsadd>+ Nytt mottak</button>') + '</div>' +
       (view.goodsAddOpen ? goodsFormHtml(null) : '') +
       '<div class="goods-filters">' + chip("open", "Ikke behandlet (" + open + ")") + chip("avvik", "Med avvik (" + dev + ")") + chip("alle", "Alle (" + all.length + ")") +
