@@ -2549,6 +2549,7 @@
       <div><span style="color:var(--muted); font-size:11px;">Telefon</span><br><span id="pdTelefon">–</span></div>
       <div><span style="color:var(--muted); font-size:11px;">Fag</span><br><span id="pdFag">–</span></div>
       <div><span style="color:var(--muted); font-size:11px;">Adresse</span><br><span id="pdAdresse">–</span></div>
+      <div id="pdInfoWrap" hidden style="grid-column:1 / -1;"><span style="color:var(--muted); font-size:11px;">Info</span><br><strong id="pdInfo"></strong></div>
     </div>
     <div style="margin:0 0 16px;"><button type="button" class="btn small" id="pdEditInfoBtn" hidden>Rediger info</button></div>
     <div id="pdGroupMembers" hidden style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin:10px 0 16px; padding:10px 12px; background:var(--surface-alt); border-radius:8px;"></div>
@@ -2590,6 +2591,7 @@
     <div class="field"><label for="peMenighetInput">Menighet</label><input type="text" id="peMenighetInput" maxlength="120" /></div>
     <div class="field"><label for="peTelefonInput">Telefon</label><input type="text" id="peTelefonInput" maxlength="40" /></div>
     <div class="field"><label for="peAdresseInput">Adresse</label><input type="text" id="peAdresseInput" maxlength="200" /></div>
+    <div class="field"><label for="peInfoInput">Info til losji (f.eks. Singel søster)</label><input type="text" id="peInfoInput" maxlength="200" placeholder="Valgfritt – vises bare på kortet" /></div>
     <div class="field"><label for="peTagInput">Tag (f.eks. Lokal eller Under 18)</label><input type="text" id="peTagInput" maxlength="30" placeholder="Valgfritt" /></div>
     <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:6px; margin-top:4px;"><input type="checkbox" id="peLokalInput" /> Lokal (ordner losji selv)</label>
     <label class="checkrow" style="font-size:12.5px; display:flex; align-items:center; gap:6px; margin-top:4px;"><input type="checkbox" id="peOnTeamInput" /> Med i teamet</label>
@@ -7618,7 +7620,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at, cardEditedAt: row.card_edited_at || null };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at, cardEditedAt: row.card_edited_at || null, info: row.info || "" };
   }
   function rowToElement(row){
     return {
@@ -11201,7 +11203,7 @@
         if(m.congregation) bits.push(m.congregation);
         if(m.phone) bits.push(m.phone);
         var editLink = canEditFull ? ' <a href="#" data-editpersoninfo="'+m.id+'" style="font-size:11.5px;">Rediger</a>' : "";
-        return '<div><strong>'+escapeHtml(m.name)+'</strong> · '+escapeHtml(bits.join(" · "))+editLink+'</div>';
+        return '<div><strong>'+escapeHtml(m.name)+'</strong> · '+escapeHtml(bits.join(" · "))+(m.info ? ' · <em>'+escapeHtml(m.info)+'</em>' : '')+editLink+'</div>';
       }).join("");
       byId("pdGroupMembers").querySelectorAll("[data-editpersoninfo]").forEach(function(a){
         a.addEventListener("click", function(ev){ ev.preventDefault(); openPersonInfoEditDialog(this.dataset.editpersoninfo); });
@@ -11211,6 +11213,8 @@
       byId("pdTelefon").textContent = person.phone || "–";
       byId("pdFag").textContent = currentFagLabelForPerson(personId) || "–";
       byId("pdAdresse").textContent = person.address || "–";
+      byId("pdInfo").textContent = person.info || "";
+      byId("pdInfoWrap").hidden = !person.info;
     }
     byId("pdEditInfoBtn").hidden = grouped || !canEditFull;
     var groupNote = byId("logiGroupNote");
@@ -11340,6 +11344,7 @@
     byId("peTelefonInput").value = person.phone || "";
     byId("peAdresseInput").value = person.address || "";
     byId("peTagInput").value = person.tag || "";
+    byId("peInfoInput").value = person.info || "";
     byId("peLokalInput").checked = person.tag === "Lokal";
     personInfoEditDialog.dataset.wasLokal = person.tag === "Lokal" ? "1" : "";
     byId("peOnTeamInput").checked = !!person.onTeam;
@@ -11372,6 +11377,7 @@
       phone: byId("peTelefonInput").value.trim().slice(0,40) || null,
       address: byId("peAdresseInput").value.trim().slice(0,200) || null,
       tag: byId("peTagInput").value.trim().slice(0,30) || null,
+      info: byId("peInfoInput").value.trim().slice(0,200) || null,
       on_team: onTeamChecked,
       card_edited_at: new Date().toISOString()
     });
@@ -11384,6 +11390,12 @@
     if(lokalChecked && !wasLokal) upsertLogiInfo(personId, { status: "ordner_selv" });
     else if(!lokalChecked && wasLokal) upsertLogiInfo(personId, { status: "uavklart" });
     personInfoEditDialog.close();
+    // Vis endringene på kortet med en gang (hentes også på nytt fra databasen).
+    var localP = state.people.find(function(p){ return p.id === personId; });
+    if(localP){
+      localP.name = name.slice(0,80); localP.congregation = byId("peMenighetInput").value.trim(); localP.phone = byId("peTelefonInput").value.trim();
+      localP.address = byId("peAdresseInput").value.trim(); localP.tag = byId("peTagInput").value.trim(); localP.info = byId("peInfoInput").value.trim(); localP.onTeam = onTeamChecked;
+    }
     if(logiDialog.open) openLogiDialog(personId);
   });
 
