@@ -525,6 +525,22 @@
   .card-toggle .ct-chev{ margin-left:auto; color:var(--muted); font-size:13px; transition:transform .15s ease; flex:none; }
   .card-toggle[aria-expanded="true"] .ct-chev{ transform:rotate(180deg); }
   .peoplecard.collapsed .office-head{ margin-bottom:0; }
+  .req-card{ margin-bottom:16px; }
+  .req-q{ border:1px solid var(--border); border-radius:10px; padding:9px 11px; margin-top:8px; display:flex; flex-direction:column; gap:5px; }
+  .req-q.done{ opacity:.65; }
+  .req-q .req-qtext{ font-weight:600; font-size:13.5px; white-space:pre-wrap; }
+  .req-q .gmeta{ font-size:12px; color:var(--muted); }
+  .req-q textarea, .req-ask textarea, .req-ask select{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; font:inherit; font-size:13px; background:var(--surface); width:100%; box-sizing:border-box; resize:vertical; }
+  .req-ask{ display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
+  .req-ask .grow2, .req-q .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
+  .req-ask select{ width:auto; flex:1; min-width:160px; }
+  .req-answer{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; }
+  .req-qacts{ display:flex; gap:6px; justify-content:flex-end; }
+  .req-q .gfiles{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .req-q .gfile{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-size:12px; background:var(--surface); text-decoration:none; color:var(--text); }
+  #reqAskBox:empty{ display:none; }
+  #reqAskBox{ margin-top:14px; }
+  .reqask-card{ border:2px solid var(--bad); }
   .peoplecard.collapsed{ padding-top:10px; padding-bottom:10px; }
   @media (max-width:640px){
     .goods-row{ flex-wrap:wrap; }
@@ -1091,6 +1107,8 @@
     <div id="statusBanner" class="status-banner ok"></div>
   </header>
 
+  <div id="reqAskBox"></div>
+
   <div id="mobileHome">
     <button type="button" class="mh-project-banner" id="mobileHomeProjectBtn" title="Bytt prosjekt" aria-haspopup="listbox" aria-expanded="false">
       <span class="mh-project-text">
@@ -1602,6 +1620,7 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="acgo"></div>
     <div class="goods-shared" data-goodspage="acgo"></div>
+    <div class="reqprep-shared" data-reqpage="acgo"></div>
     <p id="acgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div>
@@ -1694,7 +1713,7 @@
           </div>
           <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
           <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
-          <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label></div>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewReq" /> Req prepp</label></div>
           <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
         </form>
       </details>
@@ -1749,6 +1768,7 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="cgo"></div>
     <div class="goods-shared" data-goodspage="cgo"></div>
+    <div class="reqprep-shared" data-reqpage="cgo"></div>
     <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0; flex:1; min-width:180px;"></p>
       <div style="display:flex; align-items:center; gap:6px;">
@@ -1848,6 +1868,7 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="kontor1"></div>
     <div class="goods-shared" data-goodspage="kontor1"></div>
+    <div class="reqprep-shared" data-reqpage="kontor1"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 1</h2>
       <div style="display:flex; gap:8px;">
@@ -1871,6 +1892,7 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="" id="cg1sideOffice"></div>
     <div class="goods-shared" data-goodspage="" id="cg1sideGoods"></div>
+    <div class="reqprep-shared" data-reqpage="" id="cg1sideReq"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;" id="cg1sideTitle">Side</h2>
       <div style="display:flex; gap:8px;">
@@ -1894,6 +1916,7 @@
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <div class="office-shared" data-officepage="kontor2"></div>
     <div class="goods-shared" data-goodspage="kontor2"></div>
+    <div class="reqprep-shared" data-reqpage="kontor2"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 2</h2>
       <div style="display:flex; gap:8px;">
@@ -2620,7 +2643,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -6765,6 +6788,7 @@
     byId("cg1sideCreateBox").dataset.opencreatebox = key || "";
     byId("cg1sideOffice").dataset.officepage = key || "";
     byId("cg1sideGoods").dataset.goodspage = key || "";
+    byId("cg1sideReq").dataset.reqpage = key || "";
     if(pg) renderOfficeBoxes(key, byId("officeBoxes-cg1side"));
     else byId("officeBoxes-cg1side").innerHTML = "";
   }
@@ -6894,6 +6918,7 @@
     try{ localStorage.setItem("ldc_cardopen", JSON.stringify(cardOpen)); }catch(e){}
     if(key === "office"){ officeRenderedSig = {}; renderOfficeShared(); }
     else if(key === "goods"){ goodsRerender(); }
+    else if(key === "req"){ reqRerender(); }
   });
   function officeTodoRowHtml(t){
     var late = !t.done && t.due_date && t.due_date < osloTodayIso();
@@ -7243,6 +7268,273 @@
     }
   });
 
+  // ---------- Req prepp (sql/100): sjekkliste og spørsmål per prosjekt ----------
+  // Kortet vises på CG1-sidene (under Godsmottaker) for brukere med «Req prepp» krysset av.
+  // Spørsmål sendes til én person i teamet; innloggingen koblet til personen under Team
+  // (team_logins) får en boks øverst («Spørsmål om Req prepp») og kan svare med tekst og
+  // bilder/filer uten å ha tilgang til selve kortet. Filene ligger i filmappen «reqprep»
+  // under <prosjekt>/<spørsmål>/. Hvem som spurte, svarte og huket av fyller databasen ut.
+  function userHasReqprep(){
+    if(!isByggeleder()) return false;
+    if(view.cg1AccessMissing) return false;
+    var a = myCg1Access();
+    return !!(a && a.active && a.reqprep);
+  }
+  function refetchReq(){
+    if(!sb || !state.me) return;
+    var has = userHasReqprep();
+    Promise.all([
+      has ? sb.from("req_prep_items").select("*").order("sort_order").order("created_at") : Promise.resolve({ data: [] }),
+      sb.from("req_prep_questions").select("*").order("created_at", { ascending: false }),
+      sb.from("req_prep_files").select("*").order("created_at")
+    ]).then(function(r){
+      if(r[0].error || r[1].error || r[2].error){ view.reqMissing = has; state.reqItems = []; state.reqQuestions = []; state.reqFiles = []; scheduleRender(); return; }
+      view.reqMissing = false;
+      state.reqItems = r[0].data || []; state.reqQuestions = r[1].data || []; state.reqFiles = r[2].data || [];
+      scheduleRender();
+    });
+  }
+  function reqFilesFor(qid){ return (state.reqFiles || []).filter(function(f){ return f.question_id === qid; }); }
+  function reqHasLogin(personId, pid){ return state.teamLogins.some(function(r){ return r.projectId === pid && r.personId === personId; }); }
+  // Spørsmål til personen(e) den innloggede er koblet til, i valgt prosjekt.
+  function myOpenReqQuestions(){
+    if(!state.me) return [];
+    var pid = currentProjectId();
+    var mine = state.teamLogins.filter(function(r){ return r.accountId === state.me.id && r.projectId === pid; }).map(function(r){ return r.personId; });
+    return (state.reqQuestions || []).filter(function(q){ return q.project_id === pid && q.status === "open" && mine.indexOf(q.to_person_id) !== -1; })
+      .sort(function(a, b){ return a.created_at < b.created_at ? -1 : 1; });
+  }
+  function reqDateTxt(ts){ return ts ? fmtRange(ts.slice(0, 10), ts.slice(0, 10)) : ""; }
+  function reqFileLinks(qid, canDelete){
+    var files = reqFilesFor(qid);
+    if(!files.length) return "";
+    return '<div class="gfiles">' + files.map(function(f){
+      var img = (f.content_type || "").indexOf("image/") === 0;
+      return '<span style="display:inline-flex; align-items:center;"><a class="gfile" data-fileurl href="'+escapeHtml(fileUrl("reqprep", f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Fil")+'</a>' +
+        (canDelete ? '<button type="button" class="x" data-reqdelfile="'+f.id+'" title="Fjern filen" style="border:none; background:none; color:var(--muted); cursor:pointer;">×</button>' : '') + '</span>';
+    }).join("") + '</div>';
+  }
+  function reqQuestionHtml(q){
+    var who = q.to_person_id ? personName(q.to_person_id) : "(personen er fjernet)";
+    var st = q.status === "open" ? '<span class="badge" style="background:var(--warn-soft); color:var(--warn-ink);">Venter på svar</span>'
+      : q.status === "answered" ? '<span class="badge" style="background:var(--good-soft, #e3f4e6); color:var(--good-ink, #1e6b34);">Besvart</span>'
+      : '<span class="badge">Lukket</span>';
+    var noLogin = q.to_person_id && q.status === "open" && !reqHasLogin(q.to_person_id, q.project_id);
+    return '<div class="req-q'+(q.status === "closed" ? ' done' : '')+'">' +
+      '<div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
+      '<div class="gmeta">Til <strong>'+escapeHtml(who)+'</strong> · spurt av '+escapeHtml(q.asked_by_name || "ukjent")+', '+reqDateTxt(q.created_at)+' '+st+
+        (noLogin ? ' <span style="color:var(--bad-ink);">– har ingen innlogging, får ikke varsel</span>' : '') + '</div>' +
+      (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
+        (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, true) + '</div>' : '') +
+      '<div class="req-qacts">' +
+        (q.status === "answered" ? '<button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button>' : '') +
+        (q.status === "closed" ? '<button type="button" class="btn small ghost" data-reqreopen="'+q.id+'">Åpne igjen</button>' : '') +
+        '<button type="button" class="btn small ghost danger" data-reqdelq="'+q.id+'">Slett</button></div>' +
+      '</div>';
+  }
+  function reqHtml(){
+    if(view.reqMissing) return '<div class="peoplecard req-card"><h2 style="font-size:16px;">Req prepp</h2><p class="empty-note">Databasen mangler Req prepp. Kjør sql/100-req-prepp.sql i Supabase.</p></div>';
+    var pid = currentProjectId();
+    if(!pid) return "";
+    var items = (state.reqItems || []).filter(function(i){ return i.project_id === pid; });
+    var qs = (state.reqQuestions || []).filter(function(q){ return q.project_id === pid; });
+    var nDone = items.filter(function(i){ return i.done; }).length;
+    var nOpen = qs.filter(function(q){ return q.status === "open"; }).length;
+    var nAns = qs.filter(function(q){ return q.status === "answered"; }).length;
+    var sum = [items.length ? nDone + ' av ' + items.length + ' gjort' : '', nOpen ? nOpen + ' venter på svar' : '', nAns ? '<span class="warn">' + nAns + ' nytt svar</span>' : ''].filter(Boolean).join(' · ') || 'Tom';
+    if(!cardOpen.req) return '<div class="peoplecard req-card collapsed"><div class="office-head">'+cardToggleHtml("req", "Req prepp", sum)+'</div></div>';
+    var team = teamMemberPeopleForCurrentProject().slice().sort(function(a, b){ return a.name.localeCompare(b.name, "nb"); });
+    var opts = '<option value="">Send til …</option>' + team.map(function(p){
+      return '<option value="'+p.id+'">'+escapeHtml(p.name)+(reqHasLogin(p.id, pid) ? '' : ' – får ikke varsel')+'</option>'; }).join("");
+    var active = qs.filter(function(q){ return q.status !== "closed"; }).sort(function(a, b){
+      var o = { answered: 0, open: 1 }; return (o[a.status] - o[b.status]) || (a.created_at < b.created_at ? 1 : -1); });
+    var closed = qs.filter(function(q){ return q.status === "closed"; });
+    return '<div class="peoplecard req-card">' +
+      '<div class="office-head">'+cardToggleHtml("req", "Req prepp", sum)+'</div>' +
+      '<div class="office-cols">' +
+        '<div class="office-sec"><h3>Sjekkliste</h3>' +
+          (items.length ? items.map(function(i){
+            return '<div class="office-row'+(i.done ? ' done' : '')+'"><input type="checkbox" data-reqitem="'+i.id+'"'+(i.done ? ' checked' : '')+' aria-label="Gjort" />' +
+              '<div class="otext"><span data-reqitemedit="'+i.id+'" title="Trykk for å endre teksten" style="cursor:text;">'+escapeHtml(i.text)+'</span>' +
+              (i.done && i.done_by ? '<div class="gmeta">✓ '+escapeHtml(i.done_by)+', '+reqDateTxt(i.done_at)+'</div>' : '') + '</div>' +
+              '<button type="button" class="x" data-reqitemdel="'+i.id+'" title="Slett">×</button></div>';
+          }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen punkter ennå.</p>') +
+          '<form class="office-add" data-reqadditem><input type="text" maxlength="300" placeholder="Nytt punkt …" required /><button type="submit" class="btn small primary">Legg til</button></form>' +
+        '</div>' +
+        '<div class="office-sec"><h3>Spørsmål</h3>' +
+          '<form class="req-ask" data-reqask><textarea name="q" maxlength="2000" rows="2" placeholder="Skriv spørsmålet …" required></textarea>' +
+            '<div class="grow2"><select name="to" required aria-label="Send til">'+opts+'</select><button type="submit" class="btn small primary">Send spørsmål</button></div>' +
+            (team.length ? '' : '<p class="empty-note" style="margin:0;">Ingen i teamet i dette prosjektet ennå (Frivillige → «med i teamet»).</p>') + '</form>' +
+          (active.length ? active.map(reqQuestionHtml).join("") : '<p class="empty-note" style="margin:6px 0;">Ingen åpne spørsmål.</p>') +
+          (closed.length ? '<details style="margin-top:8px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Lukkede spørsmål ('+closed.length+')</summary>' + closed.map(reqQuestionHtml).join("") + '</details>' : '') +
+        '</div>' +
+      '</div></div>';
+  }
+  var reqAnsFiles = {};
+  function reqAskHtml(){
+    var qs = myOpenReqQuestions();
+    if(!qs.length) return "";
+    return '<div class="peoplecard reqask-card"><h2 style="font-size:16px; margin:0 0 6px;">Spørsmål om Req prepp ('+qs.length+')</h2>' + qs.map(function(q){
+      var chosen = reqAnsFiles[q.id] || [];
+      return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
+        '<div class="gmeta">Fra '+escapeHtml(q.asked_by_name || "CG1")+', '+reqDateTxt(q.created_at)+'</div>' +
+        reqFileLinks(q.id, false) +
+        '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
+        '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
+          '<span class="empty-note" data-reqansfiles style="margin:0;">'+(chosen.length ? chosen.length + ' fil(er) valgt: ' + escapeHtml(chosen.map(function(f){ return f.name; }).join(", ")) : '')+'</span>' +
+          '<button type="submit" class="btn small primary" style="margin-left:auto;">Send svar</button></div></form>';
+    }).join("") + '</div>';
+  }
+  var reqRenderedSig = {};
+  function reqRenderBox(box, key, html){
+    if(reqRenderedSig[key] === html) return;
+    var ae = document.activeElement;
+    if(ae && box.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox" && ae.type !== "file"){
+      if(!(ae.closest("[data-reqadditem]") && !ae.value)){ view.reqPendingRender = true; return; }
+    }
+    var keep = {};
+    box.querySelectorAll("form [name]").forEach(function(el){ var f = el.closest("form"); keep[(f.dataset.reqanswer || (f.hasAttribute("data-reqask") ? "ask" : "")) + "|" + el.name] = el.value; });
+    var refocus = ae && box.contains(ae) && ae.closest("[data-reqadditem]");
+    box.innerHTML = html;
+    reqRenderedSig[key] = html;
+    box.querySelectorAll("form [name]").forEach(function(el){ var f = el.closest("form"); var k = (f.dataset.reqanswer || (f.hasAttribute("data-reqask") ? "ask" : "")) + "|" + el.name; if(k in keep) el.value = keep[k]; });
+    if(refocus){ var el = box.querySelector("[data-reqadditem] input[type=text]"); if(el) el.focus(); }
+  }
+  function renderReqShared(){
+    document.querySelectorAll(".reqprep-shared").forEach(function(box){
+      var page = box.dataset.reqpage;
+      reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep()) ? reqHtml() : "");
+    });
+    var ask = byId("reqAskBox");
+    if(ask) reqRenderBox(ask, "ask", reqAskHtml());
+  }
+  function reqRerender(){ reqRenderedSig = {}; renderReqShared(); }
+  function reqWrite(promise, okMsg){
+    return promise.then(function(res){
+      if(res && res.error) showError("Kunne ikke lagre i Req prepp: " + res.error.message);
+      else if(okMsg) showInfo(okMsg);
+      refetchReq();
+      return res;
+    });
+  }
+  function uploadReqFiles(qid, pid, files){
+    if(!pid || !files || !files.length) return Promise.resolve();
+    showInfo("Laster opp " + files.length + " fil(er) …");
+    return Promise.all(Array.prototype.map.call(files, function(file){
+      return compressImage(file, 2000, 0.85).then(function(f){
+        if(f.size > MAX_GOODS_FILE_BYTES){ showError("«" + f.name + "» er for stor (maks 25 MB)."); return null; }
+        var safe = (f.name || "fil").replace(/[^a-zA-Z0-9_.\-]/g, "_");
+        var path = pid + "/" + qid + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
+        return sb.storage.from("reqprep").upload(path, f, { contentType: f.type || "application/octet-stream" }).then(function(res){
+          if(res.error){ showError("Kunne ikke laste opp «" + f.name + "»: " + res.error.message); return null; }
+          return sb.from("req_prep_files").insert({ question_id: qid, project_id: pid, file_path: path, file_name: (f.name || "fil").slice(0, 120), content_type: f.type || null });
+        });
+      });
+    })).then(function(){ refetchReq(); });
+  }
+  function inReq(t){ return t.closest && (t.closest(".reqprep-shared") || t.closest("#reqAskBox")); }
+  document.addEventListener("click", function(ev){
+    var t = ev.target;
+    if(!inReq(t)) return;
+    var b;
+    if((b = t.closest("[data-reqitemdel]"))){
+      var id = b.dataset.reqitemdel;
+      askConfirm("Punktet slettes for alle.", function(){ reqWrite(sb.from("req_prep_items").delete().eq("id", id)); }, { title: "Slette punktet?" });
+    } else if((b = t.closest("[data-reqitemedit]"))){
+      var item = (state.reqItems || []).find(function(x){ return x.id === b.dataset.reqitemedit; });
+      if(!item) return;
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 300; inp.value = item.text; inp.style.width = "100%";
+      b.replaceWith(inp); inp.focus();
+      var done = false;
+      var finish = function(save){
+        if(done) return; done = true;
+        var v = inp.value.trim();
+        inp.blur();
+        if(save && v && v !== item.text) reqWrite(sb.from("req_prep_items").update({ text: v }).eq("id", item.id));
+        else reqRerender();
+      };
+      inp.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); finish(true); } else if(e.key === "Escape"){ finish(false); } });
+      inp.addEventListener("blur", function(){ finish(true); });
+    } else if((b = t.closest("[data-reqclose]"))){
+      reqWrite(sb.from("req_prep_questions").update({ status: "closed" }).eq("id", b.dataset.reqclose), "Spørsmålet er lukket ✓");
+    } else if((b = t.closest("[data-reqreopen]"))){
+      var q0 = (state.reqQuestions || []).find(function(x){ return x.id === b.dataset.reqreopen; });
+      reqWrite(sb.from("req_prep_questions").update({ status: q0 && q0.answer ? "answered" : "open" }).eq("id", b.dataset.reqreopen));
+    } else if((b = t.closest("[data-reqdelq]"))){
+      var qid = b.dataset.reqdelq;
+      askConfirm("Spørsmålet, svaret og vedleggene slettes for alle.", function(){
+        var paths = reqFilesFor(qid).map(function(f){ return f.file_path; });
+        (paths.length ? sb.storage.from("reqprep").remove(paths) : Promise.resolve()).then(function(){
+          reqWrite(sb.from("req_prep_questions").delete().eq("id", qid), "Spørsmålet er slettet ✓");
+        });
+      }, { title: "Slette spørsmålet?" });
+    } else if((b = t.closest("[data-reqdelfile]"))){
+      var file = (state.reqFiles || []).find(function(x){ return x.id === b.dataset.reqdelfile; });
+      if(!file) return;
+      askConfirm("«" + (file.file_name || "Filen") + "» fjernes for alle.", function(){
+        sb.storage.from("reqprep").remove([file.file_path]).then(function(){ reqWrite(sb.from("req_prep_files").delete().eq("id", file.id), "Filen er fjernet ✓"); });
+      }, { title: "Fjerne filen?" });
+    }
+  });
+  document.addEventListener("change", function(ev){
+    var t = ev.target;
+    if(!inReq(t)) return;
+    if(t.dataset.reqitem){
+      reqWrite(sb.from("req_prep_items").update({ done: t.checked }).eq("id", t.dataset.reqitem));
+    } else if(t.dataset.reqansfile){
+      var id = t.dataset.reqansfile;
+      reqAnsFiles[id] = (reqAnsFiles[id] || []).concat(Array.prototype.slice.call(t.files || []));
+      t.value = "";
+      var lbl = t.closest("form").querySelector("[data-reqansfiles]");
+      if(lbl) lbl.textContent = reqAnsFiles[id].length + " fil(er) valgt: " + reqAnsFiles[id].map(function(f){ return f.name; }).join(", ");
+    }
+  });
+  document.addEventListener("focusout", function(ev){
+    if(!view.reqPendingRender || !inReq(ev.target)) return;
+    setTimeout(function(){ view.reqPendingRender = false; renderReqShared(); }, 0);
+  });
+  document.addEventListener("submit", function(ev){
+    var f = ev.target;
+    if(!inReq(f)) return;
+    var pid = currentProjectId();
+    if(f.hasAttribute("data-reqadditem")){
+      ev.preventDefault();
+      var inp = f.querySelector("input[type=text]"), text = inp.value.trim();
+      if(!text || !pid) return;
+      var max = (state.reqItems || []).filter(function(i){ return i.project_id === pid; }).reduce(function(m, i){ return Math.max(m, i.sort_order || 0); }, 0);
+      inp.value = "";
+      reqWrite(sb.from("req_prep_items").insert({ project_id: pid, text: text.slice(0, 300), sort_order: max + 1 }));
+    } else if(f.hasAttribute("data-reqask")){
+      ev.preventDefault();
+      var q = f.elements.q.value.trim(), to = f.elements.to.value;
+      if(!q || !to || !pid) return;
+      if(document.activeElement && f.contains(document.activeElement)) document.activeElement.blur();
+      var noLogin = !reqHasLogin(to, pid);
+      sb.from("req_prep_questions").insert({ project_id: pid, question: q.slice(0, 2000), to_person_id: to }).then(function(res){
+        if(res.error){ showError("Kunne ikke sende spørsmålet: " + res.error.message); return; }
+        f.elements.q.value = ""; f.elements.to.value = "";
+        showInfo(noLogin ? "Spørsmålet er lagret – " + personName(to) + " har ingen innlogging og får ikke varsel." : "Spørsmålet er sendt til " + personName(to) + " ✓");
+        refetchReq(); reqRerender();
+      });
+    } else if(f.dataset.reqanswer){
+      ev.preventDefault();
+      var qid = f.dataset.reqanswer, answer = f.elements.answer.value.trim(), files = reqAnsFiles[qid] || [];
+      if(!answer && !files.length){ showError("Skriv et svar eller legg ved et bilde/en fil."); return; }
+      if(document.activeElement && f.contains(document.activeElement)) document.activeElement.blur();
+      var btn = f.querySelector("button[type=submit]"); if(btn) btn.disabled = true;
+      // Filene lastes opp først, så svaret og vedleggene dukker opp samtidig hos den som spurte.
+      uploadReqFiles(qid, pid, files).then(function(){
+        return sb.from("req_prep_questions").update({ answer: answer || "(se vedlegg)" }).eq("id", qid);
+      }).then(function(res){
+        if(res && res.error){ showError("Kunne ikke sende svaret: " + res.error.message); if(btn) btn.disabled = false; return; }
+        delete reqAnsFiles[qid];
+        showInfo("Svaret er sendt ✓");
+        refetchReq(); reqRerender();
+      });
+    }
+  });
+
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAdminEditButtons();
@@ -7269,6 +7561,7 @@
     renderKontorTabs();
     renderOfficeShared();
     renderGoodsShared();
+    renderReqShared();
     renderAllPortalSuggestionLists();
     renderToMoteTab();
     renderDashboardTab();
@@ -8034,6 +8327,7 @@
       if(isCg1Admin() && !view.cg1UsersLoaded) refetchCg1Users();
       refetchOffice();
       refetchGoods();
+      refetchReq();
       scheduleRender();
     });
   }
@@ -8067,6 +8361,7 @@
       if("isAdmin" in body) u.isAdmin = body.isAdmin;
       if("office" in body) u.office = body.office;
       if("godsmottak" in body) u.godsmottak = body.godsmottak;
+      if("reqprep" in body) u.reqprep = body.reqprep;
       if("displayName" in body) u.displayName = body.displayName;
     }
     cg1UserAdmin(body).then(function(){
@@ -8273,6 +8568,7 @@
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer; margin-left:6px;"><input type="checkbox" data-cg1admin="'+u.userId+'"'+(u.isAdmin?' checked':'')+' /> Admin</label>' +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter"><input type="checkbox" data-cg1office="'+u.userId+'"'+(u.office?' checked':'')+' /> Office</label>' +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Godsmottaker (mottak av varer med dokumenter) øverst på CG1-sidene"><input type="checkbox" data-cg1goods="'+u.userId+'"'+(u.godsmottak?' checked':'')+' /> Godsmottaker</label>' +
+          '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Req prepp (sjekkliste og spørsmål til teamet) på CG1-sidene"><input type="checkbox" data-cg1req="'+u.userId+'"'+(u.reqprep?' checked':'')+' /> Req prepp</label>' +
           '<span style="flex:1;"></span>' +
           '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
           (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
@@ -8289,6 +8585,9 @@
         var pages = Array.prototype.slice.call(box.querySelectorAll('[data-cg1page="'+id+'"]')).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
         cg1UserAction({ action:"update", userId:id, pages:pages }, "Tilgang lagret ✓");
       });
+    });
+    box.querySelectorAll("[data-cg1req]").forEach(function(cb){
+      cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1req, reqprep:this.checked }, this.checked ? "Req prepp slått på ✓" : "Req prepp slått av ✓"); });
     });
     box.querySelectorAll("[data-cg1goods]").forEach(function(cb){
       cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1goods, godsmottak:this.checked }, this.checked ? "Godsmottaker slått på ✓" : "Godsmottaker slått av ✓"); });
@@ -8336,7 +8635,7 @@
   byId("cg1AddUserForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var pages = Array.prototype.slice.call(document.querySelectorAll("[data-cg1newpage]")).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
-    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked, godsmottak: byId("cg1NewGoods").checked };
+    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked, godsmottak: byId("cg1NewGoods").checked, reqprep: byId("cg1NewReq").checked };
     if(body.password.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
     cg1UserAdmin(body).then(function(){
       showInfo("Bruker opprettet ✓ Brukeren har fått sin egen side under CG1. Gi e-post og passord videre til personen.");
@@ -12642,6 +12941,7 @@
     refetchRoomTodos();
     refetchDokuPhotos();
     refetchTeamLogins();
+    refetchReq();
     refetchProjectFags();
     refetchUserAccounts();
     refetchFags();
@@ -12723,6 +13023,9 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "office_notes" }, refetchOffice)
       .on("postgres_changes", { event: "*", schema: "public", table: "goods_receipts" }, refetchGoods)
       .on("postgres_changes", { event: "*", schema: "public", table: "goods_receipt_files" }, refetchGoods)
+      .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_items" }, refetchReq)
+      .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_questions" }, refetchReq)
+      .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_files" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_links" }, refetchOfficeBoxLinks)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_contacts" }, refetchOfficeBoxContacts)
