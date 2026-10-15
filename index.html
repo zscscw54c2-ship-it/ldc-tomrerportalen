@@ -101,6 +101,10 @@
   nav.tabs button[aria-selected="true"]{background:var(--surface); color:var(--accent); box-shadow:var(--shadow);}
   nav.tabs button:hover{color:var(--text);}
 
+  .subtabs{display:flex; gap:22px; border-bottom:1px solid var(--border); margin-bottom:16px; overflow-x:auto;}
+  .subtabs button{font-family:inherit; cursor:pointer; background:none; border:none; padding:10px 2px; font-size:13px; font-weight:600; color:var(--muted); border-bottom:2.5px solid transparent; white-space:nowrap;}
+  .subtabs button[aria-selected="true"]{font-weight:700; color:var(--accent); border-bottom-color:var(--accent);}
+
   .project-bar{
     max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
@@ -1674,96 +1678,127 @@
   <section id="panel-prosjekt" class="panel">
     <button type="button" class="btn small ghost" data-backtocg1 style="margin-bottom:10px;">← CG1</button>
     <h2 style="font-size:18px; margin-bottom:12px;">Administrasjon</h2>
-    <div class="peoplecard" id="setupStatusCard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Oppsett for prosjektet</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Det som må være på plass før oppstart. Grønt er klart, gult mangler.</p>
-      <div id="setupStatusList" style="display:flex; flex-direction:column; gap:6px;"></div>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Utskrifter og eksport</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lager en PDF du kan skrive ut eller sende. Dato brukes for oppmøtelisten (dagen) og matlisten (uken datoen ligger i).</p>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <input type="date" id="printDate" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />
-        <button type="button" class="btn small" id="printAttendanceBtn">Oppmøteliste (dag)</button>
-        <button type="button" class="btn small" id="printMatBtn">Matliste (velg uker)</button>
-        <button type="button" class="btn small" id="printPhoneBtn">Telefonliste</button>
+
+    <nav class="subtabs" role="tablist" aria-label="Administrasjon">
+      <button type="button" role="tab" data-admintab="oversikt" aria-selected="true">Oversikt</button>
+      <button type="button" role="tab" data-admintab="prosjekt" aria-selected="false">Prosjekt</button>
+      <button type="button" role="tab" data-admintab="brukere" aria-selected="false">Brukere og tilganger</button>
+      <button type="button" role="tab" data-admintab="team" aria-selected="false">Team</button>
+      <button type="button" role="tab" data-admintab="privilege" aria-selected="false">Privilege-uker</button>
+      <button type="button" role="tab" data-admintab="fag" aria-selected="false">Fag</button>
+      <button type="button" role="tab" data-admintab="menighet" aria-selected="false">Menighetskode</button>
+    </nav>
+
+    <div class="admintab-panel" data-admintab="oversikt">
+      <div class="peoplecard" id="setupStatusCard" style="margin-bottom:16px;">
+        <h2 style="font-size:16px; margin-bottom:2px;">Oppsett for prosjektet</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Det som må være på plass før oppstart. Grønt er klart, gult mangler.</p>
+        <div id="setupStatusList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
-        <button type="button" class="btn small" id="exportProjectBtn">Eksporter prosjekt (Excel)</button>
-        <span id="exportProjectStatus" style="font-size:12.5px; color:var(--muted);">Alt som er lagret i prosjektet, ett ark per tabell – som sikkerhetskopi eller før prosjektet slettes.</span>
-      </div>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Prosjektinnstillinger</h2>
-      <p class="sub" id="prosjektSubLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
-        <button type="button" class="btn small" id="acgoProjectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
-        <button type="button" class="btn small" id="acgoProjectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
-        <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
-      </div>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Hver ny bruker får sin egen side under CG1 (med samme navn). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Godsmottaker: brukeren ser Godsmottaker (mottak med dokumenter). Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
-      <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
-      <details id="cg1AddUserBox" style="border:1px dashed var(--border-strong); border-radius:10px; padding:10px 12px;">
-        <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">+ Legg til bruker</summary>
-        <form id="cg1AddUserForm" style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
-          <div class="cols2">
-            <div class="field"><label for="cg1NewName">Navn</label><input type="text" id="cg1NewName" maxlength="60" placeholder="F.eks. ACGO eller Ola Nordmann" /></div>
-            <div class="field"><label for="cg1NewEmail">E-post</label><input type="email" id="cg1NewEmail" maxlength="120" required /></div>
-          </div>
-          <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
-          <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewReq" /> Req prepp</label></div>
-          <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
-        </form>
-      </details>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet, og gi hver person innloggingen de bruker (CGO, ACGO, Kontor eller et fag). De som har en innlogging, ser Team-siden og har Flex – ektefellen regnes med. Gjelder dette prosjektet.</p>
-      <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
-      <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
-      <div id="adminTeamSearchResults"></div>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
-        <h2 style="font-size:16px;">Privilege-uker</h2>
-        <span style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button type="button" class="btn small primary" id="adminPwProgramBtn" title="Alle uker i prosjektet – trykk på en uke for å sette ansvarlig">Program</button>
-          <button type="button" class="btn small" id="pwNewBtn">+ Ny uke</button>
-        </span>
-      </div>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Datoer, ansvarlig, familiestudie, sikkerhetstale og bibellesning for hver uke. Team-siden viser dette (Info/Program); morgentilbedelsen fylles ut der.</p>
-      <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
-      <h3 style="font-size:14px; margin:16px 0 6px;">Ansvarspunkter</h3>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Sjekklisten for privilege-uken som vises på Team-siden.</p>
-      <div id="adminDutyList" style="display:flex; flex-direction:column; gap:6px;"></div>
-      <form class="inline-add" id="addDutyForm" style="margin-top:8px;">
-        <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
-        <button class="btn primary" type="submit">Legg til</button>
-      </form>
-    </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
-      <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alt som har med et fag å gjøre, på ett sted. Farge gjelder alle prosjekter - resten (aktiv, datoer, kode) gjelder kun dette prosjektet. Hvem som ser Team-siden og har Flex, settes under Team.</p>
-      <div id="unifiedFagList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
-      <form class="inline-add" id="addFagForm">
-        <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
-        <input type="text" id="newFagLabel" placeholder="Navn på nytt fag" maxlength="40" required style="flex:1; min-width:140px;" />
-        <button class="btn primary" type="submit">+ Nytt fag</button>
-      </form>
-    </div>
       <div class="peoplecard">
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
-        <h2 style="font-size:16px; flex:1; min-width:140px;">Menighet – innloggingskode</h2>
-        <span class="badge group" id="menighetCodeBadge" hidden>Kode satt</span>
-        <button type="button" class="btn small" id="menighetShowCodeBtn" hidden>Vis kode</button>
-        <button type="button" class="btn small" id="menighetCodeBtn">Sett kode</button>
+        <h2 style="font-size:16px; margin-bottom:2px;">Utskrifter og eksport</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lager en PDF du kan skrive ut eller sende. Dato brukes for oppmøtelisten (dagen) og matlisten (uken datoen ligger i).</p>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input type="date" id="printDate" style="border:1px solid var(--border); border-radius:7px; padding:5px 7px; font-size:12.5px; background:var(--surface);" />
+          <button type="button" class="btn small" id="printAttendanceBtn">Oppmøteliste (dag)</button>
+          <button type="button" class="btn small" id="printMatBtn">Matliste (velg uker)</button>
+          <button type="button" class="btn small" id="printPhoneBtn">Telefonliste</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+          <button type="button" class="btn small" id="exportProjectBtn">Eksporter prosjekt (Excel)</button>
+          <span id="exportProjectStatus" style="font-size:12.5px; color:var(--muted);">Alt som er lagret i prosjektet, ett ark per tabell – som sikkerhetskopi eller før prosjektet slettes.</span>
+        </div>
       </div>
-      <p class="sub" style="font-size:12px; color:var(--muted); margin:0;">Menigheten logger inn på innloggingssiden: velg dette prosjektet → «Menighet» → koden. De ser da kun dette prosjektet. Send koden til menighetens kontaktperson.</p>
+    </div>
+
+    <div class="admintab-panel" data-admintab="prosjekt" hidden>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Prosjektinnstillinger</h2>
+        <p class="sub" id="prosjektSubLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn small primary" id="acgoProjectNewBtn">+ Nytt prosjekt</button>
+          <button type="button" class="btn small" id="acgoProjectSetActive" title="Gjør dette til prosjektet siden åpner med som standard">Sett som aktivt</button>
+          <button type="button" class="btn small" id="acgoProjectEditBtn" title="Rediger navn og datoer for dette prosjektet">Rediger</button>
+          <button type="button" class="btn small ghost danger" id="acgoProjectDelete" title="Slett prosjektet som er valgt">Slett prosjekt</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admintab-panel" data-admintab="brukere" hidden>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Brukere og tilganger</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Innlogginger for CG1 (e-post + passord). Hver ny bruker får sin egen side under CG1 (med samme navn). Kryss av hvilke CG1-sider hver bruker ser. Admin ser Administrasjon og kan endre brukere og tilganger. Office: brukeren ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter. Godsmottaker: brukeren ser Godsmottaker (mottak med dokumenter). Fag og menighet logger inn med kode per prosjekt (under Fag og Menighet nedenfor).</p>
+        <div id="cg1UserList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+        <details id="cg1AddUserBox" style="border:1px dashed var(--border-strong); border-radius:10px; padding:10px 12px;">
+          <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">+ Legg til bruker</summary>
+          <form id="cg1AddUserForm" style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+            <div class="cols2">
+              <div class="field"><label for="cg1NewName">Navn</label><input type="text" id="cg1NewName" maxlength="60" placeholder="F.eks. ACGO eller Ola Nordmann" /></div>
+              <div class="field"><label for="cg1NewEmail">E-post</label><input type="email" id="cg1NewEmail" maxlength="120" required /></div>
+            </div>
+            <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
+            <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewReq" /> Req prepp</label></div>
+            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
+          </form>
+        </details>
+      </div>
+    </div>
+
+    <div class="admintab-panel" data-admintab="team" hidden>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet, og gi hver person innloggingen de bruker (CGO, ACGO, Kontor eller et fag). De som har en innlogging, ser Team-siden og har Flex – ektefellen regnes med. Gjelder dette prosjektet.</p>
+        <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
+        <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
+        <div id="adminTeamSearchResults"></div>
+      </div>
+    </div>
+
+    <div class="admintab-panel" data-admintab="privilege" hidden>
+      <div class="peoplecard">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:2px;">
+          <h2 style="font-size:16px;">Privilege-uker</h2>
+          <span style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn small primary" id="adminPwProgramBtn" title="Alle uker i prosjektet – trykk på en uke for å sette ansvarlig">Program</button>
+            <button type="button" class="btn small" id="pwNewBtn">+ Ny uke</button>
+          </span>
+        </div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Datoer, ansvarlig, familiestudie, sikkerhetstale og bibellesning for hver uke. Team-siden viser dette (Info/Program); morgentilbedelsen fylles ut der.</p>
+        <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <h3 style="font-size:14px; margin:16px 0 6px;">Ansvarspunkter</h3>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Sjekklisten for privilege-uken som vises på Team-siden.</p>
+        <div id="adminDutyList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <form class="inline-add" id="addDutyForm" style="margin-top:8px;">
+          <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="admintab-panel" data-admintab="fag" hidden>
+      <div class="peoplecard">
+        <h2 style="font-size:16px; margin-bottom:2px;">Fag</h2>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Alt som har med et fag å gjøre, på ett sted. Farge gjelder alle prosjekter - resten (aktiv, datoer, kode) gjelder kun dette prosjektet. Hvem som ser Team-siden og har Flex, settes under Team.</p>
+        <div id="unifiedFagList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
+        <form class="inline-add" id="addFagForm">
+          <input type="color" id="newFagColor" value="#2f6fa8" style="width:34px; height:34px; padding:0; border:none; background:none; cursor:pointer;" title="Farge" />
+          <input type="text" id="newFagLabel" placeholder="Navn på nytt fag" maxlength="40" required style="flex:1; min-width:140px;" />
+          <button class="btn primary" type="submit">+ Nytt fag</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="admintab-panel" data-admintab="menighet" hidden>
+      <div class="peoplecard">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+          <h2 style="font-size:16px; flex:1; min-width:140px;">Menighet – innloggingskode</h2>
+          <span class="badge group" id="menighetCodeBadge" hidden>Kode satt</span>
+          <button type="button" class="btn small" id="menighetShowCodeBtn" hidden>Vis kode</button>
+          <button type="button" class="btn small" id="menighetCodeBtn">Sett kode</button>
+        </div>
+        <p class="sub" style="font-size:12px; color:var(--muted); margin:0;">Menigheten logger inn på innloggingssiden: velg dette prosjektet → «Menighet» → koden. De ser da kun dette prosjektet. Send koden til menighetens kontaktperson.</p>
+      </div>
     </div>
   </section>
 
@@ -9145,6 +9180,13 @@
     }
     setTeamLogin(c.accountId, personId);
   }
+  document.querySelectorAll("#panel-prosjekt .subtabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var key = this.dataset.admintab;
+      document.querySelectorAll("#panel-prosjekt .subtabs button").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.admintab === key ? "true" : "false"); });
+      document.querySelectorAll("#panel-prosjekt .admintab-panel").forEach(function(p){ p.hidden = p.dataset.admintab !== key; });
+    });
+  });
   byId("adminTeamSearch").addEventListener("input", function(){ view.adminTeamSearch = this.value; renderProsjektTab(); });
   byId("menighetCodeBtn").addEventListener("click", function(){ openCodeDialog("kontakt", "Menighet"); });
   byId("addFagForm").addEventListener("submit", function(ev){
