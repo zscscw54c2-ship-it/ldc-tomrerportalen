@@ -546,10 +546,15 @@
   .req-ask .grow2, .req-q .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
   .req-ask select{ width:auto; flex:1; min-width:160px; }
   .req-answer{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; }
-  .landscape-dlg .ls-phone{ height:110px; display:flex; align-items:center; justify-content:center; }
+  .landscape-dlg .ls-phone{ height:110px; display:flex; align-items:center; justify-content:center; position:relative; }
+  /* Grønn hake når mobilen ligger (i animasjonen, og fast når den faktisk er snudd) */
+  .landscape-dlg .ls-check{ position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; background:var(--good); color:#fff; font-size:21px; font-weight:800; line-height:34px; text-align:center; box-shadow:0 0 0 3px var(--surface); opacity:0; transform:scale(.4); animation:ls-check 2.4s ease-in-out infinite; }
+  .landscape-dlg.is-landscape .ls-check{ animation:none; opacity:1; transform:scale(1); }
+  @keyframes ls-check{ 0%,50%{ opacity:0; transform:scale(.4); } 60%,82%{ opacity:1; transform:scale(1); } 92%,100%{ opacity:0; transform:scale(.4); } }
   .landscape-dlg .ls-device{ width:46px; height:80px; border:4px solid var(--text); border-radius:10px; position:relative; animation:ls-rotate 2.4s ease-in-out infinite; }
   .landscape-dlg .ls-device span{ position:absolute; left:50%; bottom:5px; width:10px; height:3px; margin-left:-5px; border-radius:2px; background:var(--text); }
   .landscape-dlg.is-landscape .ls-device{ animation:none; transform:rotate(-90deg); border-color:var(--good); }
+  .landscape-dlg.is-landscape .ls-device span{ background:var(--good); }
   .landscape-dlg .ls-ok{ color:var(--good); font-weight:700; margin:4px 0 0; }
   @keyframes ls-rotate{ 0%,25%{ transform:rotate(0); } 55%,85%{ transform:rotate(-90deg); } 100%{ transform:rotate(0); } }
   .ls-warn{ color:var(--bad-ink); font-weight:600; }
@@ -2639,7 +2644,7 @@
 
 <dialog id="landscapeDialog" class="landscape-dlg">
   <div class="dlg-body" style="text-align:center;">
-    <div class="ls-phone" aria-hidden="true"><div class="ls-device"><span></span></div></div>
+    <div class="ls-phone" aria-hidden="true"><div class="ls-device"><span></span></div><div class="ls-check">✓</div></div>
     <h3 style="margin:6px 0 4px;">Legg mobilen liggende</h3>
     <p style="font-size:14px; color:var(--muted); margin:0 0 6px;">Dokumentasjonsbilder skal være <strong>liggende</strong> (bredt bilde). Snu mobilen før du tar bildet.</p>
     <p id="landscapeOk" class="ls-ok" hidden>✓ Mobilen ligger – bra!</p>
