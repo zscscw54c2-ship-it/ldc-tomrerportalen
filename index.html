@@ -7420,7 +7420,7 @@
     var noLogin = q.to_person_id && q.status === "open" && !reqHasLogin(q.to_person_id, q.project_id);
     return '<div class="req-q'+(q.status === "closed" ? ' done' : '')+'">' +
       '<div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
-      '<div class="gmeta">Til <strong>'+escapeHtml(who)+'</strong> · spurt av '+escapeHtml(q.asked_by_name || "ukjent")+', '+reqDateTxt(q.created_at)+' '+st+
+      '<div class="gmeta">Til <strong>'+escapeHtml(who)+'</strong> · spurt av '+escapeHtml(reqAskerLabel(q))+', '+reqDateTxt(q.created_at)+' '+st+
         (noLogin ? ' <span style="color:var(--bad-ink);">– har ingen innlogging, får ikke varsel</span>' : '') + '</div>' +
       (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
         (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, true) + '</div>' : '') +
@@ -7430,12 +7430,21 @@
         '<button type="button" class="btn small ghost danger" data-reqdelq="'+q.id+'">Slett</button></div>' +
       '</div>';
   }
-  function reqHtml(){
+  // Hvem spørsmålet er fra: personens navn + innloggingen, f.eks. «Ronja Sakkestad (Kontor 1)».
+  function reqAskerLabel(q){
+    var a = q.asked_by ? state.cg1Access.find(function(x){ return x.user_id === q.asked_by; }) : null;
+    var name = q.asked_by_name || (a && a.display_name) || "CG1";
+    return a && a.display_name && a.display_name.toLowerCase() !== name.toLowerCase() ? name + " (" + a.display_name + ")" : name;
+  }
+  function reqHtml(page){
     if(view.reqMissing) return '<div class="peoplecard req-card"><h2 style="font-size:16px;">Req prepp</h2><p class="empty-note">Databasen mangler Req prepp. Kjør sql/100-req-prepp.sql i Supabase.</p></div>';
     var pid = currentProjectId();
     if(!pid) return "";
     var items = (state.reqItems || []).filter(function(i){ return i.project_id === pid; });
-    var qs = (state.reqQuestions || []).filter(function(q){ return q.project_id === pid; });
+    // Spørsmål er private mellom avsender og mottaker: kortet viser bare spørsmål sideeieren har
+    // sendt eller fått (siden speiler eieren).
+    var rqOwn = msgReqFor(msgBoxOwner(page));
+    var qs = rqOwn.mine.concat(rqOwn.toMe.filter(function(q){ return rqOwn.mine.indexOf(q) === -1; }));
     var nDone = items.filter(function(i){ return i.done; }).length;
     var nOpen = qs.filter(function(q){ return q.status === "open"; }).length;
     var nAns = qs.filter(function(q){ return q.status === "answered"; }).length;
@@ -7474,13 +7483,13 @@
     if(!qs.length) return "";
     // Kompakt linje til man trykker på den (huskes per enhet, som Office/Godsmottaker).
     var from = [];
-    qs.forEach(function(q){ var n = q.asked_by_name || "CG1"; if(from.indexOf(n) === -1) from.push(n); });
+    qs.forEach(function(q){ var n = reqAskerLabel(q); if(from.indexOf(n) === -1) from.push(n); });
     var head = '<div class="office-head">'+cardToggleHtml("reqask", "Forespørsel fra Req prepp ("+qs.length+")", "fra " + escapeHtml(from.join(", ")))+'</div>';
     if(!cardOpen.reqask) return '<div class="peoplecard reqask-card collapsed">' + head + '</div>';
     return '<div class="peoplecard reqask-card">' + head + qs.map(function(q){
       var chosen = reqAnsFiles[q.id] || [];
       return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
-        '<div class="gmeta">Fra '+escapeHtml(q.asked_by_name || "CG1")+', '+reqDateTxt(q.created_at)+'</div>' +
+        '<div class="gmeta">Fra '+escapeHtml(reqAskerLabel(q))+', '+reqDateTxt(q.created_at)+'</div>' +
         reqFileLinks(q.id, false) +
         '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
         '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
@@ -7506,7 +7515,7 @@
   function renderReqShared(){
     document.querySelectorAll(".reqprep-shared").forEach(function(box){
       var page = box.dataset.reqpage;
-      reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep() && cg1PageShows(page, "reqprep")) ? reqHtml() : "");
+      reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep() && cg1PageShows(page, "reqprep")) ? reqHtml(page) : "");
     });
     var ask = byId("reqAskBox");
     if(ask) reqRenderBox(ask, "ask", userOwnMsg() ? msgTopLineHtml() : reqAskHtml());
@@ -7764,7 +7773,7 @@
     var mineActive = rq.mine.filter(function(q){ return q.status !== "closed"; }).sort(function(a, b){ var o = { answered: 0, open: 1 }; return (o[a.status] - o[b.status]) || (a.created_at < b.created_at ? 1 : -1); });
     var mineClosed = rq.mine.filter(function(q){ return q.status === "closed"; });
     var qLine = function(q, withTo){
-      var who = withTo ? 'Til <strong>'+escapeHtml(q.to_person_id ? personName(q.to_person_id) : "–")+'</strong> · ' : 'Fra <strong>'+escapeHtml(q.asked_by_name || "CG1")+'</strong> · ';
+      var who = withTo ? 'Til <strong>'+escapeHtml(q.to_person_id ? personName(q.to_person_id) : "–")+'</strong> · ' : 'Fra <strong>'+escapeHtml(reqAskerLabel(q))+'</strong> · ';
       var st = q.status === "open" ? '<span class="badge" style="background:var(--warn-soft); color:var(--warn-ink);">Venter på svar</span>'
         : q.status === "answered" ? '<span class="badge done">Besvart</span>' : '<span class="badge">Lukket</span>';
       return '<div class="req-q'+(q.status === "closed" ? ' done' : '')+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
@@ -7776,7 +7785,7 @@
     };
     var answerForm = function(q){
       return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
-        '<div class="gmeta">Fra <strong>'+escapeHtml(q.asked_by_name || "CG1")+'</strong> · '+reqDateTxt(q.created_at)+'</div>' + reqFileLinks(q.id, false) +
+        '<div class="gmeta">Fra <strong>'+escapeHtml(reqAskerLabel(q))+'</strong> · '+reqDateTxt(q.created_at)+'</div>' + reqFileLinks(q.id, false) +
         '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
         '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
           '<span class="empty-note" data-reqansfiles style="margin:0;">'+((reqAnsFiles[q.id] || []).length ? (reqAnsFiles[q.id].length + ' fil(er) valgt') : '')+'</span>' +
