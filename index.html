@@ -546,6 +546,16 @@
   .req-ask .grow2, .req-q .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
   .req-ask select{ width:auto; flex:1; min-width:160px; }
   .req-answer{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; }
+  .local-row{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:10px; padding:9px 11px; margin-bottom:8px; }
+  .local-row .lmain{ flex:1; min-width:0; }
+  .local-row .lname{ font-weight:700; font-size:14px; }
+  .local-row .lmeta{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .local-row .lskills{ display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+  .local-row .lallergy{ font-size:12.5px; color:var(--bad-ink); margin-top:3px; }
+  .local-row .lacts{ display:flex; flex-direction:column; gap:4px; }
+  .local-skills{ display:flex; gap:6px 14px; flex-wrap:wrap; font-size:13px; }
+  .local-skills label{ display:flex; align-items:center; gap:5px; cursor:pointer; font-weight:normal; }
+  @media (max-width:640px){ .local-row{ flex-wrap:wrap; } .local-row .lacts{ flex-direction:row; width:100%; justify-content:flex-end; } }
   .req-reply{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; margin-left:14px; }
   .req-reply.asker{ background:var(--accent-soft); margin-left:0; margin-right:14px; }
   .req-compose{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
@@ -1071,6 +1081,7 @@
 
     <div id="kontaktSectionToggle" style="display:flex; gap:4px; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:2px; margin-bottom:14px; width:fit-content;">
       <button type="button" class="btn small" data-kontaktsection="behov">Behov for hjelp</button>
+      <button type="button" class="btn small" data-kontaktsection="lokale">Lokale frivillige</button>
       <button type="button" class="btn small" data-kontaktsection="logiteam">Losji for byggegruppen</button>
       <button type="button" class="btn small" data-kontaktsection="logi">Losji</button>
       <button type="button" class="btn small" data-kontaktsection="mat">Mat</button>
@@ -1087,6 +1098,18 @@
           </div>
         </div>
         <div class="gantt-wrap behov-grid" id="kontaktBehovScroll"><div class="gantt" id="kontaktBehovGrid"></div></div>
+      </div>
+    </div>
+
+    <div id="kontaktLokaleWrap" hidden>
+      <div class="peoplecard">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
+          <h2 style="font-size:16px; margin:0;">Lokale frivillige</h2>
+          <button type="button" class="btn small primary" id="localVolAddBtn">+ Legg til lokal frivillig</button>
+        </div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin:0 0 10px;">Menighetens egne frivillige som vil hjelpe til på prosjektet – i stedet for skjema eller Excel. Når dere fyller inn «Behov for hjelp», får dere forslag fra denne listen. De som settes på en dag, kommer automatisk med i frivillig-listen og matlisten.</p>
+        <input type="search" id="localVolSearch" placeholder="Søk etter navn eller fag …" style="width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; padding:7px 10px; background:var(--surface); margin-bottom:10px;" />
+        <div id="localVolList"></div>
       </div>
     </div>
 
@@ -2607,6 +2630,29 @@
   </form>
 </dialog>
 
+<dialog id="localVolDialog">
+  <form class="dlg-body" id="localVolForm" method="dialog">
+    <h3 id="localVolTitle">Ny lokal frivillig</h3>
+    <input type="hidden" id="localVolId" />
+    <div class="cols2">
+      <div class="field"><label for="localVolName">Navn</label><input type="text" id="localVolName" maxlength="60" required autocomplete="off" /></div>
+      <div class="field"><label for="localVolPhone">Telefon</label><input type="tel" id="localVolPhone" maxlength="30" autocomplete="off" /></div>
+      <div class="field"><label for="localVolCongregation">Menighet</label><input type="text" id="localVolCongregation" maxlength="80" autocomplete="off" /></div>
+      <div class="field"><label for="localVolAddress">Adresse</label><input type="text" id="localVolAddress" maxlength="160" autocomplete="off" /></div>
+    </div>
+    <div class="field"><label>Kan hjelpe med</label><div id="localVolSkills" class="local-skills"></div></div>
+    <div class="field">
+      <label class="checkrow" style="margin:0;"><input type="checkbox" id="localVolAllergy" /> Allergi / diett (mat)</label>
+      <input type="text" id="localVolAllergyText" maxlength="300" placeholder="F.eks. nøtter, glutenfri, vegetar" style="margin-top:6px;" />
+    </div>
+    <div class="field"><label for="localVolNote">Notat</label><textarea id="localVolNote" rows="2" maxlength="500" placeholder="F.eks. kan bare helger, har egen bil"></textarea></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn ghost" id="localVolCancel">Avbryt</button>
+      <button type="submit" class="btn primary" id="localVolSave">Lagre</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="behovFillDialog">
   <form class="dlg-body" id="behovFillForm" method="dialog">
     <h3>Hvem kan hjelpe denne dagen?</h3>
@@ -3580,6 +3626,7 @@
   guardDialog("deliveryEditDialog", { cancelId: "deliveryEditCancel", isNew: function(){ return false; } });
   guardDialog("logiDialog", { cancelId: "logiDialogClose", saveId: "logiSaveBtn", isNew: function(){ return false; } });
   guardDialog("personInfoEditDialog", { cancelId: "personInfoEditCancel", isNew: function(){ return false; } });
+  guardDialog("localVolDialog", { cancelId: "localVolCancel", what: "den lokale frivillige", isNew: function(){ return !byId("localVolId").value; } });
   guardDialog("behovFillDialog", { cancelId: "behovFillCancel", what: "den nye lokale frivillige", isNew: function(){ return byId("behovFillSelect").value === "__new"; } });
   guardDialog("codeDialog", { cancelId: "codeDlgCancel", what: "koden", isNew: function(){ return true; } });
   guardDialog("createBoxDialog", { cancelId: "createBoxCancel", what: "den nye tavlen", isNew: function(){ return true; } });
@@ -8213,7 +8260,7 @@
 
   // ---------- supabase-backed data layer ----------
   function rowToPerson(row){
-    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at, cardEditedAt: row.card_edited_at || null, info: row.info || "" };
+    return { id: row.id, name: row.name, group: row.group || "", phone: row.phone || "", address: row.address || "", congregation: row.congregation || "", tag: row.tag || "", onTeam: !!row.on_team, projectId: row.project_id, logiGroupId: row.logi_group_id || null, spousePersonId: row.spouse_person_id || null, createdAt: row.created_at, cardEditedAt: row.card_edited_at || null, info: row.info || "", localSkills: row.local_skills || [], localNote: row.local_note || "" };
   }
   function rowToElement(row){
     return {
@@ -11298,6 +11345,99 @@
   }
   byId("kontaktLogiFullViewBtn").addEventListener("click", kontaktToggleFullView);
   byId("kontaktLogiSearchInput").addEventListener("input", function(){ view.logiSearch = this.value; renderKontaktView(); });
+  // ---------- Lokale frivillige (sql/107): menighetens egen liste over lokale frivillige ----------
+  // Losjikoordinatoren legger inn de lokale frivillige her i stedet for skjema/Excel. De merkes
+  // «Lokal» (ordner losji selv) og foreslås når «Behov for hjelp» fylles ut. Lagres via
+  // save_local_volunteer / delete_local_volunteer, som bare kan endre lokale frivillige i prosjektet.
+  function localSkillOptions(){ return activeProjectFags().filter(function(f){ return f !== "team"; }).concat(["annet"]); }
+  function localSkillLabel(k){ return k === "annet" ? "Annet" : (FAG_LABELS[k] || k); }
+  function localVolDays(pid){
+    var days = {};
+    state.attendance.forEach(function(a){ if(a.project_id === currentProjectId() && a.person_id === pid) days[a.day] = true; });
+    return Object.keys(days).length;
+  }
+  function renderLocalVolunteers(){
+    var q = (byId("localVolSearch").value || "").trim().toLowerCase();
+    var all = peopleForCurrentProject().filter(isLocalPerson).sort(function(a, b){ return a.name.localeCompare(b.name, "no"); });
+    var list = all.filter(function(p){
+      if(!q) return true;
+      return [p.name, p.phone, p.congregation, p.localNote].concat((p.localSkills || []).map(localSkillLabel)).join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+    byId("localVolList").innerHTML = (all.length ? '<p class="sub" style="font-size:12px; color:var(--muted); margin:0 0 6px;">'+all.length+' lokale frivillige</p>' : '') +
+      (list.length ? list.map(function(p){
+        var info = logiInfoForPerson(p.id), days = localVolDays(p.id);
+        var allergy = info && (info.allergiMat || info.allergiMatTekst) ? (info.allergiMatTekst || "Allergi") : "";
+        return '<div class="local-row"><div class="lmain">' +
+          '<div class="lname">'+escapeHtml(p.name)+(days ? ' <span class="badge group">'+days+' dag'+(days === 1 ? '' : 'er')+'</span>' : '')+'</div>' +
+          '<div class="lmeta">'+[p.phone, p.congregation].filter(Boolean).map(escapeHtml).join(" · ")+'</div>' +
+          ((p.localSkills || []).length ? '<div class="lskills">'+p.localSkills.map(function(k){ return '<span class="badge">'+escapeHtml(localSkillLabel(k))+'</span>'; }).join(" ")+'</div>' : '') +
+          (allergy ? '<div class="lallergy">🍽️ '+escapeHtml(allergy)+'</div>' : '') +
+          (p.localNote ? '<div class="lmeta" style="white-space:pre-wrap;">'+escapeHtml(p.localNote)+'</div>' : '') +
+          '</div><div class="lacts"><button type="button" class="btn small ghost" data-localvoledit="'+p.id+'">Endre</button><button type="button" class="btn small ghost danger" data-localvoldel="'+p.id+'">Slett</button></div></div>';
+      }).join("") : '<p class="empty-note" style="margin:6px 0;">'+(all.length ? 'Ingen treff.' : 'Ingen lokale frivillige lagt inn ennå. Trykk «+ Legg til lokal frivillig».')+'</p>');
+  }
+  var localVolDialog = byId("localVolDialog");
+  function openLocalVolDialog(personId){
+    var p = personId ? state.people.find(function(x){ return x.id === personId; }) : null;
+    var info = p ? logiInfoForPerson(p.id) : null;
+    byId("localVolTitle").textContent = p ? "Endre lokal frivillig" : "Ny lokal frivillig";
+    byId("localVolId").value = p ? p.id : "";
+    byId("localVolName").value = p ? p.name : "";
+    byId("localVolPhone").value = p ? (p.phone || "") : "";
+    byId("localVolCongregation").value = p ? (p.congregation || "") : "";
+    byId("localVolAddress").value = p ? (p.address || "") : "";
+    byId("localVolNote").value = p ? (p.localNote || "") : "";
+    byId("localVolAllergy").checked = !!(info && (info.allergiMat || info.allergiMatTekst));
+    byId("localVolAllergyText").value = info ? (info.allergiMatTekst || "") : "";
+    var have = p ? (p.localSkills || []) : [];
+    var opts = localSkillOptions();
+    have.forEach(function(k){ if(opts.indexOf(k) === -1) opts.push(k); });
+    byId("localVolSkills").innerHTML = opts.map(function(k){ return '<label><input type="checkbox" value="'+escapeHtml(k)+'"'+(have.indexOf(k) !== -1 ? ' checked' : '')+' /> '+escapeHtml(localSkillLabel(k))+'</label>'; }).join("");
+    localVolDialog.showModal();
+    byId("localVolName").focus();
+  }
+  byId("localVolAddBtn").addEventListener("click", function(){ openLocalVolDialog(null); });
+  byId("localVolCancel").addEventListener("click", function(){ localVolDialog.close(); });
+  byId("localVolSearch").addEventListener("input", renderLocalVolunteers);
+  byId("localVolAllergyText").addEventListener("input", function(){ if(this.value.trim()) byId("localVolAllergy").checked = true; });
+  byId("localVolForm").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = byId("localVolName").value.trim();
+    if(!name){ showError("Skriv inn navn."); return; }
+    var skills = Array.prototype.map.call(byId("localVolSkills").querySelectorAll("input:checked"), function(x){ return x.value; });
+    var id = byId("localVolId").value || null;
+    var btn = byId("localVolSave"); btn.disabled = true;
+    sb.rpc("save_local_volunteer", { p_project_id: currentProjectId(), p_person_id: id, p_name: name,
+      p_phone: byId("localVolPhone").value.trim() || null, p_congregation: byId("localVolCongregation").value.trim() || null,
+      p_address: byId("localVolAddress").value.trim() || null, p_skills: skills, p_note: byId("localVolNote").value.trim() || null,
+      p_allergy: byId("localVolAllergy").checked, p_allergy_text: byId("localVolAllergyText").value.trim() || null }).then(function(res){
+      btn.disabled = false;
+      if(res.error){
+        showError(/save_local_volunteer/.test(res.error.message || "") && /not find|does not exist|Could not/.test(res.error.message || "")
+          ? "Databasen mangler lokale frivillige. Kjør sql/107-lokale-frivillige.sql i Supabase." : "Kunne ikke lagre: " + res.error.message);
+        return;
+      }
+      localVolDialog.close();
+      showInfo(id ? "Endringene er lagret ✓" : name + " er lagt til ✓");
+      refetchPeople(); refetchLogiInfo();
+    });
+  });
+  byId("localVolList").addEventListener("click", function(ev){
+    var b;
+    if((b = ev.target.closest("[data-localvoledit]"))){ openLocalVolDialog(b.dataset.localvoledit); return; }
+    if((b = ev.target.closest("[data-localvoldel]"))){
+      var p = state.people.find(function(x){ return x.id === b.dataset.localvoldel; });
+      if(!p) return;
+      var days = localVolDays(p.id);
+      askConfirm(p.name + " slettes fra listen" + (days ? ", og fjernes også fra " + days + " dag" + (days === 1 ? "" : "er") + " i «Behov for hjelp» og frivillig-listen." : "."), function(){
+        sb.rpc("delete_local_volunteer", { p_project_id: currentProjectId(), p_person_id: p.id }).then(function(res){
+          if(res.error){ showError("Kunne ikke slette: " + res.error.message); return; }
+          showInfo(p.name + " er slettet ✓");
+          refetchPeople(); refetchAttendance(); refetchBehovDays(); refetchElements(); refetchLogiInfo();
+        });
+      }, { title: "Slette lokal frivillig?" });
+    }
+  });
   function renderKontaktView(){
     if(!isKontaktViewActive()) return;
     var preview = isByggeleder();
@@ -11311,6 +11451,7 @@
       byId("kontaktPicker").hidden = preview || isSharedFagAccount();
       byId("kontaktSectionToggle").hidden = true;
       byId("kontaktBehovWrap").hidden = true;
+      byId("kontaktLokaleWrap").hidden = true;
       byId("kontaktLogiWrap").hidden = true;
       byId("kontaktMatWrap").hidden = true;
       byId("kontaktProjectTag").textContent = "";
@@ -11324,12 +11465,14 @@
     document.querySelectorAll("#kontaktSectionToggle [data-kontaktsection]").forEach(function(b){
       b.classList.toggle("primary", b.dataset.kontaktsection === view.kontaktSection);
     });
-    var section = ["logi", "logiteam", "mat"].indexOf(view.kontaktSection) !== -1 ? view.kontaktSection : "behov";
+    var section = ["logi", "logiteam", "mat", "lokale"].indexOf(view.kontaktSection) !== -1 ? view.kontaktSection : "behov";
     var kontaktLogiTeam = section === "logiteam";
     if(kontaktLogiTeam) section = "logi";
     byId("kontaktBehovWrap").hidden = section !== "behov";
     byId("kontaktLogiWrap").hidden = section !== "logi";
     byId("kontaktMatWrap").hidden = section !== "mat";
+    byId("kontaktLokaleWrap").hidden = section !== "lokale";
+    if(section === "lokale"){ renderLocalVolunteers(); return; }
     if(section === "mat"){
       renderKontaktMat(cur);
       return;
@@ -11385,10 +11528,23 @@
     var slot = state.behovSlots.find(function(s){ return s.id === d.slot_id; });
     behovFillDialog.dataset.targetId = dayRowId;
     byId("behovFillMeta").textContent = (slot ? (slot.fag ? FAG_LABELS[slot.fag] : slot.label) : "") + " · " + fmtRange(d.day, d.day);
-    var locals = peopleForCurrentProject().filter(isLocalPerson).sort(function(a,b){ return a.name.localeCompare(b.name, "no"); });
+    // Forslag fra menighetens egen liste (fanen «Lokale frivillige»): de som kan hjelpe med det
+    // behovet gjelder står øverst, de som allerede er satt opp denne dagen nederst.
+    var need = slot && slot.fag ? slot.fag : "annet";
+    var busyIds = {};
+    state.attendance.forEach(function(a){ if(a.project_id === currentProjectId() && a.day === d.day) busyIds[a.person_id] = true; });
+    var locals = peopleForCurrentProject().filter(isLocalPerson).map(function(p){
+      var busy = !!busyIds[p.id] && p.id !== d.personId;
+      return { p: p, match: (p.localSkills || []).indexOf(need) !== -1, busy: busy };
+    }).sort(function(a, b){ return (a.busy - b.busy) || (b.match - a.match) || a.p.name.localeCompare(b.p.name, "no"); });
     var cur = d.personId ? state.people.find(function(p){ return p.id === d.personId; }) : null;
+    var optOf = function(x){
+      var skills = (x.p.localSkills || []).map(localSkillLabel).join(", ");
+      return '<option value="'+x.p.id+'"'+(x.p.id===d.personId?' selected':'')+'>'+escapeHtml(x.p.name)+(skills ? ' ('+escapeHtml(skills)+')' : '')+(x.busy ? ' – allerede satt opp denne dagen' : '')+'</option>';
+    };
+    var matches = locals.filter(function(x){ return x.match && !x.busy; }), rest = locals.filter(function(x){ return !(x.match && !x.busy); });
     byId("behovFillSelect").innerHTML = '<option value="">— Ingen (tom dag) —</option>' +
-      locals.map(function(p){ return '<option value="'+p.id+'"'+(p.id===d.personId?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
+      (matches.length ? '<optgroup label="Passer for behovet">' + matches.map(optOf).join("") + '</optgroup>' + (rest.length ? '<optgroup label="Andre lokale frivillige">' + rest.map(optOf).join("") + '</optgroup>' : '') : rest.map(optOf).join("")) +
       (cur && !isLocalPerson(cur) ? '<option value="'+cur.id+'" selected>'+escapeHtml(cur.name)+' (ikke merket lokal)</option>' : '') +
       '<option value="__new">+ Ny lokal frivillig …</option>';
     if(!d.personId && !locals.length) byId("behovFillSelect").value = "__new";
