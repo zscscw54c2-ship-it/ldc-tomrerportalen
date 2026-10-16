@@ -546,6 +546,11 @@
   .req-ask .grow2, .req-q .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
   .req-ask select{ width:auto; flex:1; min-width:160px; }
   .req-answer{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; }
+  .req-reply{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; margin-left:14px; }
+  .req-reply.asker{ background:var(--accent-soft); margin-left:0; margin-right:14px; }
+  .req-compose{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+  .req-compose textarea{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; font:inherit; font-size:13px; background:var(--surface); width:100%; box-sizing:border-box; resize:vertical; }
+  .req-compose .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
   .req-qacts{ display:flex; gap:6px; justify-content:flex-end; }
   .req-q .gfiles{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
   .req-q .gfile{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-size:12px; background:var(--surface); text-decoration:none; color:var(--text); }
@@ -2733,7 +2738,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { msgThreads: [], msgParts: [], msgMessages: [], msgFiles: [], reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { reqReplies: [], msgThreads: [], msgParts: [], msgMessages: [], msgFiles: [], reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -7444,15 +7449,46 @@
     Promise.all([
       has ? sb.from("req_prep_items").select("*").order("sort_order").order("created_at") : Promise.resolve({ data: [] }),
       sb.from("req_prep_questions").select("*").order("created_at", { ascending: false }),
-      sb.from("req_prep_files").select("*").order("created_at")
+      sb.from("req_prep_files").select("*").order("created_at"),
+      sb.from("req_prep_replies").select("*").order("created_at")
     ]).then(function(r){
       if(r[0].error || r[1].error || r[2].error){ view.reqMissing = has; state.reqItems = []; state.reqQuestions = []; state.reqFiles = []; scheduleRender(); return; }
       view.reqMissing = false;
       state.reqItems = r[0].data || []; state.reqQuestions = r[1].data || []; state.reqFiles = r[2].data || [];
+      state.reqReplies = r[3].error ? [] : (r[3].data || []); // sql/106 (tråd)
       scheduleRender();
     });
   }
-  function reqFilesFor(qid){ return (state.reqFiles || []).filter(function(f){ return f.question_id === qid; }); }
+  // Filer til selve spørsmålet/første svar (ikke de som hører til et svar i tråden).
+  function reqFilesFor(qid){ return (state.reqFiles || []).filter(function(f){ return f.question_id === qid && !f.reply_id; }); }
+  // ---- Tråd under spørsmålet (sql/106): avsender og mottaker kan fortsette å skrive ----
+  function reqRepliesFor(qid){ return (state.reqReplies || []).filter(function(r){ return r.question_id === qid; }); }
+  function reqIsToMe(q){
+    return !!state.me && state.teamLogins.some(function(r){ return r.accountId === state.me.id && r.projectId === q.project_id && r.personId === q.to_person_id; });
+  }
+  function reqCanPost(q){ return !!state.me && q.status !== "closed" && (q.asked_by === state.me.id || reqIsToMe(q)); }
+  function reqThreadHtml(q, canDeleteMain){
+    var main = q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name && !reqRepliesFor(q.id).length ? ' fra '+escapeHtml(q.answered_by_name) : '')+'</div>' +
+      (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, canDeleteMain) + '</div>' : '';
+    var reps = reqRepliesFor(q.id).map(function(r){
+      var fromAsker = r.sender === q.asked_by;
+      var files = (state.reqFiles || []).filter(function(f){ return f.reply_id === r.id; });
+      return '<div class="req-reply'+(fromAsker ? ' asker' : '')+'"><div class="gmeta" style="margin:0 0 2px;">'+escapeHtml(r.sender_name || (fromAsker ? reqAskerLabel(q) : "Svar"))+' · '+msgTime(r.created_at)+'</div>' +
+        (r.body ? '<div style="white-space:pre-wrap;">'+escapeHtml(r.body)+'</div>' : '') +
+        (files.length ? '<div class="gfiles">' + files.map(function(f){ var img = (f.content_type || "").indexOf("image/") === 0; return '<a class="gfile" data-fileurl href="'+escapeHtml(fileUrl("reqprep", f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Fil")+'</a>'; }).join("") + '</div>' : '') + '</div>';
+    }).join("");
+    return main + reps;
+  }
+  // Skrivefelt under tråden (samme skjema som første svar: data-reqanswer).
+  function reqComposerHtml(q){
+    var chosen = reqAnsFiles[q.id] || [];
+    var first = !q.answer && !reqRepliesFor(q.id).length && reqIsToMe(q) && q.asked_by !== (state.me && state.me.id);
+    return '<form class="req-compose" data-reqanswer="'+q.id+'">' +
+      '<textarea name="answer" maxlength="4000" rows="2" placeholder="'+(first ? 'Skriv svaret …' : 'Skriv i samtalen …')+'"></textarea>' +
+      '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
+        '<span class="empty-note" data-reqansfiles style="margin:0;">'+(chosen.length ? chosen.length + ' fil(er) valgt: ' + escapeHtml(chosen.map(function(f){ return f.name; }).join(", ")) : '')+'</span>' +
+        '<button type="submit" class="btn small primary" style="margin-left:auto;">'+(first ? 'Send svar' : 'Send')+'</button></div></form>';
+  }
   function reqHasLogin(personId, pid){ return state.teamLogins.some(function(r){ return r.projectId === pid && r.personId === personId; }); }
   // Spørsmål til personen(e) den innloggede er koblet til, i valgt prosjekt.
   function myOpenReqQuestions(){
@@ -7482,8 +7518,8 @@
       '<div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
       '<div class="gmeta">Til <strong>'+escapeHtml(who)+'</strong> · spurt av '+escapeHtml(reqAskerLabel(q))+', '+reqDateTxt(q.created_at)+' '+st+
         (noLogin ? ' <span style="color:var(--bad-ink);">– har ingen innlogging, får ikke varsel</span>' : '') + '</div>' +
-      (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
-        (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, !!(state.me && q.asked_by === state.me.id)) + '</div>' : '') +
+      reqThreadHtml(q, !!(state.me && q.asked_by === state.me.id)) +
+      (reqCanPost(q) ? reqComposerHtml(q) : '') +
       // Bare den som sendte spørsmålet kan lukke, åpne igjen og slette (låst i databasen, sql/104).
       (state.me && q.asked_by === state.me.id ? '<div class="req-qacts">' +
         (q.status === "answered" ? '<button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button>' : '') +
@@ -7560,14 +7596,9 @@
     var head = '<div class="office-head">'+cardToggleHtml("reqask", "Forespørsel fra Req prepp ("+qs.length+")", "fra " + escapeHtml(from.join(", ")))+'</div>';
     if(!cardOpen.reqask) return '<div class="peoplecard reqask-card collapsed">' + head + other + '</div>';
     return '<div class="peoplecard reqask-card">' + head + other + qs.map(function(q){
-      var chosen = reqAnsFiles[q.id] || [];
-      return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
+      return '<div class="req-q"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
         '<div class="gmeta">Fra '+escapeHtml(reqAskerLabel(q))+', '+reqDateTxt(q.created_at)+'</div>' +
-        reqFileLinks(q.id, false) +
-        '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
-        '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
-          '<span class="empty-note" data-reqansfiles style="margin:0;">'+(chosen.length ? chosen.length + ' fil(er) valgt: ' + escapeHtml(chosen.map(function(f){ return f.name; }).join(", ")) : '')+'</span>' +
-          '<button type="submit" class="btn small primary" style="margin-left:auto;">Send svar</button></div></form>';
+        reqThreadHtml(q, false) + reqComposerHtml(q) + '</div>';
     }).join("") + '</div>';
   }
   var reqRenderedSig = {};
@@ -7602,7 +7633,7 @@
       return res;
     });
   }
-  function uploadReqFiles(qid, pid, files){
+  function uploadReqFiles(qid, pid, files, replyId){
     if(!pid || !files || !files.length) return Promise.resolve();
     showInfo("Laster opp " + files.length + " fil(er) …");
     return Promise.all(Array.prototype.map.call(files, function(file){
@@ -7612,7 +7643,9 @@
         var path = pid + "/" + qid + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
         return sb.storage.from("reqprep").upload(path, f, { contentType: f.type || "application/octet-stream" }).then(function(res){
           if(res.error){ showError("Kunne ikke laste opp «" + f.name + "»: " + res.error.message); return null; }
-          return sb.from("req_prep_files").insert({ question_id: qid, project_id: pid, file_path: path, file_name: (f.name || "fil").slice(0, 120), content_type: f.type || null });
+          var row = { question_id: qid, project_id: pid, file_path: path, file_name: (f.name || "fil").slice(0, 120), content_type: f.type || null };
+          if(replyId) row.reply_id = replyId;
+          return sb.from("req_prep_files").insert(row);
         });
       });
     })).then(function(){ refetchReq(); });
@@ -7714,13 +7747,21 @@
       if(!answer && !files.length){ showError("Skriv et svar eller legg ved et bilde/en fil."); return; }
       if(document.activeElement && f.contains(document.activeElement)) document.activeElement.blur();
       var btn = f.querySelector("button[type=submit]"); if(btn) btn.disabled = true;
-      // Filene lastes opp først, så svaret og vedleggene dukker opp samtidig hos den som spurte.
-      uploadReqFiles(qid, pid, files).then(function(){
-        return sb.from("req_prep_questions").update({ answer: answer || "(se vedlegg)" }).eq("id", qid);
-      }).then(function(res){
+      var q0 = (state.reqQuestions || []).find(function(x){ return x.id === qid; }) || {};
+      var asReply = !!q0.answer || reqRepliesFor(qid).length || (state.me && q0.asked_by === state.me.id);
+      var qpid = q0.project_id || pid;
+      // Første svar lagres på spørsmålet; etter det blir alt svar i tråden (sql/106).
+      // Filene lastes opp først, så teksten og vedleggene dukker opp samtidig.
+      (asReply
+        ? sb.from("req_prep_replies").insert({ question_id: qid, project_id: qpid, body: answer || null }).select().single().then(function(res){
+            if(res.error) return res;
+            return uploadReqFiles(qid, qpid, files, res.data.id).then(function(){ return res; });
+          })
+        : uploadReqFiles(qid, qpid, files).then(function(){ return sb.from("req_prep_questions").update({ answer: answer || "(se vedlegg)" }).eq("id", qid); })
+      ).then(function(res){
         if(res && res.error){ showError("Kunne ikke sende svaret: " + res.error.message); if(btn) btn.disabled = false; return; }
         delete reqAnsFiles[qid];
-        showInfo("Svaret er sendt ✓");
+        showInfo(asReply ? "Sendt ✓" : "Svaret er sendt ✓");
         refetchReq(); reqRerender();
       });
     }
@@ -7859,22 +7900,15 @@
         : q.status === "answered" ? '<span class="badge done">Besvart</span>' : '<span class="badge">Lukket</span>';
       return '<div class="req-q'+(q.status === "closed" ? ' done' : '')+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
         '<div class="gmeta">'+who+reqDateTxt(q.created_at)+' '+st+'</div>' +
-        (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
-          (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, false) + '</div>' : '') +
+        reqThreadHtml(q, false) +
+        (canWrite && reqCanPost(q) ? reqComposerHtml(q) : '') +
         (withTo && canWrite && state.me && q.asked_by === state.me.id ? '<div class="req-qacts">' +
           (q.status === "answered" ? '<button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button>' : '') +
           (q.status === "closed" ? '<button type="button" class="btn small ghost" data-reqreopen="'+q.id+'">Åpne igjen</button>' : '') +
           '<button type="button" class="btn small ghost danger" data-reqdelq="'+q.id+'">Slett</button></div>' : '') +
         '</div>';
     };
-    var answerForm = function(q){
-      return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
-        '<div class="gmeta">Fra <strong>'+escapeHtml(reqAskerLabel(q))+'</strong> · '+reqDateTxt(q.created_at)+'</div>' + reqFileLinks(q.id, false) +
-        '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
-        '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
-          '<span class="empty-note" data-reqansfiles style="margin:0;">'+((reqAnsFiles[q.id] || []).length ? (reqAnsFiles[q.id].length + ' fil(er) valgt') : '')+'</span>' +
-          '<button type="submit" class="btn small primary" style="margin-left:auto;">Send svar</button></div></form>';
-    };
+    var answerForm = function(q){ return qLine(q, false); };
     return '<h3 class="msg-h">Til meg'+(toOpen.length ? ' <span class="msg-badge">'+toOpen.length+'</span>' : '')+'</h3>' +
       (toOpen.length ? toOpen.map(function(q){ return canWrite ? answerForm(q) : qLine(q, false); }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen spørsmål venter på svar.</p>') +
       (toDone.length ? '<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Besvarte ('+toDone.length+')</summary>'+toDone.map(function(q){ return qLine(q, false); }).join("")+'</details>' : '') +
@@ -13618,6 +13652,7 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_items" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_questions" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_files" }, refetchReq)
+      .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_replies" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "msg_threads" }, refetchMsg)
       .on("postgres_changes", { event: "*", schema: "public", table: "msg_participants" }, refetchMsg)
       .on("postgres_changes", { event: "*", schema: "public", table: "msg_messages" }, refetchMsg)
