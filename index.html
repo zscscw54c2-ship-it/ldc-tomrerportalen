@@ -1362,8 +1362,8 @@
       <h2 style="font-size:16px; margin-bottom:4px;">Ny rom-oppgave</h2>
       <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Todo-lister per rom, f.eks. A-sal, Foajé osv.</p>
       <form class="inline-add" id="addRoomTodoForm">
-        <input type="text" id="newRoomName" placeholder="Rom (f.eks. A-sal)" required maxlength="60" list="roomNamesList" style="max-width:180px;" />
-        <datalist id="roomNamesList"></datalist>
+        <select id="newRoomSelect" aria-label="Rom" style="max-width:200px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface); font:inherit;"></select>
+        <input type="text" id="newRoomName" placeholder="Navn på nytt rom (f.eks. A-sal)" maxlength="60" style="max-width:220px; display:none;" />
         <input type="text" id="newRoomTodoText" placeholder="Oppgave" required maxlength="160" />
         <button class="btn primary" type="submit">Legg til</button>
       </form>
@@ -4854,7 +4854,13 @@
     var box = byId("roomTodoGroups");
     var list = roomTodosForCurrentProject();
     var rooms = Array.from(new Set(list.map(function(t){ return t.room; }))).sort(function(a,b){ return a.localeCompare(b,"no"); });
-    byId("roomNamesList").innerHTML = rooms.map(function(r){ return '<option value="'+escapeHtml(r)+'"></option>'; }).join("");
+    // Rom-velger: vanlig nedtrekksliste (datalist virker dårlig på mobil) med rommene som finnes,
+    // og «+ Nytt rom …» som viser et felt for navnet.
+    // Bare det brukeren selv har valgt huskes (ikke «Nytt rom» som velges automatisk når listen er tom).
+    var sel = byId("newRoomSelect"), prev = view.roomSelected || "";
+    sel.innerHTML = '<option value="">Velg rom …</option>' + rooms.map(function(r){ return '<option value="'+escapeHtml(r)+'">'+escapeHtml(r)+'</option>'; }).join("") + '<option value="__new">+ Nytt rom …</option>';
+    sel.value = (prev === "__new" || rooms.indexOf(prev) !== -1) ? prev : (rooms.length ? "" : "__new");
+    byId("newRoomName").style.display = sel.value === "__new" ? "" : "none";
     if(list.length === 0){ box.innerHTML = '<p class="empty-note">Ingen rom-oppgaver lagt til ennå.</p>'; return; }
     box.innerHTML = rooms.map(function(room){
       var items = list.filter(function(t){ return t.room === room; });
@@ -4895,12 +4901,20 @@
       span.addEventListener("click", function(){ view.roomTodoEditing[this.dataset.roomtodotaken] = true; renderRoomTab(); });
     });
   }
+  byId("newRoomSelect").addEventListener("change", function(){
+    view.roomSelected = this.value;
+    byId("newRoomName").style.display = this.value === "__new" ? "" : "none";
+    if(this.value === "__new") byId("newRoomName").focus();
+  });
   byId("addRoomTodoForm").addEventListener("submit", function(ev){
     ev.preventDefault();
-    var roomInput = byId("newRoomName"), textInput = byId("newRoomTodoText");
-    var room = roomInput.value.trim(), text = textInput.value.trim();
-    if(!room || !text) return;
+    var sel = byId("newRoomSelect"), roomInput = byId("newRoomName"), textInput = byId("newRoomTodoText");
+    var room = sel.value === "__new" ? roomInput.value.trim() : sel.value, text = textInput.value.trim();
+    if(!room){ showError(sel.value === "__new" ? "Skriv navnet på det nye rommet." : "Velg et rom."); (sel.value === "__new" ? roomInput : sel).focus(); return; }
+    if(!text) return;
     addRoomTodo(room, text);
+    // Neste oppgave havner i samme rom (også et nytt rom, som nå finnes i listen).
+    view.roomSelected = room; roomInput.value = "";
     textInput.value = "";
   });
 
