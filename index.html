@@ -7592,7 +7592,7 @@
     var reps = reqRepliesFor(q.id).map(function(r){
       var fromAsker = r.sender === q.asked_by;
       var files = (state.reqFiles || []).filter(function(f){ return f.reply_id === r.id; });
-      return '<div class="req-reply'+(fromAsker ? ' asker' : '')+'"><div class="gmeta" style="margin:0 0 2px;">'+escapeHtml(r.sender_name || (fromAsker ? reqAskerLabel(q) : "Svar"))+' · '+msgTime(r.created_at)+'</div>' +
+      return '<div class="req-reply'+(fromAsker ? ' asker' : '')+'"><div class="gmeta" style="margin:0 0 2px;">'+escapeHtml(linkedPersonName(r.sender, q.project_id) || r.sender_name || (fromAsker ? reqAskerLabel(q) : "Svar"))+' · '+msgTime(r.created_at)+'</div>' +
         (r.body ? '<div style="white-space:pre-wrap;">'+escapeHtml(r.body)+'</div>' : '') +
         (files.length ? '<div class="gfiles">' + files.map(function(f){ var img = (f.content_type || "").indexOf("image/") === 0; return '<a class="gfile" data-fileurl href="'+escapeHtml(fileUrl("reqprep", f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Fil")+'</a>'; }).join("") + '</div>' : '') + '</div>';
     }).join("");
@@ -7647,9 +7647,17 @@
       '</div>';
   }
   // Hvem spørsmålet er fra: personens navn + innloggingen, f.eks. «Ronja Sakkestad (Kontor 1)».
+  // Navnet på personen innloggingen er koblet til under Team i prosjektet (slås opp nå, så navnet
+  // blir riktig også hvis koblingen ble gjort etter at spørsmålet/svaret ble sendt).
+  function linkedPersonName(userId, pid){
+    if(!userId) return "";
+    var tl = state.teamLogins.find(function(r){ return r.accountId === userId && r.projectId === pid; });
+    var p = tl ? state.people.find(function(x){ return x.id === tl.personId; }) : null;
+    return p && p.name ? p.name : "";
+  }
   function reqAskerLabel(q){
     var a = q.asked_by ? state.cg1Access.find(function(x){ return x.user_id === q.asked_by; }) : null;
-    var name = q.asked_by_name || (a && a.display_name) || "CG1";
+    var name = linkedPersonName(q.asked_by, q.project_id) || q.asked_by_name || (a && a.display_name) || "CG1";
     return a && a.display_name && a.display_name.toLowerCase() !== name.toLowerCase() ? name + " (" + a.display_name + ")" : name;
   }
   function reqHtml(page){
@@ -7989,7 +7997,7 @@
       (write && others.length ? '<select data-msgadduser="'+t.id+'" aria-label="Legg til i samtalen"><option value="">+ Legg til …</option>'+others.map(function(a){ return '<option value="'+a.user_id+'">'+escapeHtml(msgUserName(a.user_id))+'</option>'; }).join("")+'</select>' : '') + '</div>' +
       '<div class="msg-list">' + (msgs.length ? msgs.map(function(m){
         var mine = m.sender === owner;
-        return '<div class="msg-b'+(mine ? ' me' : '')+'"><div class="msg-meta">'+escapeHtml(m.sender_name || msgUserName(m.sender))+' · '+msgTime(m.created_at)+
+        return '<div class="msg-b'+(mine ? ' me' : '')+'"><div class="msg-meta">'+escapeHtml(linkedPersonName(m.sender, m.project_id) || m.sender_name || msgUserName(m.sender))+' · '+msgTime(m.created_at)+
           (m.sender === me && write ? ' <button type="button" class="msg-del" data-msgdel="'+m.id+'" title="Slett meldingen">×</button>' : '')+'</div>' +
           (m.body ? '<div class="msg-body">'+escapeHtml(m.body)+'</div>' : '') + msgFileLinks(msgFilesOf(m.id), "meldinger") + '</div>';
       }).join("") : '<p class="empty-note" style="margin:6px 0;">Ingen meldinger ennå.</p>') + '</div>' +
@@ -8056,7 +8064,7 @@
           (ts.length ? ts.map(function(t){
             var n = msgUnread(t, owner), msgs = msgMessagesOf(t.id), last = msgs[msgs.length - 1];
             return '<button type="button" class="msg-trow'+(n ? ' unread' : '')+'" data-msgopen="'+t.id+'"><span class="msg-ttitle">'+escapeHtml(msgThreadTitle(t, owner))+(n ? ' <span class="msg-badge">'+n+'</span>' : '')+'</span>' +
-              '<span class="msg-tlast">'+(last ? escapeHtml((last.sender_name || msgUserName(last.sender)) + ': ' + (last.body || "📎 vedlegg")) : 'Ingen meldinger ennå')+'</span>' +
+              '<span class="msg-tlast">'+(last ? escapeHtml((linkedPersonName(last.sender, last.project_id) || last.sender_name || msgUserName(last.sender)) + ': ' + (last.body || "📎 vedlegg")) : 'Ingen meldinger ennå')+'</span>' +
               '<span class="msg-ttime">'+msgTime(t.last_message_at)+'</span></button>';
           }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen samtaler i dette prosjektet ennå.</p>');
       }
