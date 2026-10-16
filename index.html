@@ -545,6 +545,37 @@
   #reqAskBox:empty{ display:none; }
   #reqAskBox{ margin-top:14px; }
   .reqask-card{ border:2px solid var(--bad); }
+  .msg-card{ margin-bottom:16px; }
+  .msg-ro{ font-size:12.5px; color:var(--muted); background:var(--surface-alt); border-radius:8px; padding:6px 10px; margin:6px 0; }
+  .msg-tabs{ display:flex; gap:6px; margin:8px 0 10px; border-bottom:1px solid var(--border); }
+  .msg-tabs button{ border:none; background:none; padding:7px 10px; font:inherit; font-size:13.5px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .msg-tabs button.on{ color:var(--accent); border-bottom-color:var(--accent); }
+  .msg-badge{ display:inline-block; min-width:18px; padding:0 6px; border-radius:9px; background:var(--bad); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; }
+  .msg-trow{ display:grid; grid-template-columns:1fr auto; gap:2px 10px; width:100%; text-align:left; border:1px solid var(--border); border-radius:10px; padding:8px 11px; margin-bottom:6px; background:var(--surface); font:inherit; cursor:pointer; color:var(--text); }
+  .msg-trow.unread{ border-color:var(--bad); }
+  .msg-ttitle{ font-weight:700; font-size:13.5px; }
+  .msg-ttime{ font-size:11.5px; color:var(--muted); grid-row:1; grid-column:2; }
+  .msg-tlast{ grid-column:1 / -1; font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .msg-thead{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .msg-parts{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .msg-chip{ display:inline-flex; align-items:center; gap:3px; background:var(--surface-alt); border:1px solid var(--border); border-radius:14px; padding:2px 9px; font-size:12px; }
+  .msg-chip button{ border:none; background:none; color:var(--muted); cursor:pointer; padding:0 2px; font-size:13px; }
+  .msg-parts select{ border:1px solid var(--border); border-radius:14px; padding:2px 8px; font:inherit; font-size:12px; background:var(--surface); }
+  .msg-list{ display:flex; flex-direction:column; gap:6px; max-height:420px; overflow-y:auto; padding:4px 2px; }
+  .msg-b{ align-self:flex-start; max-width:85%; background:var(--surface-alt); border-radius:12px 12px 12px 3px; padding:6px 10px; font-size:13.5px; }
+  .msg-b.me{ align-self:flex-end; background:var(--accent-soft); border-radius:12px 12px 3px 12px; }
+  .msg-meta{ font-size:11px; color:var(--muted); margin-bottom:1px; }
+  .msg-body{ white-space:pre-wrap; word-break:break-word; }
+  .msg-del{ border:none; background:none; color:var(--muted); cursor:pointer; padding:0 2px; }
+  .msg-b .gfiles, .msg-card .req-q .gfiles{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .msg-b .gfile{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:6px; padding:3px 8px; font-size:12px; background:var(--surface); text-decoration:none; color:var(--text); }
+  .msg-compose, .msg-new{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+  .msg-compose textarea, .msg-new textarea, .msg-new input[type=text]{ border:1px solid var(--border); border-radius:8px; padding:6px 8px; font:inherit; font-size:13px; background:var(--surface); width:100%; box-sizing:border-box; resize:vertical; }
+  .msg-compose .grow2, .msg-new .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
+  .msg-pick{ display:flex; gap:6px 14px; flex-wrap:wrap; font-size:13px; }
+  .msg-pick label{ display:flex; align-items:center; gap:5px; cursor:pointer; }
+  .msg-h{ font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin:4px 0; }
+  .msg-topline{ display:flex; align-items:center; gap:8px; width:100%; border:2px solid var(--bad); font:inherit; font-size:14px; font-weight:700; cursor:pointer; text-align:left; color:var(--text); padding:10px 14px; }
   .reqask-card .card-toggle{ flex-wrap:wrap; row-gap:0; }
   .reqask-card .card-toggle h2{ font-size:15px; white-space:nowrap; }
   .reqask-card .card-toggle .ct-sum{ order:3; flex-basis:100%; font-weight:500; }
@@ -1628,6 +1659,7 @@
     <div class="office-shared" data-officepage="acgo"></div>
     <div class="goods-shared" data-goodspage="acgo"></div>
     <div class="reqprep-shared" data-reqpage="acgo"></div>
+    <div class="msg-shared" data-msgpage="acgo"></div>
     <p id="acgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"></p>
     <div class="peoplecard" style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
       <div>
@@ -1738,7 +1770,7 @@
             </div>
             <div class="field"><label for="cg1NewPassword">Midlertidig passord (minst 8 tegn)</label><input type="text" id="cg1NewPassword" minlength="8" maxlength="72" required autocomplete="off" /></div>
             <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:13px;" id="cg1NewPages"></div>
-            <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewReq" /> Req prepp</label></div>
+            <div style="display:flex; gap:14px; flex-wrap:wrap;"><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewAdmin" /> Admin</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewOffice" /> Office</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewGoods" /> Godsmottaker</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewReq" /> Req prepp</label><label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;"><input type="checkbox" id="cg1NewMsg" /> Meldinger</label></div>
             <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" type="submit">Opprett bruker</button></div>
           </form>
         </details>
@@ -1807,6 +1839,7 @@
     <div class="office-shared" data-officepage="cgo"></div>
     <div class="goods-shared" data-goodspage="cgo"></div>
     <div class="reqprep-shared" data-reqpage="cgo"></div>
+    <div class="msg-shared" data-msgpage="cgo"></div>
     <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
       <p id="cgoIdentityLine" class="sub" style="font-size:12.5px; color:var(--muted); margin:0; flex:1; min-width:180px;"></p>
       <div style="display:flex; align-items:center; gap:6px;">
@@ -1907,6 +1940,7 @@
     <div class="office-shared" data-officepage="kontor1"></div>
     <div class="goods-shared" data-goodspage="kontor1"></div>
     <div class="reqprep-shared" data-reqpage="kontor1"></div>
+    <div class="msg-shared" data-msgpage="kontor1"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 1</h2>
       <div style="display:flex; gap:8px;">
@@ -1931,6 +1965,7 @@
     <div class="office-shared" data-officepage="" id="cg1sideOffice"></div>
     <div class="goods-shared" data-goodspage="" id="cg1sideGoods"></div>
     <div class="reqprep-shared" data-reqpage="" id="cg1sideReq"></div>
+    <div class="msg-shared" data-msgpage="" id="cg1sideMsg"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;" id="cg1sideTitle">Side</h2>
       <div style="display:flex; gap:8px;">
@@ -1955,6 +1990,7 @@
     <div class="office-shared" data-officepage="kontor2"></div>
     <div class="goods-shared" data-goodspage="kontor2"></div>
     <div class="reqprep-shared" data-reqpage="kontor2"></div>
+    <div class="msg-shared" data-msgpage="kontor2"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
       <h2 style="font-size:18px;">Kontor 2</h2>
       <div style="display:flex; gap:8px;">
@@ -2683,7 +2719,7 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: resilientFetch } });
   }
 
-  var state = { reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
+  var state = { msgThreads: [], msgParts: [], msgMessages: [], msgFiles: [], reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
   var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
@@ -6849,6 +6885,7 @@
     byId("cg1sideOffice").dataset.officepage = key || "";
     byId("cg1sideGoods").dataset.goodspage = key || "";
     byId("cg1sideReq").dataset.reqpage = key || "";
+    byId("cg1sideMsg").dataset.msgpage = key || "";
     if(pg) renderOfficeBoxes(key, byId("officeBoxes-cg1side"));
     else byId("officeBoxes-cg1side").innerHTML = "";
   }
@@ -6979,6 +7016,7 @@
     if(key === "office"){ officeRenderedSig = {}; renderOfficeShared(); }
     else if(key === "goods"){ goodsRerender(); }
     else if(key === "req" || key === "reqask"){ reqRerender(); }
+    else if(key === "msg"){ msgRerender(); }
   });
   function officeTodoRowHtml(t){
     var late = !t.done && t.due_date && t.due_date < osloTodayIso();
@@ -7471,7 +7509,7 @@
       reqRenderBox(box, "page:" + page, (page && cg1PageByKey(page) && userHasReqprep() && cg1PageShows(page, "reqprep")) ? reqHtml() : "");
     });
     var ask = byId("reqAskBox");
-    if(ask) reqRenderBox(ask, "ask", reqAskHtml());
+    if(ask) reqRenderBox(ask, "ask", userOwnMsg() ? msgTopLineHtml() : reqAskHtml());
   }
   function reqRerender(){ reqRenderedSig = {}; renderReqShared(); }
   function reqWrite(promise, okMsg){
@@ -7497,7 +7535,7 @@
       });
     })).then(function(){ refetchReq(); });
   }
-  function inReq(t){ return t.closest && (t.closest(".reqprep-shared") || t.closest("#reqAskBox")); }
+  function inReq(t){ return t.closest && (t.closest(".reqprep-shared") || t.closest("#reqAskBox") || t.closest(".msg-shared")); }
   document.addEventListener("click", function(ev){
     var t = ev.target;
     if(!inReq(t)) return;
@@ -7600,6 +7638,350 @@
     }
   });
 
+  // ---------- Meldinger (sql/103): samtaler mellom CG1-brukere + Req prepp-fane, per prosjekt ----------
+  // Boksen ligger på CG1-sidene for brukere med «Meldinger» krysset av, og speiler sidens eier: den
+  // som ser på en annens side, kan lese eierens samtaler og Req prepp-spørsmål, men bare eieren kan
+  // skrive der. Bare de som er med i en tråd kan skrive i den (låst i databasen). Vedlegg ligger i
+  // filmappen «meldinger» under <prosjekt>/<tråd>/.
+  function userHasMsg(){ return isByggeleder() && !view.cg1AccessMissing && cg1FlagVisible("meldinger"); }
+  function userOwnMsg(){ var me = myCg1Access(); return !!(me && me.active && me.meldinger); }
+  function refetchMsg(){
+    if(!sb || !userHasMsg()) return;
+    Promise.all([
+      sb.from("msg_threads").select("*").order("last_message_at", { ascending: false }),
+      sb.from("msg_participants").select("*"),
+      sb.from("msg_messages").select("*").order("created_at"),
+      sb.from("msg_files").select("*").order("created_at")
+    ]).then(function(r){
+      if(r.some(function(x){ return x.error; })){ view.msgMissing = true; scheduleRender(); return; }
+      view.msgMissing = false;
+      state.msgThreads = r[0].data || []; state.msgParts = r[1].data || []; state.msgMessages = r[2].data || []; state.msgFiles = r[3].data || [];
+      scheduleRender();
+    });
+  }
+  // Brukerens navn i prosjektet: personen innloggingen er koblet til under Team, ellers brukernavnet.
+  function msgUserName(userId){
+    var tl = teamLoginForAccount(userId);
+    var p = tl ? state.people.find(function(x){ return x.id === tl.personId; }) : null;
+    if(p && p.name) return p.name;
+    var a = state.cg1Access.find(function(x){ return x.user_id === userId; });
+    return a ? (a.display_name || "Bruker") : "Bruker";
+  }
+  function msgUsers(){ return state.cg1Access.filter(function(a){ return a.active && a.meldinger; }); }
+  function msgBoxOwner(page){ var o = cg1PageOwnerAccess(page); return o ? o.user_id : (state.me ? state.me.id : null); }
+  function msgPartsOf(tid){ return (state.msgParts || []).filter(function(p){ return p.thread_id === tid; }); }
+  function msgThreadsFor(owner){
+    var pid = currentProjectId();
+    return (state.msgThreads || []).filter(function(t){ return t.project_id === pid && msgPartsOf(t.id).some(function(p){ return p.user_id === owner; }); })
+      .sort(function(a, b){ return a.last_message_at < b.last_message_at ? 1 : -1; });
+  }
+  function msgMessagesOf(tid){ return (state.msgMessages || []).filter(function(m){ return m.thread_id === tid; }); }
+  function msgFilesOf(mid){ return (state.msgFiles || []).filter(function(f){ return f.message_id === mid; }); }
+  function msgUnread(t, owner){
+    var part = msgPartsOf(t.id).find(function(p){ return p.user_id === owner; });
+    if(!part) return 0;
+    return msgMessagesOf(t.id).filter(function(m){ return m.sender !== owner && m.created_at > part.last_read_at; }).length;
+  }
+  function msgThreadTitle(t, owner){
+    if(t.title) return t.title;
+    var names = msgPartsOf(t.id).filter(function(p){ return p.user_id !== owner; }).map(function(p){ return msgUserName(p.user_id); });
+    return names.length ? names.join(", ") : "Samtale";
+  }
+  // Req prepp for en bruker: spørsmål til personen(e) brukeren er koblet til, og spørsmål brukeren har sendt.
+  function msgReqFor(owner){
+    var pid = currentProjectId();
+    var persons = state.teamLogins.filter(function(r){ return r.accountId === owner && r.projectId === pid; }).map(function(r){ return r.personId; });
+    var qs = (state.reqQuestions || []).filter(function(q){ return q.project_id === pid; });
+    return {
+      toMe: qs.filter(function(q){ return persons.indexOf(q.to_person_id) !== -1; }),
+      mine: qs.filter(function(q){ return q.asked_by === owner; })
+    };
+  }
+  function msgCounts(owner){
+    var unread = msgThreadsFor(owner).reduce(function(s, t){ return s + msgUnread(t, owner); }, 0);
+    var rq = msgReqFor(owner);
+    var reqN = rq.toMe.filter(function(q){ return q.status === "open"; }).length + rq.mine.filter(function(q){ return q.status === "answered"; }).length;
+    return { unread: unread, req: reqN, total: unread + reqN };
+  }
+  function msgTime(ts){
+    if(!ts) return "";
+    var d = new Date(ts), hm = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+    var iso = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+    return (iso === osloTodayIso() ? "i dag" : fmtRange(iso, iso)) + " kl. " + hm;
+  }
+  function msgFileLinks(files, bucket, canDelete, delAttr){
+    if(!files.length) return "";
+    return '<div class="gfiles">' + files.map(function(f){
+      var img = (f.content_type || "").indexOf("image/") === 0;
+      return '<a class="gfile" data-fileurl href="'+escapeHtml(fileUrl(bucket, f.file_path))+'" target="_blank" rel="noopener">'+(img ? '🖼️' : '📄')+' '+escapeHtml(f.file_name || "Fil")+'</a>';
+    }).join("") + '</div>';
+  }
+  var msgChosen = {};
+  function msgChosenLabel(key){ var c = msgChosen[key] || []; return c.length ? c.length + " fil(er) valgt: " + escapeHtml(c.map(function(f){ return f.name; }).join(", ")) : ""; }
+  function msgComposerHtml(key, attr){
+    return '<textarea name="body" maxlength="4000" rows="2" placeholder="Skriv en melding …"></textarea>' +
+      '<div class="grow2" style="align-items:center;">' + goodsFileButtons('data-msgfile="'+key+'"') +
+      '<span class="empty-note" data-msgchosen style="margin:0;">'+msgChosenLabel(key)+'</span>' +
+      '<button type="submit" class="btn small primary" style="margin-left:auto;">'+attr+'</button></div>';
+  }
+  function msgThreadHtml(t, owner, canWrite){
+    var me = state.me ? state.me.id : null;
+    var parts = msgPartsOf(t.id);
+    var member = parts.some(function(p){ return p.user_id === me; });
+    var write = canWrite && member;
+    var others = msgUsers().filter(function(a){ return !parts.some(function(p){ return p.user_id === a.user_id; }); });
+    var msgs = msgMessagesOf(t.id);
+    return '<div class="msg-thread">' +
+      '<div class="msg-thead"><button type="button" class="btn small ghost" data-msgback>← Samtaler</button><strong>'+escapeHtml(msgThreadTitle(t, owner))+'</strong></div>' +
+      '<div class="msg-parts">' + parts.map(function(p){
+        return '<span class="msg-chip">'+escapeHtml(msgUserName(p.user_id))+(write ? '<button type="button" data-msgrmuser="'+t.id+'|'+p.user_id+'" title="'+(p.user_id === me ? 'Forlat samtalen' : 'Fjern fra samtalen')+'">×</button>' : '')+'</span>';
+      }).join("") +
+      (write && others.length ? '<select data-msgadduser="'+t.id+'" aria-label="Legg til i samtalen"><option value="">+ Legg til …</option>'+others.map(function(a){ return '<option value="'+a.user_id+'">'+escapeHtml(msgUserName(a.user_id))+'</option>'; }).join("")+'</select>' : '') + '</div>' +
+      '<div class="msg-list">' + (msgs.length ? msgs.map(function(m){
+        var mine = m.sender === owner;
+        return '<div class="msg-b'+(mine ? ' me' : '')+'"><div class="msg-meta">'+escapeHtml(m.sender_name || msgUserName(m.sender))+' · '+msgTime(m.created_at)+
+          (m.sender === me && write ? ' <button type="button" class="msg-del" data-msgdel="'+m.id+'" title="Slett meldingen">×</button>' : '')+'</div>' +
+          (m.body ? '<div class="msg-body">'+escapeHtml(m.body)+'</div>' : '') + msgFileLinks(msgFilesOf(m.id), "meldinger") + '</div>';
+      }).join("") : '<p class="empty-note" style="margin:6px 0;">Ingen meldinger ennå.</p>') + '</div>' +
+      (write ? '<form class="msg-compose" data-msgsend="'+t.id+'">'+msgComposerHtml(t.id, "Send")+'</form>'
+        : (canWrite ? '<p class="empty-note">Du er ikke med i denne samtalen lenger.</p>' : '')) +
+      '</div>';
+  }
+  function msgNewHtml(){
+    var me = state.me ? state.me.id : null;
+    var users = msgUsers().filter(function(a){ return a.user_id !== me; });
+    return '<form class="msg-new" data-msgnew>' +
+      '<div class="gmeta">Hvem skal være med?</div>' +
+      '<div class="msg-pick">' + (users.length ? users.map(function(a){ return '<label><input type="checkbox" name="u" value="'+a.user_id+'" /> '+escapeHtml(msgUserName(a.user_id))+'</label>'; }).join("") : '<span class="empty-note">Ingen andre brukere har Meldinger ennå.</span>') + '</div>' +
+      '<input type="text" name="title" maxlength="80" placeholder="Navn på samtalen (valgfritt), f.eks. Stillas" />' +
+      msgComposerHtml("new", "Start samtalen") +
+      '<div style="text-align:right;"><button type="button" class="btn small ghost" data-msgcancel>Avbryt</button></div></form>';
+  }
+  function msgReqTabHtml(owner, canWrite){
+    var rq = msgReqFor(owner);
+    var toOpen = rq.toMe.filter(function(q){ return q.status === "open"; });
+    var toDone = rq.toMe.filter(function(q){ return q.status !== "open"; });
+    var mineActive = rq.mine.filter(function(q){ return q.status !== "closed"; }).sort(function(a, b){ var o = { answered: 0, open: 1 }; return (o[a.status] - o[b.status]) || (a.created_at < b.created_at ? 1 : -1); });
+    var mineClosed = rq.mine.filter(function(q){ return q.status === "closed"; });
+    var qLine = function(q, withTo){
+      var who = withTo ? 'Til <strong>'+escapeHtml(q.to_person_id ? personName(q.to_person_id) : "–")+'</strong> · ' : 'Fra <strong>'+escapeHtml(q.asked_by_name || "CG1")+'</strong> · ';
+      var st = q.status === "open" ? '<span class="badge" style="background:var(--warn-soft); color:var(--warn-ink);">Venter på svar</span>'
+        : q.status === "answered" ? '<span class="badge done">Besvart</span>' : '<span class="badge">Lukket</span>';
+      return '<div class="req-q'+(q.status === "closed" ? ' done' : '')+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
+        '<div class="gmeta">'+who+reqDateTxt(q.created_at)+' '+st+'</div>' +
+        (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
+          (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, false) + '</div>' : '') +
+        (withTo && canWrite && q.status === "answered" ? '<div class="req-qacts"><button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button></div>' : '') +
+        '</div>';
+    };
+    var answerForm = function(q){
+      return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
+        '<div class="gmeta">Fra <strong>'+escapeHtml(q.asked_by_name || "CG1")+'</strong> · '+reqDateTxt(q.created_at)+'</div>' + reqFileLinks(q.id, false) +
+        '<textarea name="answer" maxlength="4000" rows="2" placeholder="Skriv svaret …"></textarea>' +
+        '<div class="grow2" style="align-items:center;">'+goodsFileButtons('data-reqansfile="'+q.id+'"')+
+          '<span class="empty-note" data-reqansfiles style="margin:0;">'+((reqAnsFiles[q.id] || []).length ? (reqAnsFiles[q.id].length + ' fil(er) valgt') : '')+'</span>' +
+          '<button type="submit" class="btn small primary" style="margin-left:auto;">Send svar</button></div></form>';
+    };
+    return '<h3 class="msg-h">Til meg'+(toOpen.length ? ' <span class="msg-badge">'+toOpen.length+'</span>' : '')+'</h3>' +
+      (toOpen.length ? toOpen.map(function(q){ return canWrite ? answerForm(q) : qLine(q, false); }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen spørsmål venter på svar.</p>') +
+      (toDone.length ? '<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Besvarte ('+toDone.length+')</summary>'+toDone.map(function(q){ return qLine(q, false); }).join("")+'</details>' : '') +
+      '<h3 class="msg-h" style="margin-top:14px;">Mine spørsmål'+(rq.mine.filter(function(q){ return q.status === "answered"; }).length ? ' <span class="msg-badge">'+rq.mine.filter(function(q){ return q.status === "answered"; }).length+' nytt svar</span>' : '')+'</h3>' +
+      (mineActive.length ? mineActive.map(function(q){ return qLine(q, true); }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen åpne spørsmål. Spørsmål sendes fra Req prepp-kortet.</p>') +
+      (mineClosed.length ? '<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--muted);">Lukkede ('+mineClosed.length+')</summary>'+mineClosed.map(function(q){ return qLine(q, true); }).join("")+'</details>' : '');
+  }
+  function msgHtml(page){
+    if(view.msgMissing) return '<div class="peoplecard msg-card"><h2 style="font-size:16px;">Meldinger</h2><p class="empty-note">Databasen mangler Meldinger. Kjør sql/103-meldinger.sql i Supabase.</p></div>';
+    if(!currentProjectId()) return "";
+    var owner = msgBoxOwner(page), me = state.me ? state.me.id : null;
+    var canWrite = owner === me;
+    var c = msgCounts(owner);
+    var sum = c.total ? '<span class="warn">' + c.total + ' uleste</span>' : 'Ingen uleste';
+    if(!cardOpen.msg) return '<div class="peoplecard msg-card collapsed"><div class="office-head">'+cardToggleHtml("msg", "Meldinger", sum)+'</div></div>';
+    var tab = view.msgTab === "req" ? "req" : "samtaler";
+    var body;
+    if(tab === "req") body = msgReqTabHtml(owner, canWrite);
+    else {
+      var t = view.msgThread ? (state.msgThreads || []).find(function(x){ return x.id === view.msgThread && msgPartsOf(x.id).some(function(p){ return p.user_id === owner; }); }) : null;
+      if(t) body = msgThreadHtml(t, owner, canWrite);
+      else if(view.msgNewOpen && canWrite) body = msgNewHtml();
+      else {
+        var ts = msgThreadsFor(owner);
+        body = (canWrite ? '<div style="margin-bottom:8px;"><button type="button" class="btn small primary" data-msgnewopen>+ Ny samtale</button></div>' : '') +
+          (ts.length ? ts.map(function(t){
+            var n = msgUnread(t, owner), msgs = msgMessagesOf(t.id), last = msgs[msgs.length - 1];
+            return '<button type="button" class="msg-trow'+(n ? ' unread' : '')+'" data-msgopen="'+t.id+'"><span class="msg-ttitle">'+escapeHtml(msgThreadTitle(t, owner))+(n ? ' <span class="msg-badge">'+n+'</span>' : '')+'</span>' +
+              '<span class="msg-tlast">'+(last ? escapeHtml((last.sender_name || msgUserName(last.sender)) + ': ' + (last.body || "📎 vedlegg")) : 'Ingen meldinger ennå')+'</span>' +
+              '<span class="msg-ttime">'+msgTime(t.last_message_at)+'</span></button>';
+          }).join("") : '<p class="empty-note" style="margin:4px 0;">Ingen samtaler i dette prosjektet ennå.</p>');
+      }
+    }
+    return '<div class="peoplecard msg-card">' +
+      '<div class="office-head">'+cardToggleHtml("msg", "Meldinger", sum)+'</div>' +
+      (canWrite ? '' : '<p class="msg-ro">Du ser '+escapeHtml(msgUserName(owner))+' sine meldinger. Bare '+escapeHtml(msgUserName(owner))+' kan skrive her.</p>') +
+      '<div class="msg-tabs"><button type="button" data-msgtab="samtaler" class="'+(tab === "samtaler" ? 'on' : '')+'">Samtaler'+(c.unread ? ' <span class="msg-badge">'+c.unread+'</span>' : '')+'</button>' +
+        '<button type="button" data-msgtab="req" class="'+(tab === "req" ? 'on' : '')+'">Req prepp'+(c.req ? ' <span class="msg-badge">'+c.req+'</span>' : '')+'</button></div>' +
+      body + '</div>';
+  }
+  // Liten linje øverst (alle sider) for brukere med egen Meldinger-boks.
+  function msgTopLineHtml(){
+    var me = state.me ? state.me.id : null;
+    var c = msgCounts(me);
+    if(!c.total) return "";
+    return '<button type="button" class="peoplecard msg-topline" data-msggoto><span class="msg-badge">'+c.total+'</span> Meldinger: '+c.total+' uleste'+(c.req ? ' (Req prepp: '+c.req+')' : '')+' <span style="margin-left:auto; color:var(--muted);">Åpne ›</span></button>';
+  }
+  var msgRenderedSig = {};
+  function renderMsgShared(){
+    document.querySelectorAll(".msg-shared").forEach(function(box){
+      var page = box.dataset.msgpage;
+      var html = (page && cg1PageByKey(page) && userHasMsg() && cg1PageShows(page, "meldinger")) ? msgHtml(page) : "";
+      var key = "page:" + page;
+      if(msgRenderedSig[key] !== html){
+        var ae = document.activeElement;
+        if(ae && box.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== "checkbox" && ae.type !== "file" && ae.value){ view.msgPendingRender = true; }
+        else {
+          var keep = {};
+          box.querySelectorAll("form [name]").forEach(function(el){ if(el.type !== "checkbox") keep[(el.closest("form").dataset.msgsend || el.closest("form").dataset.reqanswer || (el.closest("form").hasAttribute("data-msgnew") ? "new" : "")) + "|" + el.name] = el.value; });
+          var checked = Array.prototype.map.call(box.querySelectorAll("[data-msgnew] input[name=u]:checked"), function(x){ return x.value; });
+          var refocus = ae && box.contains(ae) && ae.tagName === "TEXTAREA" ? (ae.closest("form").dataset.msgsend || "") : null;
+          var list = box.querySelector(".msg-list"), atBottom = !list || list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+          box.innerHTML = html;
+          msgRenderedSig[key] = html;
+          box.querySelectorAll("form [name]").forEach(function(el){ if(el.type === "checkbox"){ if(checked.indexOf(el.value) !== -1) el.checked = true; return; } var k = (el.closest("form").dataset.msgsend || el.closest("form").dataset.reqanswer || (el.closest("form").hasAttribute("data-msgnew") ? "new" : "")) + "|" + el.name; if(k in keep) el.value = keep[k]; });
+          var l2 = box.querySelector(".msg-list"); if(l2 && atBottom) l2.scrollTop = l2.scrollHeight;
+          if(refocus){ var ta = box.querySelector('[data-msgsend="'+refocus+'"] textarea'); if(ta) ta.focus(); }
+        }
+      }
+      // Åpen tråd i egen boks som vises: marker som lest.
+      var owner = msgBoxOwner(page), me = state.me ? state.me.id : null;
+      if(html && owner === me && cardOpen.msg && view.msgTab !== "req" && view.msgThread && box.offsetParent !== null){
+        var t = (state.msgThreads || []).find(function(x){ return x.id === view.msgThread; });
+        if(t && msgUnread(t, me) && !msgMarking[t.id]){
+          msgMarking[t.id] = true;
+          var latest = msgMessagesOf(t.id).reduce(function(m, x){ return x.created_at > m ? x.created_at : m; }, "");
+          var part = msgPartsOf(t.id).find(function(p){ return p.user_id === me; }); if(part) part.last_read_at = latest; // vis lest med en gang
+          sb.from("msg_participants").update({ last_read_at: latest }).eq("thread_id", t.id).eq("user_id", me).then(function(){ msgMarking[t.id] = false; refetchMsg(); });
+        }
+      }
+    });
+  }
+  var msgMarking = {};
+  function msgRerender(){ msgRenderedSig = {}; renderMsgShared(); renderReqShared(); }
+  function myOwnCg1PageKey(){
+    var me = state.me ? state.me.id : null;
+    var pg = cg1PagesList().find(function(p){ return p.ownerUser === me; });
+    return pg ? pg.key : null;
+  }
+  function uploadMsgFiles(messageId, threadId, pid, files){
+    if(!files || !files.length) return Promise.resolve();
+    showInfo("Laster opp " + files.length + " fil(er) …");
+    return Promise.all(Array.prototype.map.call(files, function(file){
+      return compressImage(file, 2000, 0.85).then(function(f){
+        if(f.size > MAX_GOODS_FILE_BYTES){ showError("«" + f.name + "» er for stor (maks 25 MB)."); return null; }
+        var safe = (f.name || "fil").replace(/[^a-zA-Z0-9_.\-]/g, "_");
+        var path = pid + "/" + threadId + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
+        return sb.storage.from("meldinger").upload(path, f, { contentType: f.type || "application/octet-stream" }).then(function(res){
+          if(res.error){ showError("Kunne ikke laste opp «" + f.name + "»: " + res.error.message); return null; }
+          return sb.from("msg_files").insert({ message_id: messageId, thread_id: threadId, project_id: pid, file_path: path, file_name: (f.name || "fil").slice(0, 120), content_type: f.type || null });
+        });
+      });
+    }));
+  }
+  function msgSend(threadId, body, files){
+    var pid = currentProjectId();
+    return sb.from("msg_messages").insert({ thread_id: threadId, project_id: pid, body: body || null }).select().single().then(function(res){
+      if(res.error){ showError("Kunne ikke sende meldingen: " + res.error.message); return false; }
+      return uploadMsgFiles(res.data.id, threadId, pid, files).then(function(){ refetchMsg(); return true; });
+    });
+  }
+  document.addEventListener("click", function(ev){
+    var t = ev.target, b;
+    if(t.closest && (b = t.closest("[data-msggoto]"))){
+      var key = myOwnCg1PageKey();
+      cardOpen.msg = true;
+      try{ localStorage.setItem("ldc_cardopen", JSON.stringify(cardOpen)); }catch(e){}
+      var me = state.me ? state.me.id : null, c = msgCounts(me);
+      view.msgTab = c.unread ? "samtaler" : "req"; view.msgThread = null; view.msgNewOpen = false;
+      if(key){ if(byId("panel-" + key)) switchTab(key); else openCg1Side(key); }
+      msgRerender();
+      setTimeout(function(){ var box = document.querySelector('.msg-shared[data-msgpage="'+key+'"]') || byId("cg1sideMsg"); if(box && box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+      return;
+    }
+    if(!t.closest || !t.closest(".msg-shared")) return;
+    if((b = t.closest("[data-msgtab]"))){ view.msgTab = b.dataset.msgtab; view.msgThread = null; msgRerender(); }
+    else if((b = t.closest("[data-msgopen]"))){ view.msgThread = b.dataset.msgopen; view.msgNewOpen = false; msgRerender(); }
+    else if(t.closest("[data-msgback]")){ view.msgThread = null; msgRerender(); }
+    else if(t.closest("[data-msgnewopen]")){ view.msgNewOpen = true; msgChosen["new"] = []; msgRerender(); }
+    else if(t.closest("[data-msgcancel]")){ view.msgNewOpen = false; msgChosen["new"] = []; msgRerender(); }
+    else if((b = t.closest("[data-msgdel]"))){
+      var mid = b.dataset.msgdel;
+      askConfirm("Meldingen og vedleggene slettes for alle i samtalen.", function(){
+        var paths = msgFilesOf(mid).map(function(f){ return f.file_path; });
+        (paths.length ? sb.storage.from("meldinger").remove(paths) : Promise.resolve()).then(function(){
+          return sb.from("msg_messages").delete().eq("id", mid);
+        }).then(function(res){ if(res && res.error) showError("Kunne ikke slette: " + res.error.message); refetchMsg(); });
+      }, { title: "Slette meldingen?" });
+    } else if((b = t.closest("[data-msgrmuser]"))){
+      var bits = b.dataset.msgrmuser.split("|"), self = state.me && bits[1] === state.me.id;
+      askConfirm(self ? "Du forsvinner fra samtalen og ser den ikke lenger." : msgUserName(bits[1]) + " fjernes fra samtalen.", function(){
+        sb.from("msg_participants").delete().eq("thread_id", bits[0]).eq("user_id", bits[1]).then(function(res){
+          if(res.error){ showError("Kunne ikke fjerne: " + res.error.message); return; }
+          if(self) view.msgThread = null;
+          refetchMsg(); msgRerender();
+        });
+      }, { title: self ? "Forlate samtalen?" : "Fjerne fra samtalen?" });
+    }
+  });
+  document.addEventListener("change", function(ev){
+    var t = ev.target;
+    if(!t.closest || !t.closest(".msg-shared")) return;
+    if(t.dataset.msgadduser !== undefined && t.value){
+      var tid = t.dataset.msgadduser, uid = t.value;
+      sb.from("msg_participants").insert({ thread_id: tid, user_id: uid }).then(function(res){
+        if(res.error){ showError("Kunne ikke legge til: " + res.error.message); return; }
+        showInfo(msgUserName(uid) + " er lagt til ✓"); refetchMsg();
+      });
+    } else if(t.dataset.msgfile){
+      var k = t.dataset.msgfile;
+      msgChosen[k] = (msgChosen[k] || []).concat(Array.prototype.slice.call(t.files || []));
+      t.value = "";
+      var lbl = t.closest("form").querySelector("[data-msgchosen]"); if(lbl) lbl.innerHTML = msgChosenLabel(k);
+    }
+  });
+  document.addEventListener("focusout", function(ev){
+    if(!view.msgPendingRender || !ev.target.closest || !ev.target.closest(".msg-shared")) return;
+    setTimeout(function(){ view.msgPendingRender = false; renderMsgShared(); }, 0);
+  });
+  document.addEventListener("submit", function(ev){
+    var f = ev.target;
+    if(!f.closest || !f.closest(".msg-shared")) return;
+    if(f.dataset.msgsend){
+      ev.preventDefault();
+      var tid = f.dataset.msgsend, body = f.elements.body.value.trim(), files = msgChosen[tid] || [];
+      if(!body && !files.length) return;
+      f.elements.body.value = ""; msgChosen[tid] = [];
+      msgSend(tid, body, files).then(function(ok){ if(!ok){ f.elements.body.value = body; } msgRerender(); });
+    } else if(f.hasAttribute("data-msgnew")){
+      ev.preventDefault();
+      var me = state.me ? state.me.id : null, pid = currentProjectId();
+      var users = Array.prototype.map.call(f.querySelectorAll("input[name=u]:checked"), function(x){ return x.value; });
+      var title = f.elements.title.value.trim(), body2 = f.elements.body.value.trim(), files2 = msgChosen["new"] || [];
+      if(!users.length){ showError("Velg hvem som skal være med."); return; }
+      if(!body2 && !files2.length){ showError("Skriv en melding eller legg ved en fil."); return; }
+      if(document.activeElement && f.contains(document.activeElement)) document.activeElement.blur();
+      sb.from("msg_threads").insert({ project_id: pid, title: title || null }).select().single().then(function(res){
+        if(res.error){ showError("Kunne ikke starte samtalen: " + res.error.message); return; }
+        var tid2 = res.data.id;
+        return sb.from("msg_participants").insert([me].concat(users).map(function(u){ return { thread_id: tid2, user_id: u }; })).then(function(r2){
+          if(r2.error){ showError("Kunne ikke legge til deltakere: " + r2.error.message); return; }
+          return msgSend(tid2, body2, files2).then(function(){
+            view.msgNewOpen = false; view.msgThread = tid2; msgChosen["new"] = [];
+            showInfo("Samtalen er startet ✓"); refetchMsg(); msgRerender();
+          });
+        });
+      });
+    }
+  });
+
   function renderAll(){
     if(view.dragging){ view.pendingRender = true; return; }
     updateAdminEditButtons();
@@ -7627,6 +8009,7 @@
     renderOfficeShared();
     renderGoodsShared();
     renderReqShared();
+    renderMsgShared();
     renderAllPortalSuggestionLists();
     renderToMoteTab();
     renderDashboardTab();
@@ -8365,6 +8748,7 @@
       refetchOffice();
       refetchGoods();
       refetchReq();
+      refetchMsg();
       scheduleRender();
     });
   }
@@ -8400,6 +8784,7 @@
       refetchOffice();
       refetchGoods();
       refetchReq();
+      refetchMsg();
       scheduleRender();
     });
   }
@@ -8434,6 +8819,7 @@
       if("office" in body) u.office = body.office;
       if("godsmottak" in body) u.godsmottak = body.godsmottak;
       if("reqprep" in body) u.reqprep = body.reqprep;
+      if("meldinger" in body) u.meldinger = body.meldinger;
       if("displayName" in body) u.displayName = body.displayName;
     }
     cg1UserAdmin(body).then(function(){
@@ -8641,6 +9027,7 @@
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Office øverst på CG1-sidene og kan være ansvarlig for Office-punkter"><input type="checkbox" data-cg1office="'+u.userId+'"'+(u.office?' checked':'')+' /> Office</label>' +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Godsmottaker (mottak av varer med dokumenter) øverst på CG1-sidene"><input type="checkbox" data-cg1goods="'+u.userId+'"'+(u.godsmottak?' checked':'')+' /> Godsmottaker</label>' +
           '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Req prepp (sjekkliste og spørsmål til teamet) på CG1-sidene"><input type="checkbox" data-cg1req="'+u.userId+'"'+(u.reqprep?' checked':'')+' /> Req prepp</label>' +
+          '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;" title="Ser Meldinger (samtaler med andre brukere og Req prepp-spørsmål) på sin side"><input type="checkbox" data-cg1msg="'+u.userId+'"'+(u.meldinger?' checked':'')+' /> Meldinger</label>' +
           '<span style="flex:1;"></span>' +
           '<button type="button" class="btn small" data-cg1password="'+u.userId+'">Nytt passord</button>' +
           (isMe ? '' : '<button type="button" class="btn small ghost'+(u.active?' danger':'')+'" data-cg1active="'+u.userId+'" data-next="'+(u.active?'0':'1')+'">'+(u.active?'Deaktiver':'Aktiver')+'</button>') +
@@ -8657,6 +9044,9 @@
         var pages = Array.prototype.slice.call(box.querySelectorAll('[data-cg1page="'+id+'"]')).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
         cg1UserAction({ action:"update", userId:id, pages:pages }, "Tilgang lagret ✓");
       });
+    });
+    box.querySelectorAll("[data-cg1msg]").forEach(function(cb){
+      cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1msg, meldinger:this.checked }, this.checked ? "Meldinger slått på ✓" : "Meldinger slått av ✓"); });
     });
     box.querySelectorAll("[data-cg1req]").forEach(function(cb){
       cb.addEventListener("change", function(){ cg1UserAction({ action:"update", userId:this.dataset.cg1req, reqprep:this.checked }, this.checked ? "Req prepp slått på ✓" : "Req prepp slått av ✓"); });
@@ -8707,7 +9097,7 @@
   byId("cg1AddUserForm").addEventListener("submit", function(ev){
     ev.preventDefault();
     var pages = Array.prototype.slice.call(document.querySelectorAll("[data-cg1newpage]")).filter(function(x){ return x.checked; }).map(function(x){ return x.dataset.page; });
-    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked, godsmottak: byId("cg1NewGoods").checked, reqprep: byId("cg1NewReq").checked };
+    var body = { action:"create", displayName: byId("cg1NewName").value.trim(), email: byId("cg1NewEmail").value.trim(), password: byId("cg1NewPassword").value, pages: pages, isAdmin: byId("cg1NewAdmin").checked, office: byId("cg1NewOffice").checked, godsmottak: byId("cg1NewGoods").checked, reqprep: byId("cg1NewReq").checked, meldinger: byId("cg1NewMsg").checked };
     if(body.password.length < 8){ showError("Passordet må være minst 8 tegn."); return; }
     cg1UserAdmin(body).then(function(){
       showInfo("Bruker opprettet ✓ Brukeren har fått sin egen side under CG1. Gi e-post og passord videre til personen.");
@@ -13115,6 +13505,10 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_items" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_questions" }, refetchReq)
       .on("postgres_changes", { event: "*", schema: "public", table: "req_prep_files" }, refetchReq)
+      .on("postgres_changes", { event: "*", schema: "public", table: "msg_threads" }, refetchMsg)
+      .on("postgres_changes", { event: "*", schema: "public", table: "msg_participants" }, refetchMsg)
+      .on("postgres_changes", { event: "*", schema: "public", table: "msg_messages" }, refetchMsg)
+      .on("postgres_changes", { event: "*", schema: "public", table: "msg_files" }, refetchMsg)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_items" }, refetchOfficeBoxItems)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_links" }, refetchOfficeBoxLinks)
       .on("postgres_changes", { event: "*", schema: "public", table: "office_box_contacts" }, refetchOfficeBoxContacts)

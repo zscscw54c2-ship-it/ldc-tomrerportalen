@@ -39,7 +39,7 @@ async function rememberCode(client: any, projectId: string, fagKey: string, code
   return !error;
 }
 
-const FILE_BUCKETS = ["tegninger", "dokumentasjon", "referater", "handleliste", "godsmottak", "reqprep"];
+const FILE_BUCKETS = ["tegninger", "dokumentasjon", "referater", "handleliste", "godsmottak", "reqprep", "meldinger"];
 
 // Alle filstier under en mappe (prosjekt-id) i en filmappe, også i undermapper.
 // deno-lint-ignore no-explicit-any

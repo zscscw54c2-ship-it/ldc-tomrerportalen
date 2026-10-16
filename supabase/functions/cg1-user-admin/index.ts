@@ -13,8 +13,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // Handlinger (body.action):
 //   list                                         -> alle CG1-brukere med e-post og sist innlogget
 //   create      { email, password, displayName, pages, isAdmin, office }   (pages = nøkler fra cg1_pages)
-//   update      { userId, displayName?, pages?, isAdmin?, office?, godsmottak?, reqprep? }
-//               (office = ser Office, sql/95; godsmottak = ser Godsmottaker, sql/97; reqprep = ser Req prepp, sql/100)
+//   update      { userId, displayName?, pages?, isAdmin?, office?, godsmottak?, reqprep?, meldinger? }
+//               (office = ser Office, sql/95; godsmottak = ser Godsmottaker, sql/97; reqprep = ser Req prepp, sql/100;
+//                meldinger = ser Meldinger, sql/103)
 //   setPassword { userId, password }
 //   setActive   { userId, active }
 //   delete      { userId }                       -> sletter kontoen helt (Auth + profil + tilganger)
@@ -132,6 +133,7 @@ Deno.serve(async (req: Request) => {
         office: !!r.office,
         godsmottak: !!r.godsmottak,
         reqprep: !!r.reqprep,
+        meldinger: !!r.meldinger,
         active: !!r.active,
       });
     }
@@ -147,6 +149,7 @@ Deno.serve(async (req: Request) => {
     const office = !!body.office;
     const godsmottak = !!body.godsmottak;
     const reqprep = !!body.reqprep;
+    const meldinger = !!body.meldinger;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonResponse({ error: "Ugyldig e-postadresse." }, 400);
     if (password.length < 8) return jsonResponse({ error: "Passordet må være minst 8 tegn." }, 400);
 
@@ -166,7 +169,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Kunne ikke lagre rollen: " + profErr.message }, 500);
     }
     const { error: accErr } = await admin.from("cg1_access").insert({
-      user_id: newId, display_name: displayName, pages, is_admin: isAdmin, office, godsmottak, reqprep,
+      user_id: newId, display_name: displayName, pages, is_admin: isAdmin, office, godsmottak, reqprep, meldinger,
     });
     if (accErr) {
       await admin.from("profiles").delete().eq("id", newId);
@@ -217,6 +220,7 @@ Deno.serve(async (req: Request) => {
     if ("office" in body) patch.office = !!body.office;
     if ("godsmottak" in body) patch.godsmottak = !!body.godsmottak;
     if ("reqprep" in body) patch.reqprep = !!body.reqprep;
+    if ("meldinger" in body) patch.meldinger = !!body.meldinger;
     const { error } = await admin.from("cg1_access").update(patch).eq("user_id", userId);
     if (error) return jsonResponse({ error: "Kunne ikke lagre: " + error.message }, 500);
     // Brukerens egen side får samme navn som brukeren.
