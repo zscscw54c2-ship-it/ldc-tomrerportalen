@@ -108,7 +108,14 @@
   .project-bar{
     max-width:1600px; margin:10px auto 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
-  .project-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:6px 10px; font:inherit; color:var(--accent); cursor:pointer; }
+  .project-pill{ display:inline-flex; align-items:center; gap:6px; background:var(--proj-soft, var(--accent-soft)); border:1.5px solid var(--proj, var(--accent)); border-radius:10px; padding:6px 10px; font:inherit; color:var(--proj, var(--accent)); cursor:pointer; }
+  /* Prosjektfarge (sql/105) */
+  header.top{ border-top:4px solid var(--proj, transparent); }
+  .ct-proj{ color:var(--proj, var(--muted)); font-weight:700; font-size:.82em; }
+  .office-card, .goods-card, .req-card, .msg-card, .reqask-card.collapsed{ border-top:3px solid var(--proj, var(--border)) !important; }
+  .proj-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .proj-swatch{ width:30px; height:30px; border-radius:50%; border:3px solid transparent; cursor:pointer; box-shadow:0 0 0 1px var(--border); }
+  .proj-swatch.on{ border-color:#fff; box-shadow:0 0 0 2px var(--text); }
   .project-pill:hover{ background:var(--surface); }
   .project-pill::before{ content:"📍"; font-size:12px; }
   /* Bare ett prosjekt å velge (f.eks. fag-/menighetskonto låst til prosjektet): vis som tekst, ikke knapp. */
@@ -575,7 +582,9 @@
   .msg-pick{ display:flex; gap:6px 14px; flex-wrap:wrap; font-size:13px; }
   .msg-pick label{ display:flex; align-items:center; gap:5px; cursor:pointer; }
   .msg-h{ font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); margin:4px 0; }
-  .msg-topline{ display:flex; align-items:center; gap:8px; width:100%; border:2px solid var(--bad); font:inherit; font-size:14px; font-weight:700; cursor:pointer; text-align:left; color:var(--text); padding:10px 14px; }
+  .msg-topline{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; box-sizing:border-box; border:2px solid var(--bad); font:inherit; font-size:14px; font-weight:700; text-align:left; color:var(--text); padding:10px 14px; }
+  .msg-topproj{ border:1.5px solid; border-radius:16px; background:var(--surface); padding:4px 11px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+  .req-other{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:6px; }
   .reqask-card .card-toggle{ flex-wrap:wrap; row-gap:0; }
   .reqask-card .card-toggle h2{ font-size:15px; white-space:nowrap; }
   .reqask-card .card-toggle .ct-sum{ order:3; flex-basis:100%; font-weight:500; }
@@ -905,14 +914,14 @@
   #mobileBackHome .arrow{ font-size:18px; line-height:1; }
   .mh-project-banner{
     display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; box-sizing:border-box;
-    background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:12px 14px; margin-bottom:12px;
+    background:var(--proj-soft, var(--accent-soft)); border:1.5px solid var(--proj, var(--accent)); border-radius:14px; padding:12px 14px; margin-bottom:12px;
     font-family:inherit; text-align:left; cursor:pointer;
   }
   .mh-project-banner .mh-project-text{ display:flex; flex-direction:column; gap:1px; min-width:0; }
-  .mh-project-banner .mh-project-eyebrow{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); opacity:.8; }
-  .mh-project-banner .mh-project-name{ font-size:16px; font-weight:800; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .mh-project-banner .mh-project-dates{ font-size:11.5px; color:var(--accent); opacity:.75; flex:none; }
-  .mh-project-banner .chevron{ color:var(--accent); flex:none; }
+  .mh-project-banner .mh-project-eyebrow{ font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--proj, var(--accent)); opacity:.8; }
+  .mh-project-banner .mh-project-name{ font-size:16px; font-weight:800; color:var(--proj, var(--accent)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mh-project-banner .mh-project-dates{ font-size:11.5px; color:var(--proj, var(--accent)); opacity:.75; flex:none; }
+  .mh-project-banner .chevron{ color:var(--proj, var(--accent)); flex:none; }
   .mh-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px; }
   .mh-tile{
     position:relative; background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
@@ -2198,6 +2207,11 @@
         <label for="projCloseOut">Close out</label>
         <input type="date" id="projCloseOut" />
       </div>
+    </div>
+    <div class="field">
+      <label>Farge (vises øverst og på kortene, så man ser hvilket prosjekt man står i)</label>
+      <div id="projColorSwatches" class="proj-swatches"></div>
+      <input type="hidden" id="projColor" />
     </div>
     <div class="dlg-actions">
       <button type="button" class="btn ghost" id="projectCancel">Avbryt</button>
@@ -4117,6 +4131,7 @@
   window.addEventListener("resize", function(){ if(openDropdownState) closeDropdownMenu(); });
 
   function renderProjectBar(){
+    applyProjectColor();
     // Står fagvelgeren på et fag som ikke er aktivt i prosjektet (f.eks. etter prosjektbytte),
     // gå tilbake til "Alle fag". Venter til prosjektets fag faktisk er hentet.
     if(isByggeleder() && view.byggeleiderFag !== "alle" && projectFagsForCurrentProject().length && activeProjectFags().indexOf(view.byggeleiderFag) === -1){
@@ -4212,6 +4227,30 @@
     if(state.currentProjectId) setActiveProject(state.currentProjectId);
   });
   byId("acgoOpenTomoteBtn").addEventListener("click", function(){ switchTab("tomote"); });
+  // ---------- Prosjektfarge (sql/105): så man ser hvilket prosjekt man står i ----------
+  var PROJECT_COLORS = ["#2f6fa8", "#2e8b57", "#d9822b", "#7b5cc4", "#c0473d", "#23898f", "#c2477d", "#8d6e4f"];
+  function projectColor(p){
+    if(!p) return PROJECT_COLORS[0];
+    if(p.color) return p.color;
+    var h = 0; for(var i = 0; i < p.id.length; i++){ h = (h * 31 + p.id.charCodeAt(i)) | 0; }
+    return PROJECT_COLORS[Math.abs(h) % PROJECT_COLORS.length];
+  }
+  function currentProjectColor(){ return projectColor(state.projects.find(function(x){ return x.id === currentProjectId(); })); }
+  function applyProjectColor(){
+    var c = currentProjectColor();
+    document.documentElement.style.setProperty("--proj", c);
+    document.documentElement.style.setProperty("--proj-soft", c + "1f");
+  }
+  function renderProjColorSwatches(selected){
+    byId("projColor").value = selected || "";
+    byId("projColorSwatches").innerHTML = PROJECT_COLORS.map(function(c){
+      return '<button type="button" class="proj-swatch'+(c === selected ? ' on' : '')+'" data-projcolor="'+c+'" style="background:'+c+';" aria-label="Farge '+c+'"></button>';
+    }).join("");
+  }
+  byId("projColorSwatches").addEventListener("click", function(ev){
+    var b = ev.target.closest("[data-projcolor]");
+    if(b) renderProjColorSwatches(b.dataset.projcolor);
+  });
   var projectDialog = byId("projectDialog");
   byId("acgoProjectNewBtn").addEventListener("click", function(){
     byId("projDlgTitle").textContent = "Nytt prosjekt";
@@ -4220,6 +4259,9 @@
     byId("projName").value = "";
     byId("projStart").value = "";
     byId("projCloseOut").value = "";
+    // Ny farge: første som ikke er i bruk av et annet prosjekt.
+    var used = state.projects.map(projectColor);
+    renderProjColorSwatches(PROJECT_COLORS.find(function(c){ return used.indexOf(c) === -1; }) || PROJECT_COLORS[0]);
     projectDialog.showModal();
   });
   byId("acgoProjectEditBtn").addEventListener("click", function(){
@@ -4231,6 +4273,7 @@
     byId("projName").value = p.name;
     byId("projStart").value = p.start || "";
     byId("projCloseOut").value = p.closeOut || p.end || "";
+    renderProjColorSwatches(projectColor(p));
     projectDialog.showModal();
   });
   byId("projectCancel").addEventListener("click", function(){ projectDialog.close(); });
@@ -4243,8 +4286,9 @@
     // "Slutt" og "close out" var tidligere to separate datoer, men er i praksis alltid det samme
     // for dette prosjektet - close out ER sluttdatoen, og lagres derfor i begge kolonner.
     var closeOut = byId("projCloseOut").value;
-    if(id){ updateProject(id, name, byId("projStart").value, closeOut, closeOut); }
-    else { createProject(name, byId("projStart").value, closeOut, closeOut); }
+    var color = byId("projColor").value || null;
+    if(id){ updateProject(id, name, byId("projStart").value, closeOut, closeOut, color); }
+    else { createProject(name, byId("projStart").value, closeOut, closeOut, color); }
     projectDialog.close();
   });
 
@@ -7018,7 +7062,9 @@
   try{ cardOpen = JSON.parse(localStorage.getItem("ldc_cardopen") || "{}") || {}; }catch(e){ cardOpen = {}; }
   function cardToggleHtml(key, title, sumHtml){
     var open = !!cardOpen[key];
-    return '<button type="button" class="card-toggle" data-cardtoggle="'+key+'" aria-expanded="'+open+'"><h2>'+title+'</h2>' +
+    // Prosjektnavnet i overskriften, så man alltid ser hvilket prosjekt kortet gjelder.
+    var cur = state.projects.find(function(x){ return x.id === currentProjectId(); });
+    return '<button type="button" class="card-toggle" data-cardtoggle="'+key+'" aria-expanded="'+open+'"><h2>'+title+(cur ? ' <span class="ct-proj">· '+escapeHtml(cur.name)+'</span>' : '')+'</h2>' +
       (sumHtml ? '<span class="ct-sum">'+sumHtml+'</span>' : '') + '<span class="ct-chev">▾</span></button>';
   }
   document.addEventListener("click", function(ev){
@@ -7493,15 +7539,27 @@
       '</div></div>';
   }
   var reqAnsFiles = {};
+  // Åpne spørsmål til meg i ANDRE prosjekter (vises som knapper som bytter prosjekt).
+  function reqOtherProjectsHtml(){
+    if(!state.me) return "";
+    var cur = currentProjectId();
+    var parts = state.projects.filter(function(p){ return p.id !== cur; }).map(function(p){
+      var mine = state.teamLogins.filter(function(r){ return r.accountId === state.me.id && r.projectId === p.id; }).map(function(r){ return r.personId; });
+      var n = (state.reqQuestions || []).filter(function(q){ return q.project_id === p.id && q.status === "open" && mine.indexOf(q.to_person_id) !== -1; }).length;
+      return n ? '<button type="button" class="msg-topproj" data-reqgoproj="'+p.id+'" style="border-color:'+projectColor(p)+'; color:'+projectColor(p)+';">'+n+' i '+escapeHtml(p.name)+' ›</button>' : '';
+    }).join("");
+    return parts ? '<div class="req-other">Også spørsmål til deg i: ' + parts + '</div>' : "";
+  }
   function reqAskHtml(){
     var qs = myOpenReqQuestions();
-    if(!qs.length) return "";
+    var other = reqOtherProjectsHtml();
+    if(!qs.length) return other ? '<div class="peoplecard reqask-card collapsed"><div class="office-head"><h2 style="font-size:15px; margin:0;">Forespørsel fra Req prepp</h2></div>' + other + '</div>' : "";
     // Kompakt linje til man trykker på den (huskes per enhet, som Office/Godsmottaker).
     var from = [];
     qs.forEach(function(q){ var n = reqAskerLabel(q); if(from.indexOf(n) === -1) from.push(n); });
     var head = '<div class="office-head">'+cardToggleHtml("reqask", "Forespørsel fra Req prepp ("+qs.length+")", "fra " + escapeHtml(from.join(", ")))+'</div>';
-    if(!cardOpen.reqask) return '<div class="peoplecard reqask-card collapsed">' + head + '</div>';
-    return '<div class="peoplecard reqask-card">' + head + qs.map(function(q){
+    if(!cardOpen.reqask) return '<div class="peoplecard reqask-card collapsed">' + head + other + '</div>';
+    return '<div class="peoplecard reqask-card">' + head + other + qs.map(function(q){
       var chosen = reqAnsFiles[q.id] || [];
       return '<form class="req-q" data-reqanswer="'+q.id+'"><div class="req-qtext">'+escapeHtml(q.question)+'</div>' +
         '<div class="gmeta">Fra '+escapeHtml(reqAskerLabel(q))+', '+reqDateTxt(q.created_at)+'</div>' +
@@ -7559,6 +7617,12 @@
       });
     })).then(function(){ refetchReq(); });
   }
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest("[data-reqgoproj]");
+    if(!b) return;
+    selectProject(b.dataset.reqgoproj);
+    showInfo("Byttet til " + ((state.projects.find(function(x){ return x.id === b.dataset.reqgoproj; }) || {}).name || "prosjektet"));
+  });
   function inReq(t){ return t.closest && (t.closest(".reqprep-shared") || t.closest("#reqAskBox") || t.closest(".msg-shared")); }
   document.addEventListener("click", function(ev){
     var t = ev.target;
@@ -7694,8 +7758,8 @@
   function msgUsers(){ return state.cg1Access.filter(function(a){ return a.active && a.meldinger; }); }
   function msgBoxOwner(page){ var o = cg1PageOwnerAccess(page); return o ? o.user_id : (state.me ? state.me.id : null); }
   function msgPartsOf(tid){ return (state.msgParts || []).filter(function(p){ return p.thread_id === tid; }); }
-  function msgThreadsFor(owner){
-    var pid = currentProjectId();
+  function msgThreadsFor(owner, pidOpt){
+    var pid = pidOpt || currentProjectId();
     return (state.msgThreads || []).filter(function(t){ return t.project_id === pid && msgPartsOf(t.id).some(function(p){ return p.user_id === owner; }); })
       .sort(function(a, b){ return a.last_message_at < b.last_message_at ? 1 : -1; });
   }
@@ -7712,8 +7776,8 @@
     return names.length ? names.join(", ") : "Samtale";
   }
   // Req prepp for en bruker: spørsmål til personen(e) brukeren er koblet til, og spørsmål brukeren har sendt.
-  function msgReqFor(owner){
-    var pid = currentProjectId();
+  function msgReqFor(owner, pidOpt){
+    var pid = pidOpt || currentProjectId();
     var persons = state.teamLogins.filter(function(r){ return r.accountId === owner && r.projectId === pid; }).map(function(r){ return r.personId; });
     var qs = (state.reqQuestions || []).filter(function(q){ return q.project_id === pid; });
     return {
@@ -7721,9 +7785,9 @@
       mine: qs.filter(function(q){ return q.asked_by === owner; })
     };
   }
-  function msgCounts(owner){
-    var unread = msgThreadsFor(owner).reduce(function(s, t){ return s + msgUnread(t, owner); }, 0);
-    var rq = msgReqFor(owner);
+  function msgCounts(owner, pidOpt){
+    var unread = msgThreadsFor(owner, pidOpt).reduce(function(s, t){ return s + msgUnread(t, owner); }, 0);
+    var rq = msgReqFor(owner, pidOpt);
     var reqN = rq.toMe.filter(function(q){ return q.status === "open"; }).length + rq.mine.filter(function(q){ return q.status === "answered"; }).length;
     return { unread: unread, req: reqN, total: unread + reqN };
   }
@@ -7852,11 +7916,18 @@
       body + '</div>';
   }
   // Liten linje øverst (alle sider) for brukere med egen Meldinger-boks.
+  // Viser også uleste i andre prosjekter («2 uleste i Bø · 1 i Kalmar»); trykk bytter prosjekt.
   function msgTopLineHtml(){
-    var me = state.me ? state.me.id : null;
-    var c = msgCounts(me);
-    if(!c.total) return "";
-    return '<button type="button" class="peoplecard msg-topline" data-msggoto><span class="msg-badge">'+c.total+'</span> Meldinger: '+c.total+' uleste'+(c.req ? ' (Req prepp: '+c.req+')' : '')+' <span style="margin-left:auto; color:var(--muted);">Åpne ›</span></button>';
+    var me = state.me ? state.me.id : null, cur = currentProjectId();
+    var per = state.projects.map(function(p){ return { p: p, c: msgCounts(me, p.id) }; }).filter(function(x){ return x.c.total; })
+      .sort(function(a, b){ return (a.p.id === cur ? -1 : 0) - (b.p.id === cur ? -1 : 0); });
+    if(!per.length) return "";
+    var total = per.reduce(function(s, x){ return s + x.c.total; }, 0);
+    return '<div class="peoplecard msg-topline"><span class="msg-badge">'+total+'</span> <span>Meldinger:</span>' + per.map(function(x, i){
+      var col = projectColor(x.p);
+      return '<button type="button" class="msg-topproj" data-msggoto="'+x.p.id+'" style="border-color:'+col+'; color:'+col+';">' +
+        (i === 0 ? x.c.total + ' uleste i ' : x.c.total + ' i ') + escapeHtml(x.p.name) + (x.c.req ? ' (Req prepp: '+x.c.req+')' : '') + ' ›</button>';
+    }).join("") + '</div>';
   }
   var msgRenderedSig = {};
   function renderMsgShared(){
@@ -7925,6 +7996,7 @@
   document.addEventListener("click", function(ev){
     var t = ev.target, b;
     if(t.closest && (b = t.closest("[data-msggoto]"))){
+      if(b.dataset.msggoto && b.dataset.msggoto !== currentProjectId()){ selectProject(b.dataset.msggoto); showInfo("Byttet til " + ((state.projects.find(function(x){ return x.id === b.dataset.msggoto; }) || {}).name || "prosjektet")); }
       var key = myOwnCg1PageKey();
       cardOpen.msg = true;
       try{ localStorage.setItem("ldc_cardopen", JSON.stringify(cardOpen)); }catch(e){}
@@ -8133,7 +8205,7 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", matterportUrl: row.matterport_url || "", matterportPassword: row.matterport_password || "", createdAt: row.created_at };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", matterportUrl: row.matterport_url || "", matterportPassword: row.matterport_password || "", createdAt: row.created_at, color: row.color || "" };
   }
   function rowToSiteCode(row){
     return { id: row.id, project_id: row.project_id, label: row.label, value: row.value, createdAt: row.created_at };
@@ -12350,9 +12422,9 @@
     "Lede & skrive risikoanalyse", "Starte streaming", "Sikkerhetstale (tirsdag)", "Napo (torsdag)",
     "Sikkerhetsrunde (torsdag)", "Inn & ut-sjekkings"
   ];
-  function createProject(name, start, end, closeOut){
+  function createProject(name, start, end, closeOut, color){
     if(!sb) return;
-    sb.from("projects").insert({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null })
+    sb.from("projects").insert({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null, color: color || null })
       .select().single().then(function(res){
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke opprette prosjektet: "+res.error.message); return; }
         selectProject(res.data.id);
@@ -12371,9 +12443,9 @@
         }
       });
   }
-  function updateProject(id, name, start, end, closeOut){
+  function updateProject(id, name, start, end, closeOut, color){
     if(!sb) return;
-    sb.from("projects").update({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null }).eq("id", id)
+    sb.from("projects").update({ name: name.slice(0,80), start_date: start || null, end_date: end || null, close_out_date: closeOut || null, color: color || null }).eq("id", id)
       .then(function(res){
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke oppdatere prosjektet: "+res.error.message); return; }
         refetchProjects();
