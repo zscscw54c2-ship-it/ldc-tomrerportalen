@@ -7742,7 +7742,9 @@
     var others = msgUsers().filter(function(a){ return !parts.some(function(p){ return p.user_id === a.user_id; }); });
     var msgs = msgMessagesOf(t.id);
     return '<div class="msg-thread">' +
-      '<div class="msg-thead"><button type="button" class="btn small ghost" data-msgback>← Samtaler</button><strong>'+escapeHtml(msgThreadTitle(t, owner))+'</strong></div>' +
+      '<div class="msg-thead"><button type="button" class="btn small ghost" data-msgback>← Samtaler</button><strong>'+escapeHtml(msgThreadTitle(t, owner))+'</strong>' +
+        // Den som startet samtalen kan slette hele samtalen (låst i databasen, sql/103).
+        (canWrite && t.created_by === me ? '<button type="button" class="btn small ghost danger" data-msgdelthread="'+t.id+'" style="margin-left:auto;">Slett samtalen</button>' : '') + '</div>' +
       '<div class="msg-parts">' + parts.map(function(p){
         return '<span class="msg-chip">'+escapeHtml(msgUserName(p.user_id))+(write ? '<button type="button" data-msgrmuser="'+t.id+'|'+p.user_id+'" title="'+(p.user_id === me ? 'Forlat samtalen' : 'Fjern fra samtalen')+'">×</button>' : '')+'</span>';
       }).join("") +
@@ -7781,7 +7783,10 @@
         '<div class="gmeta">'+who+reqDateTxt(q.created_at)+' '+st+'</div>' +
         (q.answer || reqFilesFor(q.id).length ? '<div class="req-answer"><div class="gmeta" style="margin:0 0 2px;">Svar'+(q.answered_by_name ? ' fra '+escapeHtml(q.answered_by_name) : '')+(q.answered_at ? ', '+reqDateTxt(q.answered_at) : '')+'</div>' +
           (q.answer ? '<div style="white-space:pre-wrap;">'+escapeHtml(q.answer)+'</div>' : '') + reqFileLinks(q.id, false) + '</div>' : '') +
-        (withTo && canWrite && state.me && q.asked_by === state.me.id && q.status === "answered" ? '<div class="req-qacts"><button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button></div>' : '') +
+        (withTo && canWrite && state.me && q.asked_by === state.me.id ? '<div class="req-qacts">' +
+          (q.status === "answered" ? '<button type="button" class="btn small primary" data-reqclose="'+q.id+'">Lukk</button>' : '') +
+          (q.status === "closed" ? '<button type="button" class="btn small ghost" data-reqreopen="'+q.id+'">Åpne igjen</button>' : '') +
+          '<button type="button" class="btn small ghost danger" data-reqdelq="'+q.id+'">Slett</button></div>' : '') +
         '</div>';
     };
     var answerForm = function(q){
@@ -7920,6 +7925,18 @@
     if((b = t.closest("[data-msgtab]"))){ view.msgTab = b.dataset.msgtab; view.msgThread = null; msgRerender(); }
     else if((b = t.closest("[data-msgopen]"))){ view.msgThread = b.dataset.msgopen; view.msgNewOpen = false; msgRerender(); }
     else if(t.closest("[data-msgback]")){ view.msgThread = null; msgRerender(); }
+    else if((b = t.closest("[data-msgdelthread]"))){
+      var dtid = b.dataset.msgdelthread;
+      askConfirm("Hele samtalen, alle meldingene og vedleggene slettes for alle som er med.", function(){
+        var paths = (state.msgFiles || []).filter(function(f){ return f.thread_id === dtid; }).map(function(f){ return f.file_path; });
+        (paths.length ? sb.storage.from("meldinger").remove(paths) : Promise.resolve()).then(function(){
+          return sb.from("msg_threads").delete().eq("id", dtid);
+        }).then(function(res){
+          if(res && res.error){ showError("Kunne ikke slette samtalen: " + res.error.message); return; }
+          view.msgThread = null; showInfo("Samtalen er slettet ✓"); refetchMsg(); msgRerender();
+        });
+      }, { title: "Slette samtalen?" });
+    }
     else if(t.closest("[data-msgnewopen]")){ view.msgNewOpen = true; msgChosen["new"] = []; msgRerender(); }
     else if(t.closest("[data-msgcancel]")){ view.msgNewOpen = false; msgChosen["new"] = []; msgRerender(); }
     else if((b = t.closest("[data-msgdel]"))){
