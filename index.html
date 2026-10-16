@@ -546,6 +546,13 @@
   .req-ask .grow2, .req-q .grow2{ display:flex; gap:8px; flex-wrap:wrap; }
   .req-ask select{ width:auto; flex:1; min-width:160px; }
   .req-answer{ background:var(--surface-alt); border-radius:8px; padding:6px 9px; font-size:13px; }
+  .landscape-dlg .ls-phone{ height:110px; display:flex; align-items:center; justify-content:center; }
+  .landscape-dlg .ls-device{ width:46px; height:80px; border:4px solid var(--text); border-radius:10px; position:relative; animation:ls-rotate 2.4s ease-in-out infinite; }
+  .landscape-dlg .ls-device span{ position:absolute; left:50%; bottom:5px; width:10px; height:3px; margin-left:-5px; border-radius:2px; background:var(--text); }
+  .landscape-dlg.is-landscape .ls-device{ animation:none; transform:rotate(-90deg); border-color:var(--good); }
+  .landscape-dlg .ls-ok{ color:var(--good); font-weight:700; margin:4px 0 0; }
+  @keyframes ls-rotate{ 0%,25%{ transform:rotate(0); } 55%,85%{ transform:rotate(-90deg); } 100%{ transform:rotate(0); } }
+  .ls-warn{ color:var(--bad-ink); font-weight:600; }
   .local-row{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:10px; padding:9px 11px; margin-bottom:8px; }
   .local-row .lmain{ flex:1; min-width:0; }
   .local-row .lname{ font-weight:700; font-size:14px; }
@@ -2630,6 +2637,19 @@
   </form>
 </dialog>
 
+<dialog id="landscapeDialog" class="landscape-dlg">
+  <div class="dlg-body" style="text-align:center;">
+    <div class="ls-phone" aria-hidden="true"><div class="ls-device"><span></span></div></div>
+    <h3 style="margin:6px 0 4px;">Legg mobilen liggende</h3>
+    <p style="font-size:14px; color:var(--muted); margin:0 0 6px;">Dokumentasjonsbilder skal være <strong>liggende</strong> (bredt bilde). Snu mobilen før du tar bildet.</p>
+    <p id="landscapeOk" class="ls-ok" hidden>✓ Mobilen ligger – bra!</p>
+    <div class="dlg-actions" style="justify-content:center;">
+      <button type="button" class="btn ghost" id="landscapeCancel">Avbryt</button>
+      <button type="button" class="btn primary" id="landscapeGo">📷 Ta bilde</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="localVolDialog">
   <form class="dlg-body" id="localVolForm" method="dialog">
     <h3 id="localVolTitle">Ny lokal frivillig</h3>
@@ -4627,6 +4647,36 @@
       '</form>' +
       '<p class="empty-note" id="dokuWeekUploadStatus"></p>';
   }
+  // ---------- «Legg mobilen liggende» før kameraet åpnes (Dokumentasjon) ----------
+  var landscapeAfter = null;
+  function isLandscapeNow(){ try{ return window.matchMedia("(orientation: landscape)").matches; }catch(e){ return window.innerWidth > window.innerHeight; } }
+  function openLandscapeReminder(after){
+    landscapeAfter = after;
+    byId("landscapeOk").hidden = !isLandscapeNow();
+    byId("landscapeDialog").classList.toggle("is-landscape", isLandscapeNow());
+    byId("landscapeDialog").showModal();
+  }
+  function onLandscapeChange(){ var d = byId("landscapeDialog"); if(!d || !d.open) return; byId("landscapeOk").hidden = !isLandscapeNow(); d.classList.toggle("is-landscape", isLandscapeNow()); }
+  window.addEventListener("resize", onLandscapeChange);
+  window.addEventListener("orientationchange", onLandscapeChange);
+  byId("landscapeCancel").addEventListener("click", function(){ landscapeAfter = null; byId("landscapeDialog").close(); });
+  byId("landscapeGo").addEventListener("click", function(){
+    var fn = landscapeAfter; landscapeAfter = null;
+    byId("landscapeDialog").close();
+    if(fn) fn(); // kameraet åpnes i samme trykk (krav fra nettleseren)
+  });
+  // Antall stående bilder (høyere enn brede) blant filene.
+  function countPortraitImages(files){
+    return Promise.all(files.map(function(f){
+      return new Promise(function(resolve){
+        if(!f.type || f.type.indexOf("image/") !== 0){ resolve(false); return; }
+        var url = URL.createObjectURL(f), img = new Image();
+        img.onload = function(){ var portrait = img.naturalHeight > img.naturalWidth * 1.05; URL.revokeObjectURL(url); resolve(portrait); };
+        img.onerror = function(){ URL.revokeObjectURL(url); resolve(false); };
+        img.src = url;
+      });
+    })).then(function(r){ return r.filter(Boolean).length; });
+  }
   function bindDokuUploadForm(weekIso){
     dokuWeekSelectedFiles = null;
     function updateDokuWeekSubmitState(){
@@ -4634,13 +4684,30 @@
     }
     function handleDokuWeekFileChange(){
       if(this.files && this.files.length){
-        dokuWeekSelectedFiles = Array.prototype.slice.call(this.files);
-        byId("dokuWeekFileStatus").textContent = dokuWeekSelectedFiles.length + " bilde(r) valgt.";
+        var picked = Array.prototype.slice.call(this.files);
+        dokuWeekSelectedFiles = picked;
+        byId("dokuWeekFileStatus").textContent = picked.length + " bilde(r) valgt.";
+        // Advar hvis et bilde er stående (dokumentasjon skal være liggende).
+        countPortraitImages(picked).then(function(n){
+          if(!n || dokuWeekSelectedFiles !== picked) return;
+          byId("dokuWeekFileStatus").innerHTML = picked.length + ' bilde(r) valgt. <span class="ls-warn">⚠ ' + (picked.length === 1 ? 'Bildet er stående' : n + ' av bildene er stående') +
+            ' – dokumentasjon skal være liggende.</span> <button type="button" class="btn small" id="dokuRetakeBtn">Ta nytt bilde</button>';
+          byId("dokuRetakeBtn").addEventListener("click", function(){
+            dokuWeekSelectedFiles = null; byId("dokuWeekFileStatus").textContent = ""; updateDokuWeekSubmitState();
+            byId("dokuWeekCameraInput").value = ""; byId("dokuWeekFileInput").value = "";
+            openLandscapeReminder(function(){ byId("dokuWeekCameraInput").click(); });
+          });
+        });
       }
       updateDokuWeekSubmitState();
     }
     byId("dokuWeekCameraInput").addEventListener("change", handleDokuWeekFileChange);
     byId("dokuWeekFileInput").addEventListener("change", handleDokuWeekFileChange);
+    // «Ta bilde»: minn om å legge mobilen liggende før kameraet åpnes.
+    byId("dokuWeekCameraTrigger").addEventListener("click", function(ev){
+      ev.preventDefault();
+      openLandscapeReminder(function(){ byId("dokuWeekCameraInput").click(); });
+    });
     byId("dokuWeekUploadForm").addEventListener("submit", function(ev){
       ev.preventDefault();
       if(!dokuWeekSelectedFiles || !dokuWeekSelectedFiles.length) return;
