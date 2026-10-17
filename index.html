@@ -1010,7 +1010,7 @@
 
   /* Team-siden: oppslagsside for teamet. Hovedkolonne (FLEX, leveranser, morgentilbedelse, møter …)
      og en smal oppslagskolonne til høyre (evakuering, adresser, Matterport, koder, info, teamet).
-     Små kort i hovedkolonnen fyller et rutenett, så skjulte (tomme) kort ikke etterlater hull. Under 1100px: én kolonne. Mobil (≤640px) bruker flisene som før –
+     Små kort i hovedkolonnen flyter i to spalter (Ukas mål over hele bredden), så ulike høyder og skjulte (tomme) kort ikke gir hull. Under 960px: én kolonne (oppslagskortene to og to). Mobil (≤640px) bruker flisene som før –
      samme data-sec kan ligge i flere .subhome-section, så både hoved- og sidekolonne følger flisen. */
   .tm-layout{ display:flex; flex-direction:column; gap:14px; }
   .tm-main, .tm-side{ display:flex; flex-direction:column; gap:14px; min-width:0; }
@@ -1024,9 +1024,11 @@
   .tm-duties{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
   .mw-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px 14px; }
   .mw-grid .field label{ font-size:12px; }
-  .ovc-row{ display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border); font-size:13.5px; }
+  .ovc-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:6px 0; border-top:1px solid var(--border); font-size:13.5px; }
+  .ovc-row .ovc-name{ display:flex; align-items:baseline; min-width:0; }
+  .ovc-row .ovc-who{ grid-column:1 / -1; font-size:12px; color:var(--muted); padding-left:14px; }
   .ovc-row:first-child{ border-top:none; }
-  .ovc-row .ovc-time{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); white-space:nowrap; text-align:right; }
+  .ovc-row .ovc-time{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); text-align:right; max-width:13em; overflow-wrap:anywhere; }
   .ovc-row .ovc-kind{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px; vertical-align:1px; }
   /* Leveranser: statuslinje + filter */
   .dlv-bar{ display:flex; height:10px; border-radius:5px; overflow:hidden; gap:2px; background:var(--surface-alt); }
@@ -1045,19 +1047,24 @@
   #panel-andelig:not(.editing) .tm-layout .is-empty:not(#tmGoalsCard){ display:none !important; }
   @media (min-width:641px){
     .tm-main > .subhome-section, .tm-side > .subhome-section{ display:flex; }
-    .tm-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); align-items:start; }
+    .tm-grid{ display:block; column-count:2; column-gap:14px; }
     .tm-grid > .subhome-section{ display:contents; }
+    .tm-grid .peoplecard{ break-inside:avoid; -webkit-column-break-inside:avoid; margin-bottom:14px; }
+    .tm-grid #tmGoalsCard{ column-span:all; }
+    .tm-side > .subhome-section{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); align-items:start; }
     .tm-edit-split{ grid-template-columns:1fr 1fr; }
     #panel-andelig:not(.editing) .tm-layout .is-empty{ display:none !important; }
     .tm-side .peoplecard > p.sub{ display:none; }
     .tm-side .peoplecard > h2{ margin-bottom:8px !important; }
     #panel-andelig.editing .tm-side .peoplecard > p.sub{ display:block; }
   }
-  @media (min-width:1100px){
-    .tm-layout{ display:grid; grid-template-columns:minmax(0,1fr) 340px; align-items:start; }
+  @media (min-width:960px){
+    .tm-layout{ display:grid; grid-template-columns:minmax(0,1fr) 300px; align-items:start; }
+    .tm-side > .subhome-section{ display:flex; }
     .evac-card.has-more .evac-view:not(.open){ max-height:14em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 70%, transparent); mask-image:linear-gradient(#000 70%, transparent); }
     #panel-andelig:not(.editing) .evac-card.has-more .evac-more{ display:inline-block; }
   }
+  @media (min-width:1200px){ .tm-layout{ grid-template-columns:minmax(0,1fr) 340px; } }
   @media (min-width:1500px){ .tm-layout{ grid-template-columns:minmax(0,1fr) 380px; } }
   @media (max-width:640px){
     .tm-side{ order:-1; }
@@ -1642,6 +1649,13 @@
         </div>
       </div>
       <div class="tm-grid">
+      <div class="subhome-section" data-tiled data-sec="ukasmaal">
+      <div class="peoplecard" id="tmGoalsCard">
+        <h2 data-etkey="andelig_ukasmaal_title" style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
+        <p class="sub" data-etkey="andelig_ukasmaal_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
+        <div id="weeklyGoalsList"></div>
+      </div>
+      </div>
       <div class="subhome-section" data-tiled data-sec="byggeplass">
         <div class="peoplecard" id="tmProgramCard">
           <h2 data-etkey="andelig_moteprogram_title" style="font-size:16px; margin-bottom:8px;">Møter og program</h2>
@@ -1676,13 +1690,6 @@
           <p class="sub" data-etkey="andelig_teammote_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
           <div id="teamMeetingView"></div>
         </div>
-      </div>
-      <div class="subhome-section" data-tiled data-sec="ukasmaal">
-      <div class="peoplecard" id="tmGoalsCard">
-        <h2 data-etkey="andelig_ukasmaal_title" style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
-        <p class="sub" data-etkey="andelig_ukasmaal_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
-        <div id="weeklyGoalsList"></div>
-      </div>
       </div>
       <div class="subhome-section" data-tiled data-sec="byggeplass">
         <div class="peoplecard">
@@ -5417,8 +5424,8 @@
       .sort(function(x, y){ return (ovDayIdx(x.o.time) - ovDayIdx(y.o.time)) || ovClock(x.o.time).localeCompare(ovClock(y.o.time)) || (x.i - y.i); });
     byId("tmProgramCard").classList.toggle("is-empty", !combined.length);
     byId("overviewCombinedList").innerHTML = combined.length ? combined.map(function(x){
-      var meta = [x.o.time, x.kind === "mote" ? x.o.ansvarlig : ""].filter(Boolean).map(escapeHtml).join(" · ");
-      return '<div class="ovc-row"><span><i class="ovc-kind" style="background:'+(x.kind === "mote" ? "var(--accent)" : "var(--good)")+'" title="'+(x.kind === "mote" ? "Møte" : "Åndelig program")+'"></i>'+escapeHtml(x.o.name)+'</span><span class="ovc-time">'+meta+'</span></div>';
+      var who = x.kind === "mote" && x.o.ansvarlig ? '<span class="ovc-who">Ansvarlig: '+escapeHtml(x.o.ansvarlig)+'</span>' : "";
+      return '<div class="ovc-row"><span class="ovc-name"><i class="ovc-kind" style="background:'+(x.kind === "mote" ? "var(--accent)" : "var(--good)")+'" title="'+(x.kind === "mote" ? "Møte" : "Åndelig program")+'"></i>'+escapeHtml(x.o.name)+'</span><span class="ovc-time">'+escapeHtml(x.o.time || "")+'</span>'+who+'</div>';
     }).join("") : '<p class="empty-note">Ingen møter eller program lagt inn ennå.</p>';
 
     document.querySelectorAll("#panel-andelig [data-delov]").forEach(function(b){
