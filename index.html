@@ -1034,10 +1034,11 @@
   .pwd-dh{ font-size:12px; font-weight:700; margin-bottom:6px; }
   .pwd-dh span{ font-family:"IBM Plex Mono",monospace; font-weight:400; color:var(--muted); }
   .pwd-none{ color:var(--muted); font-size:12px; }
-  .pwd-edit{ display:flex; flex-direction:column; }
   .pwd-erow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border); flex-wrap:wrap; }
   .pwd-erow:first-child{ border-top:none; }
-  .pwd-etext{ font-size:13.5px; flex:1; min-width:160px; }
+  .pwd-einput{ flex:1; min-width:160px; font:inherit; font-size:13.5px; border:1px solid transparent; border-radius:7px; padding:5px 8px; background:transparent; color:var(--text); }
+  .pwd-einput:hover{ border-color:var(--border); }
+  .pwd-einput:focus{ border-color:var(--accent); background:var(--surface); outline:none; }
   .pwd-days{ display:flex; gap:4px; }
   .pwd-day{ font:inherit; font-size:12px; font-weight:700; width:30px; height:28px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface); color:var(--muted); cursor:pointer; }
   .pwd-day[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
@@ -1955,8 +1956,8 @@
         <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Datoer, ansvarlig, familiestudie, sikkerhetstale og bibellesning for hver uke. Team-siden viser dette (Info/Program); morgentilbedelsen fylles ut der.</p>
         <div id="pwList" style="display:flex; flex-direction:column; gap:8px;"></div>
         <h3 style="font-size:14px; margin:16px 0 6px;">Ansvarspunkter</h3>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Sjekklisten for privilege-uken som vises på Team-siden.</p>
-        <div id="adminDutyList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Vises i ukelinjen på Team-siden og på utskriften. Trykk på dagene punktet gjelder (ingen eller alle = hele uken). Trykk på teksten for å endre den.</p>
+        <div id="adminDutyList" style="display:flex; flex-direction:column;"></div>
         <form class="inline-add" id="addDutyForm" style="margin-top:8px;">
           <input type="text" id="newDutyText" placeholder="F.eks. Starte streaming" required maxlength="120" />
           <button class="btn primary" type="submit">Legg til</button>
@@ -5413,18 +5414,37 @@
       : "Ingen aktiv privilege-uke denne uken.";
     byId("pwDutiesWrap").hidden = !duties.length;
     // Ukelinje man–fre med punktene på riktig dag; «Hele uken» for punkter uten dag.
-    // I Rediger: dagknapper (M T O T F) per punkt, flere dager kan velges.
-    var DOW_SHORT = ["Man","Tir","Ons","Tor","Fre"], DOW_BTN = ["M","T","O","T","F"];
+    // Bare visning – tekst, dager og punkter redigeres under Administrasjon → Privilege-uker.
+    var DOW_SHORT = ["Man","Tir","Ons","Tor","Fre"];
     var todayDow = isLiveTeamWeek ? new Date().getDay() : -1;
-    if(view.andeligEdit){
-      byId("pwChecklist").innerHTML = duties.length ? '<div class="pwd-edit">' + duties.map(function(d){
-        return '<div class="pwd-erow"><span class="pwd-etext">'+escapeHtml(d.text)+'</span><span class="pwd-days" role="group" aria-label="Dager for '+escapeHtml(d.text)+'">' +
+    var wholeWeek = duties.filter(dutyIsWholeWeek);
+    var chip = function(d){ return '<span class="pwd-chip">'+escapeHtml(dutyShortText(d))+'</span>'; };
+    byId("pwChecklist").innerHTML = duties.length ?
+      (wholeWeek.length ? '<div class="pwd-all"><span class="pwd-label">Hele uken</span><span class="pwd-chips">'+wholeWeek.map(chip).join("")+'</span></div>' : '') +
+      '<div class="pwd-week">' + DOW_SHORT.map(function(lbl, i){
+        var day = new Date(teamWeekMonday.getFullYear(), teamWeekMonday.getMonth(), teamWeekMonday.getDate() + i);
+        var items = duties.filter(function(d){ return !dutyIsWholeWeek(d) && d.days.indexOf(i + 1) !== -1; });
+        return '<div class="pwd-col'+(todayDow === i + 1 ? ' today' : '')+'"><div class="pwd-dh">'+lbl+' <span>'+day.getDate()+'.</span></div><div class="pwd-chips">' +
+          (items.length ? items.map(chip).join("") : '<span class="pwd-none">–</span>') + '</div></div>';
+      }).join("") + '</div>'
+      : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+    // Administrasjon → Privilege-uker: her redigeres ansvarspunktene – tekst, ukedager (M T O T F,
+    // ingen/alle = hele uken) og sletting. Tegnes ikke på nytt mens man skriver i et tekstfelt.
+    var dutyList = byId("adminDutyList");
+    var dutySig = JSON.stringify(duties.map(function(d){ return [d.id, d.text, d.days]; }));
+    var dutyFocus = dutyList.contains(document.activeElement) && document.activeElement.tagName === "INPUT";
+    if(dutyList.dataset.sig !== dutySig && !dutyFocus){
+      dutyList.dataset.sig = dutySig;
+      var DOW_BTN = ["M","T","O","T","F"];
+      dutyList.innerHTML = duties.length ? duties.map(function(d){
+        return '<div class="pwd-erow">' +
+          '<input type="text" class="pwd-einput" data-dutytext="'+d.id+'" value="'+escapeHtml(d.text)+'" maxlength="120" aria-label="Tekst for ansvarspunkt" />' +
+          '<span class="pwd-days" role="group" aria-label="Dager for '+escapeHtml(d.text)+'">' +
           DOW_BTN.map(function(l, i){ var on = d.days.indexOf(i + 1) !== -1;
             return '<button type="button" class="pwd-day" data-dutyday="'+d.id+'|'+(i + 1)+'" aria-pressed="'+on+'" title="'+DUTY_DAY_WORDS[i]+'">'+l+'</button>'; }).join("") +
-          '</span></div>';
-      }).join("") + '<p class="empty-note" style="margin:6px 0 0;">Trykk på dagene punktet gjelder. Ingen dag valgt = hele uken. Punkter legges til/fjernes under Administrasjon → Privilege-uker.</p></div>'
-        : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
-      byId("pwChecklist").querySelectorAll("[data-dutyday]").forEach(function(b){
+          '</span><button type="button" class="del" data-delduty="'+d.id+'" title="Slett ansvarspunkt" aria-label="Slett '+escapeHtml(d.text)+'">×</button></div>';
+      }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+      dutyList.querySelectorAll("[data-dutyday]").forEach(function(b){
         b.addEventListener("click", function(){
           var p = this.dataset.dutyday.split("|"), n = Number(p[1]);
           var d = state.spiritualDuties.find(function(x){ return x.id === p[0]; });
@@ -5432,26 +5452,21 @@
           setDutyDays(d.id, d.days.indexOf(n) !== -1 ? d.days.filter(function(x){ return x !== n; }) : d.days.concat([n]));
         });
       });
-    } else {
-      var wholeWeek = duties.filter(dutyIsWholeWeek);
-      var chip = function(d){ return '<span class="pwd-chip">'+escapeHtml(dutyShortText(d))+'</span>'; };
-      byId("pwChecklist").innerHTML = duties.length ?
-        (wholeWeek.length ? '<div class="pwd-all"><span class="pwd-label">Hele uken</span><span class="pwd-chips">'+wholeWeek.map(chip).join("")+'</span></div>' : '') +
-        '<div class="pwd-week">' + DOW_SHORT.map(function(lbl, i){
-          var day = new Date(teamWeekMonday.getFullYear(), teamWeekMonday.getMonth(), teamWeekMonday.getDate() + i);
-          var items = duties.filter(function(d){ return !dutyIsWholeWeek(d) && d.days.indexOf(i + 1) !== -1; });
-          return '<div class="pwd-col'+(todayDow === i + 1 ? ' today' : '')+'"><div class="pwd-dh">'+lbl+' <span>'+day.getDate()+'.</span></div><div class="pwd-chips">' +
-            (items.length ? items.map(chip).join("") : '<span class="pwd-none">–</span>') + '</div></div>';
-        }).join("") + '</div>'
-        : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+      dutyList.querySelectorAll("[data-dutytext]").forEach(function(inp){
+        inp.addEventListener("keydown", function(ev){
+          if(ev.key === "Enter"){ ev.preventDefault(); this.blur(); }
+          if(ev.key === "Escape"){ var d = state.spiritualDuties.find(function(x){ return x.id === inp.dataset.dutytext; }); if(d) this.value = d.text; this.blur(); }
+        });
+        inp.addEventListener("change", function(){ renameDuty(this.dataset.dutytext, this.value); });
+        inp.addEventListener("blur", function(){ setTimeout(renderSpiritualTab, 0); });
+      });
+      dutyList.querySelectorAll("[data-delduty]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var d = state.spiritualDuties.find(function(x){ return x.id === b.dataset.delduty; });
+          if(confirm("Slette ansvarspunktet «" + (d ? d.text : "") + "»?")) deleteDuty(this.dataset.delduty);
+        });
+      });
     }
-    // Administrasjon → Privilege-uker: samme liste, med fjern-knapp (punkter legges til/fjernes bare der).
-    byId("adminDutyList").innerHTML = duties.length ? duties.map(function(d){
-      return '<div class="shoprow"><span class="sname">'+escapeHtml(d.text)+'</span><button type="button" class="del" data-delduty="'+d.id+'" title="Fjern ansvarspunkt" aria-label="Fjern '+escapeHtml(d.text)+'">×</button></div>';
-    }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
-    byId("adminDutyList").querySelectorAll("[data-delduty]").forEach(function(b){
-      b.addEventListener("click", function(){ deleteDuty(this.dataset.delduty); });
-    });
 
     var agenda = toAgendaForCurrentProject();
     byId("toAgendaList").innerHTML = agenda.length ? agenda.map(function(a){
@@ -9048,6 +9063,17 @@
   function dutyIsWholeWeek(d){ return !d.days.length || d.days.length === 5; }
   function dutyShortText(d){
     return d.days.length ? d.text.replace(/\s*[(–—-]\s*(mandag|tirsdag|onsdag|torsdag|fredag)\s*\)?\s*$/i, "") || d.text : d.text;
+  }
+  function renameDuty(id, text){
+    text = (text || "").trim().slice(0, 120);
+    var d = state.spiritualDuties.find(function(x){ return x.id === id; });
+    if(!d || !text || text === d.text) return;
+    d.text = text;
+    if(!sb) return;
+    sb.from("spiritual_duties").update({ text: text }).eq("id", id).then(function(res){
+      if(res.error) showError("Kunne ikke lagre: " + res.error.message);
+      refetchDuties();
+    });
   }
   function setDutyDays(id, days){
     var d = state.spiritualDuties.find(function(x){ return x.id === id; });
