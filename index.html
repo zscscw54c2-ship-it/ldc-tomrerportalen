@@ -1008,24 +1008,61 @@
     .subhome-open .subhome-back{ display:flex; }
   }
 
-  /* Team-siden på PC: tydelige sone-overskrifter over hver gruppe kort, i stedet for fliser */
-  .zone-head{ display:none; }
+  /* Team-siden: oppslagsside for teamet. Hovedkolonne (FLEX, leveranser, morgentilbedelse, møter …)
+     og en smal oppslagskolonne til høyre (evakuering, adresser, Matterport, koder, info, teamet).
+     Små kort i hovedkolonnen fyller et rutenett, så skjulte (tomme) kort ikke etterlater hull. Under 1100px: én kolonne. Mobil (≤640px) bruker flisene som før –
+     samme data-sec kan ligge i flere .subhome-section, så både hoved- og sidekolonne følger flisen. */
+  .tm-layout{ display:flex; flex-direction:column; gap:14px; }
+  .tm-main, .tm-side{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .tm-main > .subhome-section, .tm-side > .subhome-section, .tm-grid > .subhome-section{ flex-direction:column; gap:14px; min-width:0; }
+  .tm-layout .peoplecard{ padding:14px 16px; min-width:0; }
+  .tm-grid{ display:flex; flex-direction:column; gap:14px; }
+  .tm-subhead{ font-size:12px !important; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 6px !important; }
+  .tm-edit-split{ display:grid; grid-template-columns:1fr; gap:14px; }
+  .tm-scripture{ display:flex; align-items:baseline; gap:8px; flex:1; min-width:200px; flex-wrap:wrap; }
+  .tm-scripture-label{ font-size:11.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .tm-duties{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .mw-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px 14px; }
+  .mw-grid .field label{ font-size:12px; }
+  .ovc-row{ display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border); font-size:13.5px; }
+  .ovc-row:first-child{ border-top:none; }
+  .ovc-row .ovc-time{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); white-space:nowrap; text-align:right; }
+  .ovc-row .ovc-kind{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px; vertical-align:1px; }
+  /* Leveranser: statuslinje + filter */
+  .dlv-bar{ display:flex; height:10px; border-radius:5px; overflow:hidden; gap:2px; background:var(--surface-alt); }
+  .dlv-bar span{ display:block; min-width:4px; }
+  .dlv-legend{ display:flex; gap:6px 14px; flex-wrap:wrap; font-size:12.5px; margin:7px 0 10px; color:var(--muted); }
+  .dlv-legend b{ color:var(--text); }
+  .dlv-legend i{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:0; }
+  .dlv-legend .dlv-late{ color:var(--bad-ink); font-weight:700; }
+  .dlv-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .dlv-chip{ font:inherit; font-size:12.5px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); border-radius:999px; padding:3px 11px; cursor:pointer; }
+  .dlv-chip[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .dlv-more{ font:inherit; font-size:12.5px; color:var(--accent); background:none; border:none; padding:6px 0 0; cursor:pointer; font-weight:600; }
+  #deliveriesList .shoprow.dlv-overdue{ background:var(--bad-soft); border-radius:8px; }
+  /* Evakuering: lang plan foldes sammen i sidekolonnen */
+  .evac-more{ display:none; font:inherit; font-size:12.5px; font-weight:700; color:var(--bad-ink); background:none; border:none; padding:6px 0 0; cursor:pointer; }
+  #panel-andelig:not(.editing) .tm-layout .is-empty:not(#tmGoalsCard){ display:none !important; }
   @media (min-width:641px){
-    .zone-head{
-      display:flex; align-items:center; gap:10px; margin:28px 0 12px;
-    }
-    .zone-head:first-of-type{ margin-top:4px; }
-    .zone-head .zone-icon{ width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--zc, var(--accent)); }
-    .zone-head .zone-icon svg{ width:16px; height:16px; fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-    .zone-head h2{ font-size:15px; margin:0; }
-    .zone-head .zone-line{ flex:1; height:1px; background:var(--border); }
+    .tm-main > .subhome-section, .tm-side > .subhome-section{ display:flex; }
+    .tm-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); align-items:start; }
+    .tm-grid > .subhome-section{ display:contents; }
+    .tm-edit-split{ grid-template-columns:1fr 1fr; }
+    #panel-andelig:not(.editing) .tm-layout .is-empty{ display:none !important; }
+    .tm-side .peoplecard > p.sub{ display:none; }
+    .tm-side .peoplecard > h2{ margin-bottom:8px !important; }
+    #panel-andelig.editing .tm-side .peoplecard > p.sub{ display:block; }
   }
-  /* Masonry: hvert kort tar kun høyden innholdet trenger, i stedet for å strekkes til
-     høyden av det høyeste kortet i samme rad (som ga mye tomrom i små kort som Matterport/Koder). */
-  .zone-grid{ column-count:1; column-gap:14px; }
-  .zone-grid > .peoplecard{ break-inside:avoid; -webkit-column-break-inside:avoid; margin-bottom:14px; padding:14px; }
-  @media (min-width:721px){ .zone-grid{ column-count:2; } }
-  @media (min-width:1400px){ .zone-grid{ column-count:3; } }
+  @media (min-width:1100px){
+    .tm-layout{ display:grid; grid-template-columns:minmax(0,1fr) 340px; align-items:start; }
+    .evac-card.has-more .evac-view:not(.open){ max-height:14em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 70%, transparent); mask-image:linear-gradient(#000 70%, transparent); }
+    #panel-andelig:not(.editing) .evac-card.has-more .evac-more{ display:inline-block; }
+  }
+  @media (min-width:1500px){ .tm-layout{ grid-template-columns:minmax(0,1fr) 380px; } }
+  @media (max-width:640px){
+    .tm-side{ order:-1; }
+    .tm-layout .subhome-section[data-tiled].active{ display:flex; }
+  }
 
   /* ---------- sammenleggbare fag-seksjoner (TO-møte "Status per fag") ---------- */
   .fagweek-toggle{ display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:2px 0; font:inherit; text-align:left; }
@@ -1538,9 +1575,10 @@
       <strong style="color:var(--warn-ink);">⚠ Du har privilege week denne uken</strong>
       <p id="pwStaffingAlertText" style="margin-top:4px; color:var(--warn-ink);"></p>
     </div>
-    <div class="peoplecard" style="margin-bottom:16px;">
-      <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-        <div id="pwBanner" style="font-size:19px; font-weight:800; color:var(--text); line-height:1.25; flex:1; min-width:180px;"></div>
+    <div class="peoplecard tm-weekbar" style="margin-bottom:14px;">
+      <div class="teamweek-header" style="display:flex; align-items:center; justify-content:space-between; gap:10px 16px; flex-wrap:wrap;">
+        <div id="pwBanner" style="font-size:17px; font-weight:800; color:var(--text); line-height:1.25; min-width:180px;"></div>
+        <div class="tm-scripture"><span class="tm-scripture-label">Ukens skriftsted</span><span id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:14px; color:var(--text); font-style:normal;"></span></div>
         <div style="display:flex; align-items:center; gap:6px;">
           <button type="button" class="btn small ghost" id="teamWeekPrev" title="Forrige uke" aria-label="Forrige uke">‹</button>
           <span id="teamWeekLabel" class="mono" style="font-weight:700; font-size:13.5px; min-width:60px; text-align:center;"></span>
@@ -1549,9 +1587,7 @@
         </div>
         <button class="btn small" id="andeligEditBtn">Rediger</button>
       </div>
-      <h2 style="font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;">Ukens skriftsted</h2>
-      <div id="weeklyScriptureView" data-viewonly class="empty-note" style="font-size:14px; color:var(--text); font-style:normal;"></div>
-      <div id="weeklyScriptureEditWrap" data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+      <div id="weeklyScriptureEditWrap" data-editonly style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
         <input type="text" id="weeklyScriptureInput" placeholder="F.eks. Salme 23" maxlength="300" style="flex:1; min-width:160px; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface);" />
         <button class="btn primary small" id="weeklyScriptureSave">Lagre</button>
       </div>
@@ -1561,18 +1597,10 @@
     <div class="mh-grid subhome-grid" id="teamHomeGrid"></div>
     <button type="button" class="subhome-back" id="teamHomeBack">← Tilbake</button>
 
-    <div class="zone-head" style="--zc:var(--accent);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M5 21V3"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg></span><h2 data-etkey="andelig_zone_ukasmaal">Ukas mål</h2><span class="zone-line"></span></div>
-    <div class="subhome-section" data-tiled data-sec="ukasmaal">
-      <div class="peoplecard">
-        <h2 data-etkey="andelig_ukasmaal_title" style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
-        <p class="sub" data-etkey="andelig_ukasmaal_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
-        <div id="weeklyGoalsList"></div>
-      </div>
-    </div>
-
-    <div class="zone-head" style="--zc:var(--warn);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span><h2 data-etkey="andelig_zone_flex">FLEX</h2><span class="zone-line"></span></div>
-    <div class="subhome-section" data-tiled data-sec="flex">
-      <div class="peoplecard" id="flexBox" style="margin-bottom:16px;">
+    <div class="tm-layout">
+     <div class="tm-main">
+      <div class="subhome-section" data-tiled data-sec="flex">
+      <div class="peoplecard" id="flexBox">
         <h2 data-etkey="andelig_flex_title" style="font-size:16px; margin-bottom:2px;">FLEX</h2>
         <p class="sub" data-etkey="andelig_flex_sub" style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send en forespørsel om ønskede tidspunkt for flex. Huk av hvis flere tidspunkt skulle passe. Men jeg godtar ikke flere enn ett tidspunkt 😉</p>
         <div id="flexPersonPicker" hidden style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1582,19 +1610,12 @@
         <p class="empty-note" id="flexNotLinkedNote" hidden>Ingen i teamet ennå. Byggeleder krysser av hvem som er med i teamet under Administrasjon → Team.</p>
         <div id="flexGrid" style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px;"></div>
       </div>
-    </div>
-
-    <div class="zone-head" style="--zc:var(--utvendig);"><span class="zone-icon"><svg viewBox="0 0 24 24"><path d="M4 19a8 8 0 0 1 16 0"/><path d="M4 19h16"/><path d="M12 5v6"/></svg></span><h2 data-etkey="andelig_zone_byggeplass">Byggeplass</h2><span class="zone-line"></span></div>
-    <div class="subhome-section" data-tiled data-sec="byggeplass">
-      <div class="zone-grid" style="margin-bottom:16px;">
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_teamet_title" style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-          <p class="sub" data-etkey="andelig_teamet_sub2" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Hvem som er i teamet, og hvor de bor under prosjektet.</p>
-          <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
-        </div>
-        <div class="peoplecard">
+      </div>
+      <div class="subhome-section" data-tiled data-sec="byggeplass">
+        <div class="peoplecard" id="tmDeliveriesCard">
           <h2 data-etkey="andelig_leveranser_title" style="font-size:16px; margin-bottom:2px;">Leveranser</h2>
           <p class="sub" data-etkey="andelig_leveranser_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Bestilte varer/leverandører med forventet dato. Huk av når leveransen er mottatt.</p>
+          <div id="deliveriesSummary"></div>
           <div id="deliveriesList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
           <form class="inline-add" id="addDeliveryForm" data-editonly style="flex-wrap:wrap;">
             <input type="text" id="newDeliveryName" placeholder="Navn (f.eks. Lindab)" required maxlength="120" style="flex:1; min-width:160px;" />
@@ -1603,40 +1624,76 @@
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_siteinfo_title" style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
-          <p class="sub" data-etkey="andelig_siteinfo_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
-          <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
-          <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
-            <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
-            <div class="field"><label>Spisested</label><input type="text" id="eatingAddressInput" maxlength="160" /></div>
-            <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
-            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
+      </div>
+      <div class="subhome-section" data-tiled data-sec="pw">
+        <div class="peoplecard" id="tmMwCard">
+          <h2 data-etkey="andelig_mw_title" style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
+          <p class="sub" data-etkey="andelig_mw_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+            <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
+            <button type="button" class="btn small" id="mwWeekEditBtn" title="Detaljer for uken (settes opp under Administrasjon)">Info</button>
+          </div>
+          <div id="mwSlots" class="mw-grid"></div>
+          <div id="pwDutiesWrap" class="tm-duties">
+          <h3 data-etkey="andelig_pw_title" class="tm-subhead">Ansvarspunkter for privilege week</h3>
+          <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
+          <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
         </div>
-
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_matterport_title" style="font-size:16px; margin-bottom:2px;">Matterport</h2>
-          <p class="sub" data-etkey="andelig_matterport_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lenke til 3D-visningen av byggeplassen, og passordet for innlogging.</p>
-          <div id="matterportView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
-          <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
-            <div class="field"><label>Lenke</label><input type="text" id="matterportUrlInput" placeholder="https://…" maxlength="300" /></div>
-            <div class="field"><label>Passord</label><input type="text" id="matterportPasswordInput" maxlength="120" /></div>
-            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="matterportSave">Lagre</button></div>
+      </div>
+      <div class="tm-grid">
+      <div class="subhome-section" data-tiled data-sec="byggeplass">
+        <div class="peoplecard" id="tmProgramCard">
+          <h2 data-etkey="andelig_moteprogram_title" style="font-size:16px; margin-bottom:8px;">Møter og program</h2>
+          <div id="overviewCombinedList" data-viewonly></div>
+          <div data-editonly class="tm-edit-split">
+            <div>
+          <h2 data-etkey="andelig_overviewmote_title" class="tm-subhead">Møter</h2>
+          <div id="overviewMoteList"></div>
+          <form class="inline-add" id="addOverviewMoteForm" data-editonly>
+            <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
+            <input type="text" id="newOvMoteTime" placeholder="Tid" maxlength="60" style="max-width:130px;" />
+            <input type="text" id="newOvMoteAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:170px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+            </div>
+            <div>
+        <h2 data-etkey="andelig_program_title" class="tm-subhead">Åndelig program</h2>
+        <div id="overviewProgramList"></div>
+        <form class="inline-add" id="addOverviewProgramForm" data-editonly>
+          <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
+          <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
+          <button class="btn primary" type="submit">Legg til</button>
+        </form>
+            </div>
           </div>
         </div>
-
+        <div class="peoplecard" id="tmMeetingCard">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <h2 data-etkey="andelig_teammote_title" style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
+            <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
+          </div>
+          <p class="sub" data-etkey="andelig_teammote_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
+          <div id="teamMeetingView"></div>
+        </div>
+      </div>
+      <div class="subhome-section" data-tiled data-sec="ukasmaal">
+      <div class="peoplecard" id="tmGoalsCard">
+        <h2 data-etkey="andelig_ukasmaal_title" style="font-size:16px; margin-bottom:2px;">Ukas mål</h2>
+        <p class="sub" data-etkey="andelig_ukasmaal_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Oppgaver som avsluttes denne uken, etter fag.</p>
+        <div id="weeklyGoalsList"></div>
+      </div>
+      </div>
+      <div class="subhome-section" data-tiled data-sec="byggeplass">
         <div class="peoplecard">
-          <h2 data-etkey="andelig_koder_title" style="font-size:16px; margin-bottom:2px;">Koder</h2>
-          <p class="sub" data-etkey="andelig_koder_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
-          <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
-          <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
-            <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
-            <input type="text" id="newSiteCodeValue" placeholder="Kode/passord" required maxlength="120" style="flex:1; min-width:120px;" />
+          <h2 data-etkey="andelig_toagenda_title" style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
+          <div id="toAgendaList"></div>
+          <form class="inline-add" id="addToAgendaForm">
+            <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
-        <div class="peoplecard" data-acgoonly>
+        <div class="peoplecard" id="tmAccountsCard" data-acgoonly>
           <h2 data-etkey="andelig_openaccounts_title" style="font-size:16px; margin-bottom:2px;">OPEN ACCOUNTS</h2>
           <p class="sub" data-etkey="andelig_openaccounts_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Leverandørkontoer med kundenr og merking.</p>
           <div id="openAccountsList" style="display:flex; flex-direction:column; gap:6px;"></div>
@@ -1647,35 +1704,53 @@
             <button class="btn primary" type="submit">Legg til</button>
           </form>
         </div>
-
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_toagenda_title" style="font-size:16px; margin-bottom:8px;">TO-møte saker</h2>
-          <div id="toAgendaList"></div>
-          <form class="inline-add" id="addToAgendaForm">
-            <input type="text" id="newToAgendaText" placeholder="Sak å ta opp" required maxlength="160" />
-            <button class="btn primary" type="submit">Legg til</button>
-          </form>
-        </div>
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_overviewmote_title" style="font-size:16px; margin-bottom:8px;">Møter</h2>
-          <div id="overviewMoteList"></div>
-          <form class="inline-add" id="addOverviewMoteForm" data-editonly>
-            <input type="text" id="newOvMoteName" placeholder="Navn (f.eks. TO-møte)" required maxlength="60" />
-            <input type="text" id="newOvMoteTime" placeholder="Tid" maxlength="60" style="max-width:130px;" />
-            <input type="text" id="newOvMoteAnsvarlig" placeholder="Ansvarlig" maxlength="60" style="max-width:170px;" />
-            <button class="btn primary" type="submit">Legg til</button>
-          </form>
-        </div>
-
-        <div class="peoplecard">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <h2 data-etkey="andelig_teammote_title" style="font-size:16px; margin-bottom:2px;">Teammøte</h2>
-            <span id="teamMeetingBadge" class="badge" style="background:var(--good-soft); color:var(--good-ink);" hidden>✓ Sendt</span>
+      </div>
+      </div>
+     </div>
+     <aside class="tm-side">
+      <div class="subhome-section" data-tiled data-sec="byggeplass">
+        <div class="peoplecard evac-card">
+          <h2 data-etkey="andelig_evac_title" style="font-size:16px; margin-bottom:8px;">🚨 Evakueringsplan</h2>
+          <div id="evacPlanView" data-viewonly class="evac-view"></div>
+          <button type="button" class="evac-more" id="evacMoreBtn" aria-expanded="false">Vis hele planen ▾</button>
+          <p class="sub" data-editonly style="font-size:12px; color:var(--muted); margin:0 0 6px;">Gjelder dette prosjektet. Er planen tom, står en mal her – fyll inn og trykk Lagre.</p>
+          <textarea id="evacPlanInput" data-editonly rows="14" maxlength="6000" style="width:100%; box-sizing:border-box; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit; font-size:13.5px;"></textarea>
+          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button class="btn primary small" id="evacPlanSave">Lagre</button>
           </div>
-          <p class="sub" data-etkey="andelig_teammote_sub" style="font-size:12px; color:var(--muted); margin-bottom:6px;">Ukens agenda fra CGO.</p>
-          <div id="teamMeetingView"></div>
         </div>
-        <div class="peoplecard">
+        <div class="peoplecard" id="tmSiteCard">
+          <h2 data-etkey="andelig_siteinfo_title" style="font-size:16px; margin-bottom:2px;">Byggeplass-info</h2>
+          <p class="sub" data-etkey="andelig_siteinfo_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Adresser for prosjektet.</p>
+          <div id="siteInfoView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
+          <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
+            <div class="field"><label>Byggeplass</label><input type="text" id="siteAddressInput" maxlength="160" /></div>
+            <div class="field"><label>Spisested</label><input type="text" id="eatingAddressInput" maxlength="160" /></div>
+            <div class="field"><label>Møter</label><input type="text" id="meetingAddressInput" maxlength="160" /></div>
+            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="siteInfoSave">Lagre</button></div>
+          </div>
+        </div>
+        <div class="peoplecard" id="tmMatterportCard">
+          <h2 data-etkey="andelig_matterport_title" style="font-size:16px; margin-bottom:2px;">Matterport</h2>
+          <p class="sub" data-etkey="andelig_matterport_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Lenke til 3D-visningen av byggeplassen, og passordet for innlogging.</p>
+          <div id="matterportView" data-viewonly style="display:flex; flex-direction:column; gap:6px; font-size:13.5px;"></div>
+          <div data-editonly style="display:flex; flex-direction:column; gap:8px;">
+            <div class="field"><label>Lenke</label><input type="text" id="matterportUrlInput" placeholder="https://…" maxlength="300" /></div>
+            <div class="field"><label>Passord</label><input type="text" id="matterportPasswordInput" maxlength="120" /></div>
+            <div style="display:flex; justify-content:flex-end;"><button class="btn primary small" id="matterportSave">Lagre</button></div>
+          </div>
+        </div>
+        <div class="peoplecard" id="tmCodesCard">
+          <h2 data-etkey="andelig_koder_title" style="font-size:16px; margin-bottom:2px;">Koder</h2>
+          <p class="sub" data-etkey="andelig_koder_sub" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Koder på byggeplassen, f.eks. wifi og kodelås.</p>
+          <div id="siteCodesList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <form class="inline-add" id="addSiteCodeForm" data-editonly style="margin-top:10px; flex-wrap:wrap;">
+            <input type="text" id="newSiteCodeLabel" placeholder="F.eks. Wifi" required maxlength="80" style="flex:1; min-width:120px;" />
+            <input type="text" id="newSiteCodeValue" placeholder="Kode/passord" required maxlength="120" style="flex:1; min-width:120px;" />
+            <button class="btn primary" type="submit">Legg til</button>
+          </form>
+        </div>
+        <div class="peoplecard" id="tmInfoCard">
           <h2 data-etkey="andelig_info_title" style="font-size:16px; margin-bottom:8px;">Info</h2>
           <div id="spiritualInfoView" data-viewonly class="empty-note" style="white-space:pre-wrap; font-style:normal; color:var(--text); font-size:13.5px; line-height:1.5;"></div>
           <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
@@ -1683,46 +1758,13 @@
             <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
           </div>
         </div>
-        <div class="peoplecard evac-card">
-          <h2 data-etkey="andelig_evac_title" style="font-size:16px; margin-bottom:8px;">🚨 Evakueringsplan</h2>
-          <div id="evacPlanView" data-viewonly class="evac-view"></div>
-          <p class="sub" data-editonly style="font-size:12px; color:var(--muted); margin:0 0 6px;">Gjelder dette prosjektet. Er planen tom, står en mal her – fyll inn og trykk Lagre.</p>
-          <textarea id="evacPlanInput" data-editonly rows="14" maxlength="6000" style="width:100%; box-sizing:border-box; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit; font-size:13.5px;"></textarea>
-          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
-            <button class="btn primary small" id="evacPlanSave">Lagre</button>
-          </div>
+        <div class="peoplecard" id="tmTeamCard">
+          <h2 data-etkey="andelig_teamet_title" style="font-size:16px; margin-bottom:2px;">Teamet</h2>
+          <p class="sub" data-etkey="andelig_teamet_sub2" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Hvem som er i teamet, og hvor de bor under prosjektet.</p>
+          <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
         </div>
       </div>
-
-      <div class="peoplecard">
-        <h2 data-etkey="andelig_program_title" style="font-size:16px; margin-bottom:8px;">Åndelig program</h2>
-        <div id="overviewProgramList"></div>
-        <form class="inline-add" id="addOverviewProgramForm" data-editonly>
-          <input type="text" id="newOvProgName" placeholder="Navn (f.eks. Familiestudie)" required maxlength="60" />
-          <input type="text" id="newOvProgTime" placeholder="Tid (f.eks. Tirsdag 17:15)" maxlength="60" />
-          <button class="btn primary" type="submit">Legg til</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="zone-head" style="--zc:var(--good);"><span class="zone-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><h2 data-etkey="andelig_zone_pw">Privilege Week</h2><span class="zone-line"></span></div>
-    <div class="subhome-section" data-tiled data-sec="pw">
-      <div class="cols2" style="margin-bottom:16px;">
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_pw_title" style="font-size:16px; margin-bottom:2px;">Privilege Week</h2>
-          <p class="sub" id="pwWeekLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></p>
-          <div id="pwChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
-        </div>
-        <div class="peoplecard">
-          <h2 data-etkey="andelig_mw_title" style="font-size:16px; margin-bottom:4px;">Morgentilbedelse</h2>
-          <p class="sub" data-etkey="andelig_mw_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Velg hvilken privilege-uke du vil sette opp program for. Én person per punkt, for hele uken.</p>
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-            <select id="mwWeekSelect" style="border:1px solid var(--border); border-radius:8px; padding:6px 9px; background:var(--surface); max-width:100%; flex:1; min-width:180px;"></select>
-            <button type="button" class="btn small" id="mwWeekEditBtn" title="Detaljer for uken (settes opp under Administrasjon)">Info</button>
-          </div>
-          <div id="mwSlots" style="display:flex; flex-direction:column; gap:10px;"></div>
-        </div>
-      </div>
+     </aside>
     </div>
   </section>
 
@@ -2842,7 +2884,7 @@
   }
 
   var state = { reqReplies: [], msgThreads: [], msgParts: [], msgMessages: [], msgFiles: [], reqItems: [], reqQuestions: [], reqFiles: [], goodsReceipts: [], goodsFiles: [], cg1Pages: [], officeTodos: [], officeNotes: [], people: [], elements: [], projects: [], shopItems: [], drawings: [], attendance: [], spiritualDuties: [], spiritualOverview: [], privilegeWeeks: [], morningWorship: [], pwDutyStatus: [], toAgenda: [], roomTodos: [], dokuPhotos: [], currentProjectId: null, me: null, andeligVisibility: [], userAccounts: [], projectFags: [], behovSlots: [], behovDays: [], portalSuggestions: [], toTopics: [], toMeetings: [], toAttendance: [], toTopicNotes: [], toFagStatus: [], toSafetyLog: [], toFollowups: [], fagRequests: [], openAccounts: [], siteCodes: [], weeklyScriptures: [], teamMeetings: [], flexRequests: [], logiInfo: [], projectStartup: [], textOverrides: [], peopleFagOrder: [], logiGroups: [], deliveries: [], officeBoxes: [], officeBoxItems: [], officeBoxLinks: [], officeBoxContacts: [], officeBoxStatusItems: [], fags: [], fagAccounts: [], cg1Access: [], cg1Users: [], teamLogins: []};
-  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false };
+  var view = { tab: "kalender", section: "innvendig", weekStart: mondayOf(new Date()), elFilter: "aktive", calView: "uke", calSec: "alle", peopleSearch: "", mwWeekId: null, andeligEdit: false, byggeleiderFag: "alle", toMeetingId: null, toMeetingPendingWeek: null, toFagStatusMode: "perfag", referatMeetingId: null, personerSection: "frivillige", peopleShowAll: false, frivilligeFullView: false, frivilligeEditMode: false, teamWeekMonday: mondayOf(new Date()), toFagOpen: {}, kontaktSection: "behov", cgoEditTexts: false, dayIso: nearestWeekday(toISODate(new Date())), roomTodoEditing: {}, logiGroupSelection: [], logiSearch: "", peopleDatesSelection: [], teamPairSelection: [], dokuWeek: null, adminTeamSearch: "", cg1AccessLoaded: false, cg1AccessMissing: false, cg1UsersLoaded: false, dlvFilter: (function(){ try{ return localStorage.getItem("ldc_dlvfilter") || "ikke"; }catch(e){ return "ikke"; } })(), dlvShowAll: false, evacOpen: false };
   var MW_SLOTS = ["Tekst: Bibelvers", "Kort kommentar (1-2 min)", "Kort kommentar (1-2 min)", "Hovedkommentar (6-10 min)", "Tekst: VT Kommentar", "Bibellesning"];
   var FAG_LIST = ["tomrer","vvs","maler","elektriker","landscape","murer","ventilasjon","blikkenslager","ovrig"];
   var OVERVIEW_ONLY_FAGS = ["stillas","audio_video","behov_menighet","team"];
@@ -5147,7 +5189,9 @@
     byId("teamWeekLabel").textContent = "Uke "+isoWeekInfo(teamWeekMonday).week;
     byId("teamWeekToday").hidden = isLiveTeamWeek;
 
-    byId("weeklyGoalsList").innerHTML = goalsChipsHtml(teamWeekMonday);
+    var goalsHtml = goalsChipsHtml(teamWeekMonday);
+    byId("weeklyGoalsList").innerHTML = goalsHtml;
+    byId("tmGoalsCard").classList.toggle("is-empty", goalsHtml.indexOf("goalgroup") === -1);
     bindDetail(byId("weeklyGoalsList"));
 
     var scripture = currentWeekScripture(teamWeekMonday);
@@ -5161,6 +5205,7 @@
     var teamMeeting = currentWeekTeamMeeting(teamWeekMonday);
     var sentMeeting = teamMeeting && teamMeeting.sent ? teamMeeting : null;
     byId("teamMeetingBadge").hidden = !sentMeeting;
+    byId("tmMeetingCard").classList.toggle("is-empty", !sentMeeting);
     byId("teamMeetingView").innerHTML = sentMeeting ?
       '<div style="white-space:pre-wrap; font-size:13.5px; line-height:1.5;">'+escapeHtml(teamMeetingAgendaText(sentMeeting))+'</div>' :
       '<p class="empty-note">Ingen teammøte-agenda sendt for denne uken ennå.</p>';
@@ -5174,6 +5219,11 @@
     var evac = (cur && cur.evacuationPlan) || "";
     var evacView = byId("evacPlanView");
     evacView.innerHTML = evac ? evacPlanHtml(evac) : '<p class="empty-note" style="margin:0;">Ingen evakueringsplan lagt inn ennå.</p>';
+    // Lang plan foldes sammen i sidekolonnen på PC (CSS), med «Vis hele planen».
+    evacView.closest(".evac-card").classList.toggle("has-more", evac.split("\n").length > 10 || evac.length > 450);
+    evacView.classList.toggle("open", !!view.evacOpen);
+    byId("evacMoreBtn").textContent = view.evacOpen ? "Vis mindre ▴" : "Vis hele planen ▾";
+    byId("evacMoreBtn").setAttribute("aria-expanded", view.evacOpen ? "true" : "false");
     var evacBox = byId("evacPlanInput");
     if(document.activeElement !== evacBox && evacBox.dataset.pid !== (cur ? cur.id : "") + "|" + evac){
       evacBox.value = evac || evacPlanTemplate(cur ? cur.name : "");
@@ -5183,6 +5233,7 @@
     var infoText = (cur && cur.spiritualInfo) || "";
     infoView.textContent = infoText || "Ingen info lagt til ennå.";
     infoView.classList.toggle("empty-note", !infoText);
+    byId("tmInfoCard").classList.toggle("is-empty", !infoText);
 
     var pid = currentProjectId();
     var showLogiBtn = canSeeLogi();
@@ -5217,20 +5268,59 @@
     }).join("") : '<p class="empty-note">Ingen er med i teamet ennå. Legg til under Administrasjon → Team.</p>';
 
     var todayIsoD = toISODate(new Date());
-    var deliveries = deliveriesForCurrentProject();
+    var allDeliveries = deliveriesForCurrentProject();
+    var isOverdue = function(d){ return d.status !== "levert" && d.expectedDate && d.expectedDate < todayIsoD; };
+    // Statusoversikt: fargelinje + tall, filter (standard «Ikke kommet»), forsinkede øverst.
+    var dlvCount = { levert:0, bekreftet:0, usikker:0 }, dlvLate = 0;
+    allDeliveries.forEach(function(d){ if(dlvCount[d.status] !== undefined) dlvCount[d.status]++; if(isOverdue(d)) dlvLate++; });
+    var wkFrom = toISODate(teamWeekMonday), wkTo = toISODate(new Date(teamWeekMonday.getFullYear(), teamWeekMonday.getMonth(), teamWeekMonday.getDate()+6));
+    var dlvFilters = [
+      { key:"ikke", label:"Ikke kommet", test:function(d){ return d.status !== "levert"; } },
+      { key:"uke", label:"Uke "+isoWeekInfo(teamWeekMonday).week, test:function(d){ return d.expectedDate && d.expectedDate >= wkFrom && d.expectedDate <= wkTo; } },
+      { key:"levert", label:"Levert", test:function(d){ return d.status === "levert"; } },
+      { key:"alle", label:"Alle", test:function(){ return true; } }
+    ];
+    var dlvFilter = dlvFilters.find(function(f){ return f.key === view.dlvFilter; }) || dlvFilters[0];
+    byId("deliveriesSummary").innerHTML = allDeliveries.length ?
+      '<div class="dlv-bar" role="img" aria-label="'+dlvCount.levert+' levert, '+dlvCount.bekreftet+' på vei, '+dlvCount.usikker+' usikre">' +
+        ["levert","bekreftet","usikker"].filter(function(k){ return dlvCount[k]; }).map(function(k){ return '<span style="flex:'+dlvCount[k]+'; background:'+DELIVERY_STATUS_COLORS[k]+';"></span>'; }).join("") + '</div>' +
+      '<div class="dlv-legend">' +
+        '<span><i style="background:'+DELIVERY_STATUS_COLORS.levert+'"></i><b>'+dlvCount.levert+'</b> levert</span>' +
+        '<span><i style="background:'+DELIVERY_STATUS_COLORS.bekreftet+'"></i><b>'+dlvCount.bekreftet+'</b> bekreftet, på vei</span>' +
+        '<span><i style="background:'+DELIVERY_STATUS_COLORS.usikker+'"></i><b>'+dlvCount.usikker+'</b> usikre</span>' +
+        (dlvLate ? '<span class="dlv-late">'+dlvLate+' forsinket</span>' : '') +
+      '</div>' +
+      '<div class="dlv-chips">' + dlvFilters.map(function(f){
+        return '<button type="button" class="dlv-chip" data-dlvfilter="'+f.key+'" aria-pressed="'+(f === dlvFilter)+'">'+escapeHtml(f.label)+' ('+allDeliveries.filter(f.test).length+')</button>';
+      }).join("") + '</div>' : "";
+    byId("deliveriesSummary").querySelectorAll("[data-dlvfilter]").forEach(function(b){
+      b.addEventListener("click", function(){ view.dlvFilter = this.dataset.dlvfilter; view.dlvShowAll = false; try{ localStorage.setItem("ldc_dlvfilter", view.dlvFilter); }catch(e){} renderSpiritualTab(); });
+    });
+    var deliveries = allDeliveries.filter(dlvFilter.test).slice().sort(function(x, y){
+      var lx = isOverdue(x) ? 0 : 1, ly = isOverdue(y) ? 0 : 1;
+      if(lx !== ly) return lx - ly;
+      var dx = x.expectedDate || "9999", dy = y.expectedDate || "9999";
+      return dlvFilter.key === "levert" ? dy.localeCompare(dx) : dx.localeCompare(dy);
+    });
+    var DLV_LIMIT = 8;
+    var dlvHidden = (!view.dlvShowAll && deliveries.length > DLV_LIMIT + 2) ? deliveries.length - DLV_LIMIT : 0;
+    if(dlvHidden) deliveries = deliveries.slice(0, DLV_LIMIT);
     byId("deliveriesList").innerHTML = deliveries.length ? deliveries.map(function(d){
-      var overdue = d.status !== "levert" && d.expectedDate && d.expectedDate < todayIsoD;
+      var overdue = isOverdue(d);
       var dateLabel = d.expectedDate ? fmtRange(d.expectedDate, d.expectedDate) : "Ingen dato";
       var dateStyle = overdue ? "color:var(--bad); font-weight:700;" : "color:var(--muted);";
       var statusDot = '<i title="'+escapeHtml(DELIVERY_STATUS_LABELS[d.status]||d.status)+'" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:'+(DELIVERY_STATUS_COLORS[d.status]||"var(--muted)")+'; flex:none;"></i>';
-      return '<div class="shoprow" style="flex-wrap:wrap;'+(d.status==="levert"?' opacity:.55;':'')+'">' +
+      return '<div class="shoprow'+(overdue?' dlv-overdue':'')+'" style="flex-wrap:wrap;'+(d.status==="levert"?' opacity:.55;':'')+'">' +
         statusDot +
         '<span class="sname"'+(d.status==="levert"?' style="text-decoration:line-through;"':'')+'>'+escapeHtml(d.name)+'</span>' +
         '<span class="sqty" style="font-size:12px; '+dateStyle+'">'+dateLabel+(overdue?' · forsinket':'')+'</span>' +
         '<span class="imp-status-chip">'+escapeHtml(DELIVERY_STATUS_LABELS[d.status]||d.status)+'</span>' +
         '<button class="btn small" data-editonly data-editdelivery="'+d.id+'">Rediger</button>' +
         '<button class="del" data-editonly data-deldelivery="'+d.id+'" title="Fjern">×</button></div>';
-    }).join("") : '<p class="empty-note">Ingen leveranser registrert ennå.</p>';
+    }).join("") + (dlvHidden ? '<button type="button" class="dlv-more" data-dlvmore>Vis '+dlvHidden+' til ▾</button>' : (view.dlvShowAll && deliveries.length > DLV_LIMIT + 2 ? '<button type="button" class="dlv-more" data-dlvmore>Vis færre ▴</button>' : ''))
+      : '<p class="empty-note">'+(allDeliveries.length ? 'Ingen leveranser i dette utvalget.' : 'Ingen leveranser registrert ennå.')+'</p>';
+    var dlvMore = byId("deliveriesList").querySelector("[data-dlvmore]");
+    if(dlvMore) dlvMore.addEventListener("click", function(){ view.dlvShowAll = !view.dlvShowAll; renderSpiritualTab(); });
     byId("deliveriesList").querySelectorAll("[data-editdelivery]").forEach(function(b){
       b.addEventListener("click", function(){ openDeliveryEditDialog(this.dataset.editdelivery); });
     });
@@ -5240,6 +5330,7 @@
 
     document.querySelectorAll("#panel-andelig [data-acgoonly]").forEach(function(el){ el.hidden = !isByggeleder(); });
     var codes = siteCodesForCurrentProject();
+    byId("tmCodesCard").classList.toggle("is-empty", !codes.length);
     byId("siteCodesList").innerHTML = codes.length ? codes.map(function(c){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(c.label)+'</span><span class="sqty mono">'+escapeHtml(c.value)+'</span><button class="del" data-editonly data-delsitecode="'+c.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen koder lagt til ennå.</p>';
@@ -5248,6 +5339,7 @@
     });
 
     var accounts = openAccountsForCurrentProject();
+    byId("tmAccountsCard").classList.toggle("is-empty", !accounts.length);
     byId("openAccountsList").innerHTML = accounts.length ? accounts.map(function(a){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(a.leverandor)+'</span><span class="sqty" style="font-size:12px;">'+[a.kundenr?("Kundenr: "+a.kundenr):"", a.merking].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-delopenaccount="'+a.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen kontoer lagt til ennå.</p>';
@@ -5256,11 +5348,13 @@
     });
 
     var siteFields = [["Byggeplass", cur && cur.siteAddress], ["Spisested", cur && cur.eatingAddress], ["Møter", cur && cur.meetingAddress]].filter(function(f){ return f[1]; });
+    byId("tmSiteCard").classList.toggle("is-empty", !siteFields.length);
     byId("siteInfoView").innerHTML = siteFields.length ? siteFields.map(function(f){ return '<div><strong>'+f[0]+':</strong> '+escapeHtml(f[1])+'</div>'; }).join("") : '<p class="empty-note">Ingen byggeplass-info lagt til ennå.</p>';
     if(document.activeElement !== byId("siteAddressInput")) byId("siteAddressInput").value = (cur && cur.siteAddress) || "";
     if(document.activeElement !== byId("eatingAddressInput")) byId("eatingAddressInput").value = (cur && cur.eatingAddress) || "";
     if(document.activeElement !== byId("meetingAddressInput")) byId("meetingAddressInput").value = (cur && cur.meetingAddress) || "";
 
+    byId("tmMatterportCard").classList.toggle("is-empty", !(cur && cur.matterportUrl));
     byId("matterportView").innerHTML = (cur && cur.matterportUrl)
       ? '<div><strong>Lenke:</strong> <a href="'+escapeHtml(cur.matterportUrl)+'" target="_blank" rel="noopener">'+escapeHtml(cur.matterportUrl)+'</a></div>' + (cur.matterportPassword ? '<div><strong>Passord:</strong> '+escapeHtml(cur.matterportPassword)+'</div>' : '')
       : '<p class="empty-note">Ingen Matterport-lenke lagt til ennå.</p>';
@@ -5284,6 +5378,7 @@
     byId("pwWeekLabel").textContent = curWeek
       ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
       : "Ingen aktiv privilege-uke denne uken.";
+    byId("pwDutiesWrap").hidden = !duties.length;
     byId("pwChecklist").innerHTML = duties.length ? duties.map(function(d){
       return '<div class="taskrow" style="flex-wrap:wrap;"><span style="flex:1; min-width:160px;">'+escapeHtml(d.text)+'</span></div>';
     }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
@@ -5313,6 +5408,19 @@
       return '<div class="shoprow"><span class="sname">'+escapeHtml(o.name)+'</span><span class="sqty">'+[o.time,o.ansvarlig].filter(Boolean).map(escapeHtml).join(" · ")+'</span><button class="del" data-editonly data-delov="'+o.id+'" title="Fjern">×</button></div>';
     }).join("") : '<p class="empty-note">Ingen rader lagt til ennå.</p>';
 
+    // Visning: møter og åndelig program i én liste, sortert på ukedag (ukjent dag til slutt).
+    var OV_DAYS = ["man","tir","ons","tor","fre","lør","søn"];
+    var ovDayIdx = function(t){ var w = (t || "").trim().toLowerCase().slice(0, 3); var i = OV_DAYS.indexOf(w); return i === -1 ? 9 : i; };
+    var ovClock = function(t){ var m = /(\d{1,2})[:.](\d{2})/.exec(t || ""); return m ? ("0"+m[1]).slice(-2)+m[2] : "9999"; };
+    var combined = mote.map(function(o){ return { o:o, kind:"mote" }; }).concat(prog.map(function(o){ return { o:o, kind:"program" }; }))
+      .map(function(x, i){ x.i = i; return x; })
+      .sort(function(x, y){ return (ovDayIdx(x.o.time) - ovDayIdx(y.o.time)) || ovClock(x.o.time).localeCompare(ovClock(y.o.time)) || (x.i - y.i); });
+    byId("tmProgramCard").classList.toggle("is-empty", !combined.length);
+    byId("overviewCombinedList").innerHTML = combined.length ? combined.map(function(x){
+      var meta = [x.o.time, x.kind === "mote" ? x.o.ansvarlig : ""].filter(Boolean).map(escapeHtml).join(" · ");
+      return '<div class="ovc-row"><span><i class="ovc-kind" style="background:'+(x.kind === "mote" ? "var(--accent)" : "var(--good)")+'" title="'+(x.kind === "mote" ? "Møte" : "Åndelig program")+'"></i>'+escapeHtml(x.o.name)+'</span><span class="ovc-time">'+meta+'</span></div>';
+    }).join("") : '<p class="empty-note">Ingen møter eller program lagt inn ennå.</p>';
+
     document.querySelectorAll("#panel-andelig [data-delov]").forEach(function(b){
       b.addEventListener("click", function(){ deleteOverviewItem(this.dataset.delov); });
     });
@@ -5340,9 +5448,10 @@
     }
     // Uken man er i (i helgen: kommende uke), ellers neste uke, ellers den siste - ikke den første.
     // Valget følger datoen til brukeren selv velger en annen uke i listen.
+    // Har man bladd til en annen uke øverst, følger listen den uken (hvis den er en privilege-uke).
     if(!view.mwWeekManual || !weeks.some(function(w){ return w.id === view.mwWeekId; })){
       var todayIso = toISODate(new Date());
-      var currentWeek = currentPrivilegeWeek() || weeks.find(function(w){ return w.start > todayIso; }) || weeks[weeks.length - 1];
+      var currentWeek = (!isLiveTeamWeek && currentPrivilegeWeek(teamWeekMonday)) || currentPrivilegeWeek() || weeks.find(function(w){ return w.start > todayIso; }) || weeks[weeks.length - 1];
       view.mwWeekId = currentWeek.id;
       view.mwWeekManual = false;
     }
@@ -5383,8 +5492,9 @@
       return '<div class="field"><label>'+slot+'. '+escapeHtml(label)+'</label>'+
         '<select data-mwslot="'+slot+'"><option value="">— Ikke satt —</option>' +
         options.map(function(p){ return '<option value="'+p.id+'"'+(p.id===pid?' selected':'')+'>'+escapeHtml(p.name)+'</option>'; }).join("") +
-        '</select>'+(!availableThisWeek.length ? '<p class="empty-note" style="margin-top:4px;">Ingen er satt tilgjengelig denne uken ennå.</p>' : '')+'</div>';
+        '</select></div>';
     }).join("");
+    byId("mwSlots").insertAdjacentHTML("afterbegin", !availableThisWeek.length ? '<p class="empty-note" style="grid-column:1 / -1; margin:0;">Ingen i teamet er satt tilgjengelig denne uken ennå, så listene er tomme. Tilgjengelighet settes under Administrasjon → Team.</p>' : '');
     byId("mwSlots").querySelectorAll("[data-mwslot]").forEach(function(s){
       s.addEventListener("change", function(){ setMorningWorship(view.mwWeekId, Number(this.dataset.mwslot), this.value || null); });
     });
@@ -5412,6 +5522,7 @@
     input.value = "";
   });
   byId("spiritualInfoSave").addEventListener("click", function(){ saveSpiritualInfo(byId("spiritualInfoInput").value); });
+  byId("evacMoreBtn").addEventListener("click", function(){ view.evacOpen = !view.evacOpen; renderSpiritualTab(); });
   byId("evacPlanSave").addEventListener("click", function(){
     if(!sb || !currentProjectId()) return;
     var text = byId("evacPlanInput").value.trim();
@@ -8685,6 +8796,7 @@
   // Team og CGO deler samme uke (view.teamWeekMonday) - se notat ved panel-cgo sin ukenavigasjon.
   function goToTeamWeek(monday){
     view.teamWeekMonday = monday;
+    view.mwWeekManual = false;
     renderSpiritualTab();
     renderCgoTab();
   }
