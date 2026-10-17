@@ -558,6 +558,11 @@
   .landscape-dlg .ls-ok{ color:var(--good); font-weight:700; margin:4px 0 0; }
   @keyframes ls-rotate{ 0%,25%{ transform:rotate(0); } 55%,85%{ transform:rotate(-90deg); } 100%{ transform:rotate(0); } }
   .ls-warn{ color:var(--bad-ink); font-weight:600; }
+  .evac-card{ border-top:3px solid var(--bad) !important; }
+  .evac-view{ font-size:13.5px; line-height:1.5; white-space:pre-wrap; tab-size:3; }
+  .evac-view .evac-title{ font-weight:800; font-size:14.5px; color:var(--bad-ink); }
+  .evac-view a{ font-weight:700; color:var(--accent); white-space:nowrap; }
+  .evac-view .evac-missing{ color:var(--warn-ink); font-style:italic; }
   .team-hh{ border-bottom:1px solid var(--border); padding:6px 0; }
   .team-hh:last-child{ border-bottom:none; }
   .team-hh-name{ font-size:14px; }
@@ -1676,6 +1681,15 @@
           <textarea id="spiritualInfoInput" data-editonly rows="6" placeholder="Generell info, kunngjøringer …" style="width:100%; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit;"></textarea>
           <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
             <button class="btn primary small" id="spiritualInfoSave">Lagre</button>
+          </div>
+        </div>
+        <div class="peoplecard evac-card">
+          <h2 data-etkey="andelig_evac_title" style="font-size:16px; margin-bottom:8px;">🚨 Evakueringsplan</h2>
+          <div id="evacPlanView" data-viewonly class="evac-view"></div>
+          <p class="sub" data-editonly style="font-size:12px; color:var(--muted); margin:0 0 6px;">Gjelder dette prosjektet. Er planen tom, står en mal her – fyll inn og trykk Lagre.</p>
+          <textarea id="evacPlanInput" data-editonly rows="14" maxlength="6000" style="width:100%; box-sizing:border-box; border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; background:var(--surface); resize:vertical; font:inherit; font-size:13.5px;"></textarea>
+          <div data-editonly style="margin-top:8px; display:flex; justify-content:flex-end;">
+            <button class="btn primary small" id="evacPlanSave">Lagre</button>
           </div>
         </div>
       </div>
@@ -5156,6 +5170,15 @@
     var cur = state.projects.find(function(p){ return p.id === state.currentProjectId; });
     var infoBox = byId("spiritualInfoInput");
     if(document.activeElement !== infoBox) infoBox.value = (cur && cur.spiritualInfo) || "";
+    // Evakueringsplan (sql/108): telefonnumre blir klikkbare; tom plan = mal i redigeringsfeltet.
+    var evac = (cur && cur.evacuationPlan) || "";
+    var evacView = byId("evacPlanView");
+    evacView.innerHTML = evac ? evacPlanHtml(evac) : '<p class="empty-note" style="margin:0;">Ingen evakueringsplan lagt inn ennå.</p>';
+    var evacBox = byId("evacPlanInput");
+    if(document.activeElement !== evacBox && evacBox.dataset.pid !== (cur ? cur.id : "") + "|" + evac){
+      evacBox.value = evac || evacPlanTemplate(cur ? cur.name : "");
+      evacBox.dataset.pid = (cur ? cur.id : "") + "|" + evac;
+    }
     var infoView = byId("spiritualInfoView");
     var infoText = (cur && cur.spiritualInfo) || "";
     infoView.textContent = infoText || "Ingen info lagt til ennå.";
@@ -5389,6 +5412,15 @@
     input.value = "";
   });
   byId("spiritualInfoSave").addEventListener("click", function(){ saveSpiritualInfo(byId("spiritualInfoInput").value); });
+  byId("evacPlanSave").addEventListener("click", function(){
+    if(!sb || !currentProjectId()) return;
+    var text = byId("evacPlanInput").value.trim();
+    sb.from("projects").update({ evacuation_plan: text.slice(0, 6000) || null }).eq("id", currentProjectId()).then(function(res){
+      if(res.error){ showError(/evacuation_plan/.test(res.error.message || "") ? "Databasen mangler evakueringsplan. Kjør sql/108-evakueringsplan.sql i Supabase." : "Kunne ikke lagre: " + res.error.message); return; }
+      showInfo("Evakueringsplanen er lagret ✓");
+      refetchProjects();
+    });
+  });
   byId("siteInfoSave").addEventListener("click", function(){
     saveSiteInfo(byId("siteAddressInput").value.trim(), byId("eatingAddressInput").value.trim(), byId("meetingAddressInput").value.trim());
   });
@@ -8372,7 +8404,7 @@
   }
 
   function rowToProject(row){
-    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", matterportUrl: row.matterport_url || "", matterportPassword: row.matterport_password || "", createdAt: row.created_at, color: row.color || "" };
+    return { id: row.id, name: row.name, start: row.start_date, end: row.end_date, closeOut: row.close_out_date || "", isActive: !!row.is_active, spiritualInfo: row.spiritual_info || "", siteAddress: row.site_address || "", eatingAddress: row.eating_address || "", meetingAddress: row.meeting_address || "", matterportUrl: row.matterport_url || "", matterportPassword: row.matterport_password || "", createdAt: row.created_at, color: row.color || "", evacuationPlan: row.evacuation_plan || "" };
   }
   function rowToSiteCode(row){
     return { id: row.id, project_id: row.project_id, label: row.label, value: row.value, createdAt: row.created_at };
@@ -13136,6 +13168,26 @@
   function deleteOpenAccount(id){
     if(!sb) return;
     sb.from("open_accounts").delete().eq("id", id).then(function(res){ if(res.error){ showError("Kunne ikke fjerne: "+res.error.message); return; } refetchOpenAccounts(); });
+  }
+  // ---------- Evakueringsplan ----------
+  function evacPlanTemplate(projectName){
+    return "Evakueringsplan " + (projectName || "[prosjekt]") + "\n\n" +
+      "Når en nødsituasjon eller krise oppstår, er det viktig at alle følger denne planen, så vi kan sikre at vi vet hva slags hjelp alle på teamet trenger.\n\n" +
+      "•\tSkriv i byggegruppens chat på WhatsApp, eller ring CGO (tlf [nummer]). Fortell om dere er ok, hva dere eventuelt trenger hjelp til og hvor dere er.\n\n" +
+      "•\tMøteplass:\n\n" +
+      "1.\t[Rikets sal / adresse]\n" +
+      "2.\t[Losji / adresse]\n\n" +
+      "•\tPrøv å få kontakt med noen på LDC-kontoret: +45 59 45 60 00\n" +
+      "Husk å gi beskjed til hjemmemenigheten din om den nødplanen de har.";
+  }
+  function evacPlanHtml(text){
+    var lines = text.split(/\n/);
+    return lines.map(function(line, i){
+      var t = escapeHtml(line).replace(/(\+?\d[\d ]{6,}\d)/g, function(m){ return '<a href="tel:' + m.replace(/\s+/g, "") + '">' + m + '</a>'; });
+      if(i === 0 && /evakuering/i.test(line)) return '<div class="evac-title">' + t + '</div>';
+      if(/^\s*\[.*\]\s*$/.test(line)) return '<div class="evac-missing">' + t + '</div>';
+      return '<div>' + (t || "&nbsp;") + '</div>';
+    }).join("");
   }
   function saveSpiritualInfo(text){
     if(!sb) return;
