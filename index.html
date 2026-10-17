@@ -1948,6 +1948,7 @@
           <h2 style="font-size:16px;">Privilege-uker</h2>
           <span style="display:flex; gap:6px; flex-wrap:wrap;">
             <button type="button" class="btn small primary" id="adminPwProgramBtn" title="Alle uker i prosjektet – trykk på en uke for å sette ansvarlig">Program</button>
+            <button type="button" class="btn small" id="pwPrintBtn" title="PDF i A4 liggende med programmet og ansvarspunktene – til å henge opp på kontoret">🖨 Skriv ut</button>
             <button type="button" class="btn small" id="pwNewBtn">+ Ny uke</button>
           </span>
         </div>
@@ -5760,6 +5761,126 @@
     if(current) current.scrollIntoView({ block: "center" });
   }
   byId("adminPwProgramBtn").addEventListener("click", function(){ openPwProgram(true); });
+
+  // Privilege week-plakat (A4 liggende) til veggen: programmet for alle ukene + ansvarspunktene
+  // fordelt på ukedager. Tegnes direkte med jsPDF i prosjektets farge.
+  function hexToRgb(hex, fallback){
+    var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec((hex || "").trim());
+    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : fallback;
+  }
+  function printPrivilegeWeekPoster(){
+    var cur = state.projects.find(function(p){ return p.id === currentProjectId(); });
+    if(!cur){ showError("Velg et prosjekt først."); return; }
+    var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if(!jsPDFCtor){ showError("PDF-biblioteket lastet ikke inn. Last siden på nytt og prøv igjen."); return; }
+    var rows = pwProgramRows();
+    var duties = dutiesForCurrentProject();
+    var acc = hexToRgb(projectColor(cur), [47,111,168]);
+    var soft = acc.map(function(c){ return Math.round(c + (255 - c) * 0.86); });
+    var ink = [27,36,48], muted = [100,116,139], line = [221,227,234];
+    var doc = new jsPDFCtor({ unit: "pt", format: "a4", orientation: "landscape" });
+    var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 40;
+    function header(cont){
+      doc.setFillColor(acc[0], acc[1], acc[2]); doc.rect(0, 0, W, 8, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(cont ? 16 : 26); doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text("Privilege Week" + (cont ? " (forts.)" : ""), M, cont ? 42 : 52);
+      doc.setFontSize(cont ? 12 : 15); doc.setTextColor(acc[0], acc[1], acc[2]);
+      doc.text(cur.name, W - M, cont ? 42 : 46, { align: "right" });
+      if(!cont){
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(muted[0], muted[1], muted[2]);
+        doc.text("Program og ansvarspunkter", M, 70);
+        if(cur.start) doc.text(fmtRange(cur.start, cur.closeOut || cur.end || cur.start), W - M, 63, { align: "right" });
+      }
+      return cont ? 62 : 104;
+    }
+    function footer(){
+      var n = doc.internal.getNumberOfPages();
+      for(var i = 1; i <= n; i++){
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(muted[0], muted[1], muted[2]);
+        var t = new Date();
+        doc.text("Utskrevet " + t.getDate() + "." + (t.getMonth() + 1) + "." + t.getFullYear() + "  ·  LDC-portalen", M, H - 20);
+        if(n > 1) doc.text("Side " + i + " av " + n, W - M, H - 20, { align: "right" });
+      }
+    }
+    function section(title, y){
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text(title.toUpperCase(), M, y);
+      doc.setDrawColor(acc[0], acc[1], acc[2]); doc.setLineWidth(1.5); doc.line(M, y + 5, M + doc.getTextWidth(title.toUpperCase()), y + 5);
+      return y + 16;
+    }
+    var y = header(false);
+    y = section("Program", y);
+    var body = rows.map(function(r){
+      var w = r.week, info = isoWeekInfo(fromISODate(r.monday));
+      return ["Uke " + info.week, fmtRange(w ? w.start : r.monday, w ? w.end : r.friday), w ? w.responsible : "Ingen ansvarlig satt",
+        (w && w.familiestudie) || "", (w && w.sikkerhetstale) || "", (w && w.bibellesning) || "", (w && w.note) || ""];
+    });
+    var hasNote = body.some(function(b){ return b[6]; });
+    if(!hasNote) body = body.map(function(b){ return b.slice(0, 6); });
+    doc.autoTable({
+      head: [["Uke", "Datoer", "Ansvarlig", "Familiestudie", "Sikkerhetstale", "Bibellesning"].concat(hasNote ? ["Merknad"] : [])],
+      body: body.length ? body : [["–", "", "Ingen uker å vise", "", "", ""]],
+      startY: y, theme: "plain", margin: { left: M, right: M, top: 60 },
+      headStyles: { fillColor: acc, textColor: 255, fontStyle: "bold", fontSize: 10, cellPadding: { top: 6, bottom: 6, left: 7, right: 7 } },
+      styles: { font: "helvetica", fontSize: 10.5, textColor: ink, cellPadding: { top: 6, bottom: 6, left: 7, right: 7 }, overflow: "linebreak", lineColor: line, lineWidth: { bottom: 0.6 } },
+      alternateRowStyles: { fillColor: [247, 249, 251] },
+      columnStyles: { 0: { fontStyle: "bold", cellWidth: 52 }, 1: { cellWidth: 92, textColor: muted }, 2: { fontStyle: "bold", cellWidth: 150 } },
+      didParseCell: function(d){ if(d.section === "body" && d.column.index === 2 && d.cell.raw === "Ingen ansvarlig satt"){ d.cell.styles.fontStyle = "italic"; d.cell.styles.textColor = muted; } },
+      didDrawPage: function(d){ if(d.pageNumber > 1) header(true); }
+    });
+    y = doc.lastAutoTable.finalY + 30;
+    // Ansvarspunkter: «Hele uken» + fem dagkolonner.
+    var colGap = 10, colW = (W - 2 * M - 4 * colGap) / 5, lineH = 14;
+    var whole = duties.filter(function(d){ return !d.days.length; });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5);
+    var cols = [0,1,2,3,4].map(function(i){
+      return duties.filter(function(d){ return d.days.indexOf(i + 1) !== -1; }).map(function(d){ return doc.splitTextToSize(dutyShortText(d), colW - 26); });
+    });
+    var colH = Math.max(1, Math.max.apply(null, cols.map(function(c){ return c.reduce(function(s, t){ return s + t.length * lineH + 6; }, 0); })));
+    var wholeText = whole.map(function(d){ return d.text; }).join("     •     ");
+    var wholeLines = whole.length ? doc.splitTextToSize(wholeText, W - 2 * M - 110) : [];
+    var need = 16 + (whole.length ? wholeLines.length * lineH + 22 : 0) + 30 + colH + 16;
+    if(y + need > H - 40){ doc.addPage(); y = header(true) + 6; }
+    y = section("Ansvarspunkter for privilege week", y);
+    if(!duties.length){
+      doc.setFont("helvetica", "italic"); doc.setFontSize(10.5); doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text("Ingen ansvarspunkter lagt til ennå.", M, y + 8);
+    } else {
+      if(whole.length){
+        var bh = wholeLines.length * lineH + 14;
+        doc.setFillColor(soft[0], soft[1], soft[2]); doc.roundedRect(M, y, W - 2 * M, bh, 6, 6, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(acc[0], acc[1], acc[2]);
+        doc.text("HELE UKEN", M + 12, y + 18);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(ink[0], ink[1], ink[2]);
+        doc.text(wholeLines, M + 100, y + 18, { lineHeightFactor: lineH / 10.5 });
+        y += bh + 10;
+      }
+      var days = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag"];
+      // Kolonnene fyller ledig plass nederst (opptil ~170pt), så arket ser helt ut og det er plass til notater.
+      colH = Math.max(colH, Math.min(170, H - 46 - (y + 24 + 16)));
+      cols.forEach(function(items, i){
+        var x = M + i * (colW + colGap);
+        doc.setFillColor(acc[0], acc[1], acc[2]); doc.roundedRect(x, y, colW, 24, 6, 6, "F"); doc.rect(x, y + 12, colW, 12, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(255, 255, 255);
+        doc.text(days[i], x + colW / 2, y + 16, { align: "center" });
+        doc.setFillColor(247, 249, 251); doc.setDrawColor(line[0], line[1], line[2]); doc.setLineWidth(0.6);
+        doc.rect(x, y + 24, colW, colH + 16, "FD");
+        var iy = y + 24 + 18;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(ink[0], ink[1], ink[2]);
+        if(!items.length){ doc.setTextColor(muted[0], muted[1], muted[2]); doc.text("–", x + colW / 2, iy, { align: "center" }); }
+        items.forEach(function(t){
+          doc.setFillColor(acc[0], acc[1], acc[2]); doc.circle(x + 13, iy - 3.5, 2.2, "F");
+          doc.setTextColor(ink[0], ink[1], ink[2]);
+          doc.text(t, x + 22, iy, { lineHeightFactor: lineH / 10.5 });
+          iy += t.length * lineH + 6;
+        });
+      });
+    }
+    footer();
+    doc.save(pdfFileName("Privilege-week", cur));
+  }
+  byId("pwPrintBtn").addEventListener("click", printPrivilegeWeekPoster);
   byId("pwProgramClose").addEventListener("click", function(){ pwProgramDialog.close(); });
   pwProgramDialog.addEventListener("click", function(ev){ if(ev.target === pwProgramDialog) pwProgramDialog.close(); });
 
