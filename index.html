@@ -1022,6 +1022,31 @@
   .tm-scripture{ display:flex; align-items:baseline; gap:8px; flex:1; min-width:200px; flex-wrap:wrap; }
   .tm-scripture-label{ font-size:11.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
   .tm-duties{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .pwd-all{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-bottom:8px; }
+  .pwd-label{ font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; min-width:70px; }
+  .pwd-chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .pwd-chip{ font-size:12.5px; background:var(--surface-alt); border:1px solid var(--border); border-radius:7px; padding:3px 8px; line-height:1.3; }
+  .pwd-week{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; }
+  .pwd-col{ background:var(--surface-alt); border-radius:9px; padding:7px; min-width:0; }
+  .pwd-col .pwd-chips{ flex-direction:column; }
+  .pwd-col .pwd-chip{ background:var(--surface); }
+  .pwd-col.today{ background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent); }
+  .pwd-dh{ font-size:12px; font-weight:700; margin-bottom:6px; }
+  .pwd-dh span{ font-family:"IBM Plex Mono",monospace; font-weight:400; color:var(--muted); }
+  .pwd-none{ color:var(--muted); font-size:12px; }
+  .pwd-edit{ display:flex; flex-direction:column; }
+  .pwd-erow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border); flex-wrap:wrap; }
+  .pwd-erow:first-child{ border-top:none; }
+  .pwd-etext{ font-size:13.5px; flex:1; min-width:160px; }
+  .pwd-days{ display:flex; gap:4px; }
+  .pwd-day{ font:inherit; font-size:12px; font-weight:700; width:30px; height:28px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface); color:var(--muted); cursor:pointer; }
+  .pwd-day[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  @media (max-width:640px){
+    .pwd-week{ grid-template-columns:1fr; }
+    .pwd-col{ display:flex; gap:10px; align-items:baseline; }
+    .pwd-col .pwd-dh{ min-width:58px; margin:0; }
+    .pwd-col .pwd-chips{ flex-direction:row; }
+  }
   .mw-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:10px 14px; }
   .mw-grid .field label{ font-size:12px; }
   .ovc-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:6px 0; border-top:1px solid var(--border); font-size:13.5px; }
@@ -5386,9 +5411,39 @@
       ? ("Uke "+isoWeekInfo(fromISODate(curWeek.start)).week+" · "+fmtRange(curWeek.start,curWeek.end)+" — "+curWeek.responsible)
       : "Ingen aktiv privilege-uke denne uken.";
     byId("pwDutiesWrap").hidden = !duties.length;
-    byId("pwChecklist").innerHTML = duties.length ? duties.map(function(d){
-      return '<div class="taskrow" style="flex-wrap:wrap;"><span style="flex:1; min-width:160px;">'+escapeHtml(d.text)+'</span></div>';
-    }).join("") : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+    // Ukelinje man–fre med punktene på riktig dag; «Hele uken» for punkter uten dag.
+    // I Rediger: dagknapper (M T O T F) per punkt, flere dager kan velges.
+    var DOW_SHORT = ["Man","Tir","Ons","Tor","Fre"], DOW_BTN = ["M","T","O","T","F"];
+    var todayDow = isLiveTeamWeek ? new Date().getDay() : -1;
+    if(view.andeligEdit){
+      byId("pwChecklist").innerHTML = duties.length ? '<div class="pwd-edit">' + duties.map(function(d){
+        return '<div class="pwd-erow"><span class="pwd-etext">'+escapeHtml(d.text)+'</span><span class="pwd-days" role="group" aria-label="Dager for '+escapeHtml(d.text)+'">' +
+          DOW_BTN.map(function(l, i){ var on = d.days.indexOf(i + 1) !== -1;
+            return '<button type="button" class="pwd-day" data-dutyday="'+d.id+'|'+(i + 1)+'" aria-pressed="'+on+'" title="'+DUTY_DAY_WORDS[i]+'">'+l+'</button>'; }).join("") +
+          '</span></div>';
+      }).join("") + '<p class="empty-note" style="margin:6px 0 0;">Trykk på dagene punktet gjelder. Ingen dag valgt = hele uken. Punkter legges til/fjernes under Administrasjon → Privilege-uker.</p></div>'
+        : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+      byId("pwChecklist").querySelectorAll("[data-dutyday]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var p = this.dataset.dutyday.split("|"), n = Number(p[1]);
+          var d = state.spiritualDuties.find(function(x){ return x.id === p[0]; });
+          if(!d) return;
+          setDutyDays(d.id, d.days.indexOf(n) !== -1 ? d.days.filter(function(x){ return x !== n; }) : d.days.concat([n]));
+        });
+      });
+    } else {
+      var wholeWeek = duties.filter(function(d){ return !d.days.length; });
+      var chip = function(d){ return '<span class="pwd-chip">'+escapeHtml(dutyShortText(d))+'</span>'; };
+      byId("pwChecklist").innerHTML = duties.length ?
+        (wholeWeek.length ? '<div class="pwd-all"><span class="pwd-label">Hele uken</span><span class="pwd-chips">'+wholeWeek.map(chip).join("")+'</span></div>' : '') +
+        '<div class="pwd-week">' + DOW_SHORT.map(function(lbl, i){
+          var day = new Date(teamWeekMonday.getFullYear(), teamWeekMonday.getMonth(), teamWeekMonday.getDate() + i);
+          var items = duties.filter(function(d){ return d.days.indexOf(i + 1) !== -1; });
+          return '<div class="pwd-col'+(todayDow === i + 1 ? ' today' : '')+'"><div class="pwd-dh">'+lbl+' <span>'+day.getDate()+'.</span></div><div class="pwd-chips">' +
+            (items.length ? items.map(chip).join("") : '<span class="pwd-none">–</span>') + '</div></div>';
+        }).join("") + '</div>'
+        : '<p class="empty-note">Ingen ansvarspunkter lagt til ennå.</p>';
+    }
     // Administrasjon → Privilege-uker: samme liste, med fjern-knapp (punkter legges til/fjernes bare der).
     byId("adminDutyList").innerHTML = duties.length ? duties.map(function(d){
       return '<div class="shoprow"><span class="sname">'+escapeHtml(d.text)+'</span><button type="button" class="del" data-delduty="'+d.id+'" title="Fjern ansvarspunkt" aria-label="Fjern '+escapeHtml(d.text)+'">×</button></div>';
@@ -5519,6 +5574,7 @@
       var scripture = currentWeekScripture(view.teamWeekMonday);
       byId("weeklyScriptureInput").value = (scripture && scripture.text) || "";
     }
+    renderSpiritualTab();
   });
   byId("addToAgendaForm").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -8830,7 +8886,8 @@
     return state.openAccounts.filter(function(a){ return a.project_id === pid; }).sort(function(a,b){ return a.leverandor.localeCompare(b.leverandor,"no"); });
   }
   function rowToDuty(row){
-    return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at };
+    return { id: row.id, project_id: row.project_id, text: row.text, sortOrder: row.sort_order, createdAt: row.created_at,
+      days: Array.isArray(row.days) ? row.days.map(Number).filter(function(n){ return n >= 1 && n <= 5; }).sort() : [] };
   }
   function rowToOverview(row){
     return { id: row.id, project_id: row.project_id, kind: row.kind, name: row.name, time: row.time_text || "", ansvarlig: row.ansvarlig || "", sortOrder: row.sort_order };
@@ -8841,6 +8898,31 @@
   }
   function rowToMW(row){
     return { id: row.id, privilegeWeekId: row.privilege_week_id, slot: row.slot, personId: row.person_id };
+  }
+  // Ansvarspunkter: ukedager (1=man … 5=fre, tom = hele uken, sql/109). Forslag ut fra teksten,
+  // eller dagen teammøtet/familiestudien står på i «Møter og program».
+  var DUTY_DAY_WORDS = ["mandag","tirsdag","onsdag","torsdag","fredag"];
+  function suggestDutyDays(text, pid){
+    var t = (text || "").toLowerCase();
+    for(var i = DUTY_DAY_WORDS.length - 1; i >= 0; i--){ if(t.indexOf(DUTY_DAY_WORDS[i]) !== -1) return [i + 1]; }
+    var hit = pid && state.spiritualOverview.filter(function(o){ return o.project_id === pid; }).find(function(o){
+      return (/teammøte/.test(t) && /teammøte/i.test(o.name)) || (/familiestudie/.test(t) && /familiestudie/i.test(o.name));
+    });
+    var dow = hit ? ["man","tir","ons","tor","fre"].indexOf((hit.time || "").trim().toLowerCase().slice(0, 3)) : -1;
+    return dow === -1 ? [] : [dow + 1];
+  }
+  function dutyShortText(d){
+    return d.days.length ? d.text.replace(/\s*[(–—-]\s*(mandag|tirsdag|onsdag|torsdag|fredag)\s*\)?\s*$/i, "") || d.text : d.text;
+  }
+  function setDutyDays(id, days){
+    var d = state.spiritualDuties.find(function(x){ return x.id === id; });
+    if(d) d.days = days.slice().sort();
+    renderSpiritualTab();
+    if(!sb) return;
+    sb.from("spiritual_duties").update({ days: days.length ? days : null }).eq("id", id).then(function(res){
+      if(res.error){ showError(/days/.test(res.error.message || "") ? "Databasen mangler dager for ansvarspunkter. Kjør sql/109-ansvarspunkt-dager.sql i Supabase." : "Kunne ikke lagre: " + res.error.message); }
+      refetchDuties();
+    });
   }
   function dutiesForCurrentProject(){
     var pid = currentProjectId();
@@ -12911,7 +12993,7 @@
         if(res.error){ showError(res.error.message.indexOf("close_out_date") !== -1 ? "Databasen mangler close_out_date-kolonnen. Kjør sql/11-close-out.sql i Supabase." : "Kunne ikke opprette prosjektet: "+res.error.message); return; }
         selectProject(res.data.id);
         refetchProjects();
-        sb.from("spiritual_duties").insert(DEFAULT_PW_DUTIES.map(function(text, i){ return { project_id: res.data.id, text: text, sort_order: i }; })).then(function(res2){
+        sb.from("spiritual_duties").insert(DEFAULT_PW_DUTIES.map(function(text, i){ var dd = suggestDutyDays(text); return { project_id: res.data.id, text: text, sort_order: i, days: dd.length ? dd : null }; })).then(function(res2){
           if(!res2.error) refetchDuties();
         });
         // Fagene som allerede finnes blir aktive med en gang for et nytt prosjekt (med prosjektets
@@ -13319,7 +13401,8 @@
   function addDuty(text){
     if(!sb) return;
     if(!currentProjectId()){ showError("Opprett eller velg et prosjekt først."); return; }
-    sb.from("spiritual_duties").insert({ project_id: currentProjectId(), text: text.slice(0,120) }).then(function(res){
+    var dd = suggestDutyDays(text, currentProjectId());
+    sb.from("spiritual_duties").insert({ project_id: currentProjectId(), text: text.slice(0,120), days: dd.length ? dd : null }).then(function(res){
       if(res.error){ showError(res.error.message.indexOf("spiritual_duties") !== -1 ? "Databasen mangler tabellen for ansvarspunkter. Kjør sql/08-andelig.sql i Supabase." : "Kunne ikke lagre: "+res.error.message); return; }
       refetchDuties();
     });
