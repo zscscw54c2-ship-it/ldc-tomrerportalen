@@ -558,6 +558,11 @@
   .landscape-dlg .ls-ok{ color:var(--good); font-weight:700; margin:4px 0 0; }
   @keyframes ls-rotate{ 0%,25%{ transform:rotate(0); } 55%,85%{ transform:rotate(-90deg); } 100%{ transform:rotate(0); } }
   .ls-warn{ color:var(--bad-ink); font-weight:600; }
+  .team-hh{ border-bottom:1px solid var(--border); padding:6px 0; }
+  .team-hh:last-child{ border-bottom:none; }
+  .team-hh-name{ font-size:14px; }
+  .team-hh-adr{ font-size:13px; color:var(--muted); margin-top:2px; }
+  .team-admin-ctl{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; padding-left:26px; }
   .local-row{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:10px; padding:9px 11px; margin-bottom:8px; }
   .local-row .lmain{ flex:1; min-width:0; }
   .local-row .lname{ font-weight:700; font-size:14px; }
@@ -1566,12 +1571,7 @@
       <div class="zone-grid" style="margin-bottom:16px;">
         <div class="peoplecard">
           <h2 data-etkey="andelig_teamet_title" style="font-size:16px; margin-bottom:2px;">Teamet</h2>
-          <p class="sub" data-etkey="andelig_teamet_sub" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Teammedlemmene, krysset av under «Med i teamet» på hver sin frivillig-info (se Rediger info, eller avkrysningen når man legger til en ny frivillig). Settes automatisk tilgjengelig hele prosjektet. Huk av flere her (f.eks. et ektepar) for å sette tilgjengelighet for dem samtidig. Tilgjengelighet justeres ellers under Frivillige, kategorien "Teamet".</p>
-          <div id="teamPairSelectionBar" hidden style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:12.5px;">
-            <span id="teamPairSelectionCount" style="flex:1;"></span>
-            <button type="button" class="btn small primary" id="teamPairSelectionBtn">Sett tilgjengelighet</button>
-            <button type="button" class="btn small ghost" id="teamPairSelectionCancelBtn">Avbryt</button>
-          </div>
+          <p class="sub" data-etkey="andelig_teamet_sub2" data-etmultiline style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">Hvem som er i teamet, og hvor de bor under prosjektet.</p>
           <div id="teamPairList" style="display:flex; flex-direction:column; gap:6px;"></div>
         </div>
         <div class="peoplecard">
@@ -1829,8 +1829,13 @@
     <div class="admintab-panel" data-admintab="team" hidden>
       <div class="peoplecard">
         <h2 style="font-size:16px; margin-bottom:8px;">Team</h2>
-        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet, og gi hver person innloggingen de bruker (CGO, ACGO, Kontor eller et fag). De som har en innlogging, ser Team-siden og har Flex – ektefellen regnes med. Gjelder dette prosjektet.</p>
+        <p class="sub" style="font-size:12.5px; color:var(--muted); margin-bottom:8px;">Søk opp og kryss av hvem som er med i teamet, og gi hver person innloggingen de bruker (CGO, ACGO, Kontor eller et fag). De som har en innlogging, ser Team-siden og har Flex – ektefellen regnes med. Her settes også ektefelle, tilgjengelighet (kryss av «Velg» på flere, f.eks. et ektepar, for å sette dem samtidig), losji og personinfo. Team-siden viser bare hvem som er i teamet og hvor de bor. Gjelder dette prosjektet.</p>
         <input type="search" id="adminTeamSearch" placeholder="Søk etter navn …" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:13px; background:var(--surface); margin-bottom:8px;" />
+        <div id="teamPairSelectionBar" hidden style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:12.5px;">
+          <span id="teamPairSelectionCount" style="flex:1;"></span>
+          <button type="button" class="btn small primary" id="teamPairSelectionBtn">Sett tilgjengelighet</button>
+          <button type="button" class="btn small ghost" id="teamPairSelectionCancelBtn">Avbryt</button>
+        </div>
         <div id="adminTeamSelected" style="margin-bottom:8px;"></div>
         <div id="adminTeamSearchResults"></div>
       </div>
@@ -4869,7 +4874,7 @@
   });
   byId("teamPairSelectionCancelBtn").addEventListener("click", function(){
     view.teamPairSelection = [];
-    renderSpiritualTab();
+    renderAll();
   });
   function wirePersonRowButtons(root){
     root.querySelectorAll("[data-peopledatescheck]").forEach(function(cb){
@@ -5145,47 +5150,35 @@
 
     var pid = currentProjectId();
     var showLogiBtn = canSeeLogi();
-    var teamMembers = teamMemberPeopleForCurrentProject().sort(function(a,b){ return a.name.localeCompare(b.name,"no"); });
-    byId("teamPairList").innerHTML = teamMembers.length ? teamMembers.map(function(t){
-      var nDays = state.attendance.filter(function(a){ return a.project_id === pid && a.person_id === t.id && a.fag === "team"; }).length;
-      var logiInfoForBadge = logiInfoForPerson(t.id);
-      var logiStatus = logiInfoForBadge ? logiInfoForBadge.status : "uavklart";
-      var logiBadgeColor = logiStatusColor(logiStatus, logiInfoForBadge && logiInfoForBadge.meldingSendt);
-      var tradeFag = singleCurrentTradeFagForPerson(t.id);
-      var checkHtml = isByggeleder() ? '<input type="checkbox" class="teampair-check" data-teampaircheck="'+t.id+'" style="margin-right:2px; flex-shrink:0;"'+(view.teamPairSelection.indexOf(t.id)!==-1?' checked':'')+' />' : '';
-      var spouseSelect = isByggeleder() ? '<select data-spouse="'+t.id+'" title="Ektefelle i teamet" style="border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:11.5px; background:var(--surface); max-width:150px;">' +
-        '<option value="">– Ikke ektefelle –</option>' +
-        teamMembers.filter(function(o){ return o.id !== t.id; }).map(function(o){ return '<option value="'+o.id+'"'+(t.spousePersonId===o.id?' selected':'')+'>Gift med '+escapeHtml(o.name)+'</option>'; }).join("") +
-        '</select>' : (t.spousePersonId ? '<span class="badge group">Gift i teamet</span>' : "");
-      return '<div class="shoprow" style="flex-wrap:wrap;">' + checkHtml + '<span class="sname">'+escapeHtml(t.name)+(tradeFag?' <span class="badge group">'+escapeHtml(FAG_LABELS[tradeFag]||tradeFag)+'</span>':'')+'</span>' +
-        '<span class="sqty" style="font-size:12px;">'+escapeHtml(t.address||"")+' · '+nDays+' dag(er) tilgjengelig</span>' +
-        (showLogiBtn ? '<button type="button" class="btn small" data-logiopen="'+t.id+'" style="background:'+logiBadgeColor+'22; border-color:'+logiBadgeColor+';">'+LOGI_STATUS_LABELS[logiStatus]+'</button>' : '') +
-        '<button type="button" class="btn small" data-setavail="'+t.id+'">Sett tilgjengelighet</button>' +
-        spouseSelect +
-        '<button class="del" data-editonly data-removefromteam="'+t.id+'" title="Fjern fra teamet">×</button></div>';
-    }).join("") : '<p class="empty-note">Ingen er med i teamet ennå. Huk av «Med i teamet» på en frivillig for å legge dem til her.</p>';
-    byId("teamPairList").querySelectorAll("[data-removefromteam]").forEach(function(b){
-      b.addEventListener("click", function(){ if(confirm("Fjerne denne personen fra teamet? Personen beholdes som vanlig frivillig.")) updatePerson(this.dataset.removefromteam, { on_team: false }); });
+    // Team-siden: bare info – én linje per husstand (ektepar slås sammen) med losji-adressen.
+    // All redigering (ektefelle, tilgjengelighet, losji, personinfo) ligger under Administrasjon → Team.
+    var teamMembers = teamMemberPeopleForCurrentProject();
+    var lastName = function(n){ var parts = (n || "").trim().split(/\s+/); return parts[parts.length - 1] || ""; };
+    var firstName = function(n){ return (n || "").trim().split(/\s+/)[0] || ""; };
+    var seenTeam = {}, households = [];
+    teamMembers.forEach(function(t){
+      if(seenTeam[t.id]) return;
+      seenTeam[t.id] = true;
+      var sp = t.spousePersonId ? teamMembers.find(function(o){ return o.id === t.spousePersonId; }) : null;
+      if(sp && !seenTeam[sp.id]){ seenTeam[sp.id] = true; households.push([t, sp].sort(function(x, y){ return x.name.localeCompare(y.name, "no"); })); } else households.push([t]);
     });
-    byId("teamPairList").querySelectorAll("[data-setavail]").forEach(function(b){
-      b.addEventListener("click", function(){ openPersonDates(this.dataset.setavail, "team"); });
-    });
-    byId("teamPairList").querySelectorAll("[data-spouse]").forEach(function(sel){
-      sel.addEventListener("change", function(){ setSpouse(this.dataset.spouse, this.value); });
-    });
-    byId("teamPairList").querySelectorAll("[data-logiopen]").forEach(function(b){
-      b.addEventListener("click", function(){ openLogiDialog(this.dataset.logiopen); });
-    });
-    byId("teamPairList").querySelectorAll("[data-teampaircheck]").forEach(function(cb){
-      cb.addEventListener("change", function(){
-        var personId = this.dataset.teampaircheck;
-        var idx = view.teamPairSelection.indexOf(personId);
-        if(cb.checked && idx === -1) view.teamPairSelection.push(personId);
-        else if(!cb.checked && idx !== -1) view.teamPairSelection.splice(idx, 1);
-        renderTeamPairSelectionBar();
-      });
-    });
-    renderTeamPairSelectionBar();
+    var hhLabel = function(h){
+      if(h.length === 1) return '<strong>' + escapeHtml(h[0].name) + '</strong>';
+      var a = h[0], b = h[1];
+      if(lastName(a.name).toLowerCase() === lastName(b.name).toLowerCase()){
+        var firsts = [a, b].map(function(x){ return firstName(x.name); }).sort(function(x, y){ return x.localeCompare(y, "no"); });
+        return '<strong>' + escapeHtml(lastName(a.name)) + '</strong> – ' + escapeHtml(firsts.join(" og "));
+      }
+      return '<strong>' + escapeHtml(a.name) + '</strong> og <strong>' + escapeHtml(b.name) + '</strong>';
+    };
+    var hhSortKey = function(h){ return (lastName(h[0].name) + " " + h[0].name).toLowerCase(); };
+    households.sort(function(a, b){ return hhSortKey(a).localeCompare(hhSortKey(b), "no"); });
+    byId("teamPairList").innerHTML = households.length ? households.map(function(h){
+      var adr = "";
+      h.forEach(function(x){ var li = logiInfoForPerson(x.id); if(!adr && li && li.adresse) adr = li.adresse; });
+      return '<div class="team-hh"><div class="team-hh-name">' + hhLabel(h) + '</div>' +
+        '<div class="team-hh-adr">' + (adr ? '📍 ' + escapeHtml(adr) : '<span class="empty-note" style="margin:0;">Losji-adresse ikke lagt inn ennå</span>') + '</div></div>';
+    }).join("") : '<p class="empty-note">Ingen er med i teamet ennå. Legg til under Administrasjon → Team.</p>';
 
     var todayIsoD = toISODate(new Date());
     var deliveries = deliveriesForCurrentProject();
@@ -9801,10 +9794,21 @@
         var note = other ? ' (koblet til '+other.name+')' : (c.kind === "fag" && !c.accountId ? ' (ingen kode ennå)' : '');
         return '<option value="'+c.key+'">'+escapeHtml(c.label + note)+'</option>';
       }).join("");
-      return '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding:2px 0;">' + check + chips + via +
+      // Redigering som før lå på Team-siden: ektefelle, tilgjengelighet, losji og personinfo.
+      var teamOthers = peopleSorted.filter(function(o){ return o.onTeam && o.id !== p.id; });
+      var nDays = state.attendance.filter(function(a){ return a.project_id === currentProjectId() && a.person_id === p.id && a.fag === "team"; }).length;
+      var li = logiInfoForPerson(p.id), lst = li ? li.status : "uavklart", lcol = logiStatusColor(lst, li && li.meldingSendt);
+      var ctl = '<div class="team-admin-ctl">' +
+        '<label class="checkrow" style="margin:0;" title="Velg flere (f.eks. et ektepar) for å sette tilgjengelighet samtidig"><input type="checkbox" data-teampaircheck="'+p.id+'"'+(view.teamPairSelection.indexOf(p.id) !== -1 ? ' checked' : '')+' /> Velg</label>' +
+        '<button type="button" class="btn small" data-setavail="'+p.id+'">Sett tilgjengelighet</button><span style="font-size:12px; color:var(--muted);">'+nDays+' dag(er)</span>' +
+        '<select data-spouse="'+p.id+'" title="Ektefelle i teamet" style="border:1px solid var(--border); border-radius:6px; padding:3px 6px; font-size:12px; background:var(--surface); max-width:170px;"><option value="">– Ikke ektefelle –</option>' +
+          teamOthers.map(function(o){ return '<option value="'+o.id+'"'+(p.spousePersonId === o.id ? ' selected' : '')+'>Gift med '+escapeHtml(o.name)+'</option>'; }).join("") + '</select>' +
+        '<button type="button" class="btn small" data-logiopen="'+p.id+'" style="background:'+lcol+'22; border-color:'+lcol+';">'+LOGI_STATUS_LABELS[lst]+'</button>' +
+        '<button type="button" class="btn small ghost" data-editpersoninfo="'+p.id+'">Rediger info</button></div>';
+      return '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding:2px 0 6px;">' + check + chips + via +
         '<span style="flex:1;"></span>' +
         '<select data-teamloginadd="'+p.id+'" aria-label="Legg til innlogging for '+escapeHtml(p.name)+'" style="border:1px solid var(--border); border-radius:7px; padding:4px 6px; font-size:12.5px; background:var(--surface); width:170px;">' +
-        '<option value="">+ innlogging</option>' + opts + '</select></div>';
+        '<option value="">+ innlogging</option>' + opts + '</select>' + ctl + '</div>';
     }
     function wireAdminTeamCheckboxes(container){
       container.querySelectorAll("[data-adminteamcheck]").forEach(function(cb){
@@ -9816,6 +9820,26 @@
           if(this.checked && !wasOnTeam) markAvailableWholeProject(id, null);
           // Ute av teamet = ingen innlogging i teamet (ingen Team-side/Flex).
           if(!this.checked) state.teamLogins.filter(function(r){ return r.projectId === currentProjectId() && r.personId === id; }).forEach(function(r){ setTeamLogin(r.accountId, null); });
+        });
+      });
+      container.querySelectorAll("[data-setavail]").forEach(function(b){
+        b.addEventListener("click", function(){ openPersonDates(this.dataset.setavail, "team"); });
+      });
+      container.querySelectorAll("[data-spouse]").forEach(function(sel){
+        sel.addEventListener("change", function(){ setSpouse(this.dataset.spouse, this.value); });
+      });
+      container.querySelectorAll("[data-logiopen]").forEach(function(b){
+        b.addEventListener("click", function(){ openLogiDialog(this.dataset.logiopen); });
+      });
+      container.querySelectorAll("[data-editpersoninfo]").forEach(function(b){
+        b.addEventListener("click", function(){ openPersonInfoEditDialog(this.dataset.editpersoninfo); });
+      });
+      container.querySelectorAll("[data-teampaircheck]").forEach(function(cb){
+        cb.addEventListener("change", function(){
+          var personId = this.dataset.teampaircheck, idx = view.teamPairSelection.indexOf(personId);
+          if(this.checked && idx === -1) view.teamPairSelection.push(personId);
+          else if(!this.checked && idx !== -1) view.teamPairSelection.splice(idx, 1);
+          renderTeamPairSelectionBar();
         });
       });
       container.querySelectorAll("[data-teamloginrm]").forEach(function(b){
@@ -9837,6 +9861,7 @@
     var teamMatches = teamQuery ? peopleSorted.filter(function(p){ return !p.onTeam && p.name.toLowerCase().indexOf(teamQuery) !== -1; }) : [];
     byId("adminTeamSearchResults").innerHTML = !teamQuery ? "" : (teamMatches.length ? teamMatches.map(adminTeamRowHtml).join("") : '<p class="empty-note">Ingen treff.</p>');
     wireAdminTeamCheckboxes(byId("adminTeamSearchResults"));
+    renderTeamPairSelectionBar();
 
   }
   // Alle innlogginger som kan gis til noen i teamet i dette prosjektet: aktive CG1-brukere og alle
