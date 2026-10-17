@@ -1022,6 +1022,11 @@
   .tm-scripture{ display:flex; align-items:baseline; gap:8px; flex:1; min-width:200px; flex-wrap:wrap; }
   .tm-scripture-label{ font-size:11.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
   .tm-duties{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .friv-control{ font-size:12.5px; color:var(--muted); margin:0 0 8px; }
+  .friv-control b{ color:var(--text); }
+  .friv-control.bad{ color:var(--bad-ink); }
+  .friv-bucket-toggle{ font:inherit; font-weight:700; background:none; border:none; padding:0; cursor:pointer; color:inherit; text-align:left; }
+  .friv-hint{ position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); white-space:nowrap; pointer-events:none; }
   .pwd-all{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-bottom:8px; }
   .pwd-label{ font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; min-width:70px; }
   .pwd-chips{ display:flex; flex-wrap:wrap; gap:5px; }
@@ -5078,6 +5083,13 @@
       }).join("");
       byId("peopleByFag").innerHTML = buildFrivilligeGridHtml(cur, { fagFilter: fagFilter, readOnly: !isByggeleder(), fromToday: !view.frivilligeFullView, editMode: view.frivilligeEditMode, allowFagDrag: true, tagFilter: view.frivilligeTag || "", showUnassigned: isByggeleder() });
       wireFrivilligeGridEvents("peopleByFag", { readOnly: !isByggeleder(), allowFagDrag: true, editMode: view.frivilligeEditMode });
+      byId("peopleByFag").querySelectorAll("[data-frivbucket]").forEach(function(b){
+        b.addEventListener("click", function(){
+          if(this.dataset.frivbucket === "nomore") view.frivNoMoreOpen = !view.frivNoMoreOpen;
+          else view.frivInactiveOpen = view.frivInactiveOpen === false;
+          renderPeopleTab();
+        });
+      });
       if(view.frivilligeFullView) scrollGridToCurrentWeek("peopleByFag", cur); else byId("peopleByFag").scrollLeft = 0;
     }
 
@@ -10924,8 +10936,28 @@
     var unassigned = opts.showUnassigned ? state.people.filter(function(p){
       return p.projectId === project.id && !byPerson[p.id] && !seenPersonIds[p.id] && tagOk(p);
     }).sort(compareByLastName) : [];
-    allListedPeople = allListedPeople.concat(unassigned);
-    var anyRows = fagGroups.length > 0 || unassigned.length > 0;
+    // Regel: alle i prosjektet skal synes i lista. De som har dager, men ikke kom med i noe fag over
+    // (bare dager før denne uken, eller bare i fag som ikke er aktivt i prosjektet), samles nederst.
+    // Gjelder ikke når lista er filtrert på ett fag.
+    var listedFags = {};
+    fagsToList.forEach(function(f){ listedFags[f] = true; });
+    var curMondayIso = toISODate(workdayDate(range, startIdx));
+    var leftover = (opts.showUnassigned && !opts.fagFilter) ? state.people.filter(function(p){
+      return p.projectId === project.id && byPerson[p.id] && !seenPersonIds[p.id] && tagOk(p);
+    }).sort(compareByLastName) : [];
+    var otherFagInfo = function(p){
+      var rows = state.attendance.filter(function(a){ return a.project_id === project.id && a.person_id === p.id; });
+      var inactive = {}, last = "", lastFag = "";
+      rows.forEach(function(a){
+        if(!listedFags[a.fag] && a.day >= curMondayIso) inactive[a.fag] = true;
+        if(a.day > last){ last = a.day; lastFag = a.fag; }
+      });
+      return { inactive: Object.keys(inactive), last: last, lastFag: lastFag };
+    };
+    var noMore = [], inactiveFag = [], fagInfo = {};
+    leftover.forEach(function(p){ var info = fagInfo[p.id] = otherFagInfo(p); (info.inactive.length ? inactiveFag : noMore).push(p); });
+    allListedPeople = allListedPeople.concat(unassigned, noMore, inactiveFag);
+    var anyRows = fagGroups.length > 0 || unassigned.length > 0 || noMore.length > 0 || inactiveFag.length > 0;
     var shortNameMap = buildShortNameMap(allListedPeople);
     // Summerer antall frivillige per dag - både per fag og totalt for hele dagen (unike personer,
     // så noen som står i flere fag samme dag ikke telles dobbelt i totalen) - for rask oversikt.
@@ -10990,7 +11022,29 @@
         html += '<div class="g-row" data-unassigned="'+p.id+'"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="g-track">'+bg+todayLine+'</div></div>';
       });
     }
+    var leftoverRows = function(list, title, key, open, hint){
+      if(!list.length) return;
+      html += '<div class="g-row g-group g-unassigned"><div class="g-name behov-fag-head"><button type="button" class="friv-bucket-toggle" data-frivbucket="'+key+'" aria-expanded="'+open+'">'+(open ? "▾" : "▸")+' '+title+' ('+list.length+')</button></div><div class="g-track">'+bg+todayLine+'</div></div>';
+      if(!open) return;
+      list.forEach(function(p){
+        var nameCell = '<span data-logiopen="'+p.id+'" style="cursor:pointer; text-decoration:underline dotted;" title="Trykk for personinfo – sett opp nye dager derfra"><span class="name-full">'+escapeHtml(p.name)+'</span><span class="name-short">'+escapeHtml(shortNameMap[p.id] || p.name)+'</span></span>';
+        html += '<div class="g-row" data-leftover="'+p.id+'"><div class="g-name" style="padding-left:24px; font-size:12.5px;">'+nameCell+'</div><div class="g-track">'+bg+todayLine+'<span class="friv-hint">'+escapeHtml(hint(fagInfo[p.id]))+'</span></div></div>';
+      });
+    };
+    leftoverRows(noMore, "Ingen flere dager", "nomore", !!view.frivNoMoreOpen, function(fi){ return fi.last ? "Siste dag: " + fmtRange(fi.last, fi.last) + " · " + (FAG_LABELS[fi.lastFag] || fi.lastFag) : ""; });
+    leftoverRows(inactiveFag, "Dager i fag som ikke er aktivt", "inactive", view.frivInactiveOpen !== false, function(fi){ return "Har dager i " + fi.inactive.map(function(f){ return FAG_LABELS[f] || f; }).join(", ") + " – slå på faget under Administrasjon, eller flytt dagene"; });
     html += '</div>';
+    // Kontrollinje: alle i prosjektet skal være med et sted i lista.
+    if(opts.showUnassigned && !opts.fagFilter){
+      var projPeople = state.people.filter(function(p){ return p.projectId === project.id && tagOk(p); });
+      var inGroups = projPeople.filter(function(p){ return seenPersonIds[p.id]; }).length;
+      var accounted = inGroups + unassigned.length + noMore.length + inactiveFag.length;
+      var parts = [inGroups + (opts.fromToday && startIdx > 0 ? " med dager fra denne uken" : " med dager"), unassigned.length + " ikke satt opp"];
+      if(noMore.length) parts.push(noMore.length + " ingen flere dager");
+      if(inactiveFag.length) parts.push(inactiveFag.length + " i fag som ikke er aktivt");
+      var ok = accounted === projPeople.length;
+      html = '<p class="friv-control'+(ok ? '' : ' bad')+'">'+(ok ? '✓ ' : '⚠ ')+'<b>'+projPeople.length+' i prosjektet</b>'+(opts.tagFilter ? ' (tagg «'+escapeHtml(opts.tagFilter)+'»)' : '')+': '+parts.join(" · ")+(ok ? '' : ' – '+(projPeople.length - accounted)+' vises ikke, si fra')+'</p>' + html;
+    }
     if(!anyRows) return html + '<p class="empty-note" style="margin-top:10px;">'+(opts.tagFilter ? 'Ingen med taggen «'+escapeHtml(opts.tagFilter)+'» her.' : (opts.fromToday && startIdx > 0 ? 'Ingen frivillige satt opp fra inneværende uke og fremover. Trykk «Vis hele prosjektet» for å se hele perioden.' : 'Ingen frivillige er satt opp på noe fag ennå.'))+'</p>';
     return html;
   }
