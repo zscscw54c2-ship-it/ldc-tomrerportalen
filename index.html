@@ -8852,7 +8852,7 @@
     state.currentProjectId = active ? active.id : state.projects[0].id;
   }
 
-  var PROJECT_COLUMNS = "id,name,start_date,end_date,close_out_date,is_active,spiritual_info,site_address,eating_address,meeting_address,matterport_url,matterport_password,created_at";
+  var PROJECT_COLUMNS = "id,name,start_date,end_date,close_out_date,is_active,spiritual_info,site_address,eating_address,meeting_address,matterport_url,matterport_password,created_at,color,evacuation_plan";
   function refetchProjects(){
     sb.from("projects").select(PROJECT_COLUMNS).order("created_at").then(function(res){
       if(res.error){ showError("Klarte ikke å hente prosjekter: "+res.error.message); return; }
