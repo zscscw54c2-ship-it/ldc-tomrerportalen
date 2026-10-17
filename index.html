@@ -5433,13 +5433,13 @@
         });
       });
     } else {
-      var wholeWeek = duties.filter(function(d){ return !d.days.length; });
+      var wholeWeek = duties.filter(dutyIsWholeWeek);
       var chip = function(d){ return '<span class="pwd-chip">'+escapeHtml(dutyShortText(d))+'</span>'; };
       byId("pwChecklist").innerHTML = duties.length ?
         (wholeWeek.length ? '<div class="pwd-all"><span class="pwd-label">Hele uken</span><span class="pwd-chips">'+wholeWeek.map(chip).join("")+'</span></div>' : '') +
         '<div class="pwd-week">' + DOW_SHORT.map(function(lbl, i){
           var day = new Date(teamWeekMonday.getFullYear(), teamWeekMonday.getMonth(), teamWeekMonday.getDate() + i);
-          var items = duties.filter(function(d){ return d.days.indexOf(i + 1) !== -1; });
+          var items = duties.filter(function(d){ return !dutyIsWholeWeek(d) && d.days.indexOf(i + 1) !== -1; });
           return '<div class="pwd-col'+(todayDow === i + 1 ? ' today' : '')+'"><div class="pwd-dh">'+lbl+' <span>'+day.getDate()+'.</span></div><div class="pwd-chips">' +
             (items.length ? items.map(chip).join("") : '<span class="pwd-none">–</span>') + '</div></div>';
         }).join("") + '</div>'
@@ -5773,111 +5773,124 @@
     if(!cur){ showError("Velg et prosjekt først."); return; }
     var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
     if(!jsPDFCtor){ showError("PDF-biblioteket lastet ikke inn. Last siden på nytt og prøv igjen."); return; }
-    var rows = pwProgramRows();
-    var duties = dutiesForCurrentProject();
     var acc = hexToRgb(projectColor(cur), [47,111,168]);
     var soft = acc.map(function(c){ return Math.round(c + (255 - c) * 0.86); });
     var ink = [27,36,48], muted = [100,116,139], line = [221,227,234];
     var doc = new jsPDFCtor({ unit: "pt", format: "a4", orientation: "landscape" });
-    var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 40;
-    function header(cont){
-      doc.setFillColor(acc[0], acc[1], acc[2]); doc.rect(0, 0, W, 8, "F");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(cont ? 16 : 26); doc.setTextColor(ink[0], ink[1], ink[2]);
-      doc.text("Privilege Week" + (cont ? " (forts.)" : ""), M, cont ? 42 : 52);
-      doc.setFontSize(cont ? 12 : 15); doc.setTextColor(acc[0], acc[1], acc[2]);
-      doc.text(cur.name, W - M, cont ? 42 : 46, { align: "right" });
-      if(!cont){
-        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(muted[0], muted[1], muted[2]);
-        doc.text("Program og ansvarspunkter", M, 70);
-        if(cur.start) doc.text(fmtRange(cur.start, cur.closeOut || cur.end || cur.start), W - M, 63, { align: "right" });
-      }
-      return cont ? 62 : 104;
-    }
-    function footer(){
-      var n = doc.internal.getNumberOfPages();
-      for(var i = 1; i <= n; i++){
-        doc.setPage(i);
-        doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(muted[0], muted[1], muted[2]);
-        var t = new Date();
-        doc.text("Utskrevet " + t.getDate() + "." + (t.getMonth() + 1) + "." + t.getFullYear() + "  ·  LDC-portalen", M, H - 20);
-        if(n > 1) doc.text("Side " + i + " av " + n, W - M, H - 20, { align: "right" });
-      }
-    }
-    function section(title, y){
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(ink[0], ink[1], ink[2]);
-      doc.text(title.toUpperCase(), M, y);
-      doc.setDrawColor(acc[0], acc[1], acc[2]); doc.setLineWidth(1.5); doc.line(M, y + 5, M + doc.getTextWidth(title.toUpperCase()), y + 5);
-      return y + 16;
-    }
-    var y = header(false);
-    y = section("Program", y);
-    var body = rows.map(function(r){
+    var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 32;
+    var LH = doc.getLineHeightFactor ? doc.getLineHeightFactor() : 1.15;
+    // Lenker er ikke til nytte på papir: vis bare adressen.
+    var shortUrl = function(t){ return (t || "").replace(/https?:\/\/([^\/\s]+)\S*/gi, "$1").replace(/\s+/g, " ").trim(); };
+    // Programtabell: kolonner med fast vekt; tomme kolonner (f.eks. ingen merknader) tas bort.
+    var rows = pwProgramRows().map(function(r){
       var w = r.week, info = isoWeekInfo(fromISODate(r.monday));
-      return ["Uke " + info.week, fmtRange(w ? w.start : r.monday, w ? w.end : r.friday), w ? w.responsible : "Ingen ansvarlig satt",
-        (w && w.familiestudie) || "", (w && w.sikkerhetstale) || "", (w && w.bibellesning) || "", (w && w.note) || ""];
+      return { cells: ["Uke " + info.week, fmtRange(w ? w.start : r.monday, w ? w.end : r.friday) + (w && w.label ? "\n" + w.label : ""), w ? w.responsible : "Ingen ansvarlig satt",
+        shortUrl(w && w.familiestudie), shortUrl(w && w.sikkerhetstale), shortUrl(w && w.bibellesning), shortUrl(w && w.note)], missing: !w };
     });
-    var hasNote = body.some(function(b){ return b[6]; });
-    if(!hasNote) body = body.map(function(b){ return b.slice(0, 6); });
+    var COLS = [["Uke", 0.6], ["Datoer", 1.15], ["Ansvarlig", 1.25], ["Familiestudie", 2.1], ["Sikkerhetstale", 2], ["Bibellesning", 1.2], ["Merknad", 2.1]];
+    var keep = COLS.map(function(c, i){ return i < 3 || rows.some(function(r){ return r.cells[i]; }); });
+    var cols = COLS.filter(function(c, i){ return keep[i]; });
+    var body = rows.map(function(r){ return r.cells.filter(function(c, i){ return keep[i]; }); });
+    var totalW = W - 2 * M, wsum = cols.reduce(function(s, c){ return s + c[1]; }, 0);
+    var widths = cols.map(function(c){ return totalW * c[1] / wsum; });
+    var duties = dutiesForCurrentProject();
+    var whole = duties.filter(dutyIsWholeWeek);
+    var dayItems = [0,1,2,3,4].map(function(i){ return duties.filter(function(d){ return !dutyIsWholeWeek(d) && d.days.indexOf(i + 1) !== -1; }); });
+    var colGap = 8, colW = (totalW - 4 * colGap) / 5;
+    var TOP = 80, BOTTOM = H - 26;
+    // Finn største skriftstørrelse der alt får plass på én side.
+    function layout(fs){
+      var pad = Math.max(3, fs * 0.45), lh = fs * LH;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(fs);
+      var headH = lh + 2 * pad;
+      var rowHs = body.map(function(cells){
+        return Math.max.apply(null, cells.map(function(c, i){ return doc.splitTextToSize(String(c || " "), widths[i] - 2 * pad).length; })) * lh + 2 * pad;
+      });
+      var tableH = headH + rowHs.reduce(function(s, h){ return s + h; }, 0);
+      var wholeLines = whole.length ? doc.splitTextToSize(whole.map(function(d){ return dutyShortText(d); }).join("   •   "), totalW - 90) : [];
+      var dayLines = dayItems.map(function(items){ return items.map(function(d){ return doc.splitTextToSize(dutyShortText(d), colW - 20); }); });
+      var colH = Math.max.apply(null, dayLines.map(function(ls){ return ls.reduce(function(s, l){ return s + l.length * lh + fs * 0.5; }, 0); })) + 2 * pad + 4;
+      var dutiesH = 18 + (whole.length ? wholeLines.length * lh + 2 * pad + 8 : 0) + (lh + 2 * pad + 2) + Math.max(colH, lh * 2);
+      return { fs: fs, pad: pad, lh: lh, tableH: tableH, wholeLines: wholeLines, dayLines: dayLines, colH: colH, total: 18 + tableH + 22 + dutiesH };
+    }
+    var L = null;
+    for(var fs = 10.5; fs >= 5.5; fs -= 0.25){ L = layout(fs); if(TOP + L.total <= BOTTOM) break; }
+    // Topptekst
+    doc.setFillColor(acc[0], acc[1], acc[2]); doc.rect(0, 0, W, 7, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.text("Privilege Week", M, 40);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.text("Program og ansvarspunkter", M, 56);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(acc[0], acc[1], acc[2]);
+    doc.text(cur.name, W - M, 36, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(muted[0], muted[1], muted[2]);
+    if(cur.start) doc.text(fmtRange(cur.start, cur.closeOut || cur.end || cur.start), W - M, 52, { align: "right" });
+    function section(title, y){
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text(title.toUpperCase(), M, y);
+      doc.setDrawColor(acc[0], acc[1], acc[2]); doc.setLineWidth(1.4); doc.line(M, y + 4, M + doc.getTextWidth(title.toUpperCase()), y + 4);
+      return y + 12;
+    }
+    var y = section("Program", TOP);
+    var colStyles = {};
+    widths.forEach(function(w, i){ colStyles[i] = { cellWidth: w }; });
+    colStyles[0].fontStyle = "bold"; colStyles[1].textColor = muted; colStyles[2].fontStyle = "bold";
     doc.autoTable({
-      head: [["Uke", "Datoer", "Ansvarlig", "Familiestudie", "Sikkerhetstale", "Bibellesning"].concat(hasNote ? ["Merknad"] : [])],
-      body: body.length ? body : [["–", "", "Ingen uker å vise", "", "", ""]],
-      startY: y, theme: "plain", margin: { left: M, right: M, top: 60 },
-      headStyles: { fillColor: acc, textColor: 255, fontStyle: "bold", fontSize: 10, cellPadding: { top: 6, bottom: 6, left: 7, right: 7 } },
-      styles: { font: "helvetica", fontSize: 10.5, textColor: ink, cellPadding: { top: 6, bottom: 6, left: 7, right: 7 }, overflow: "linebreak", lineColor: line, lineWidth: { bottom: 0.6 } },
+      head: [cols.map(function(c){ return c[0]; })],
+      body: body.length ? body : [cols.map(function(c, i){ return i === 2 ? "Ingen uker å vise" : ""; })],
+      startY: y, theme: "plain", margin: { left: M, right: M, top: 30, bottom: 26 }, tableWidth: totalW, rowPageBreak: "avoid",
+      headStyles: { fillColor: acc, textColor: 255, fontStyle: "bold", fontSize: L.fs, cellPadding: L.pad },
+      styles: { font: "helvetica", fontSize: L.fs, textColor: ink, cellPadding: L.pad, overflow: "linebreak", lineColor: line, lineWidth: { bottom: 0.5 }, valign: "top" },
       alternateRowStyles: { fillColor: [247, 249, 251] },
-      columnStyles: { 0: { fontStyle: "bold", cellWidth: 52 }, 1: { cellWidth: 92, textColor: muted }, 2: { fontStyle: "bold", cellWidth: 150 } },
-      didParseCell: function(d){ if(d.section === "body" && d.column.index === 2 && d.cell.raw === "Ingen ansvarlig satt"){ d.cell.styles.fontStyle = "italic"; d.cell.styles.textColor = muted; } },
-      didDrawPage: function(d){ if(d.pageNumber > 1) header(true); }
+      columnStyles: colStyles,
+      didParseCell: function(d){ if(d.section === "body" && d.column.index === 2 && rows[d.row.index] && rows[d.row.index].missing){ d.cell.styles.fontStyle = "italic"; d.cell.styles.textColor = muted; } }
     });
-    y = doc.lastAutoTable.finalY + 30;
-    // Ansvarspunkter: «Hele uken» + fem dagkolonner.
-    var colGap = 10, colW = (W - 2 * M - 4 * colGap) / 5, lineH = 14;
-    var whole = duties.filter(function(d){ return !d.days.length; });
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5);
-    var cols = [0,1,2,3,4].map(function(i){
-      return duties.filter(function(d){ return d.days.indexOf(i + 1) !== -1; }).map(function(d){ return doc.splitTextToSize(dutyShortText(d), colW - 26); });
-    });
-    var colH = Math.max(1, Math.max.apply(null, cols.map(function(c){ return c.reduce(function(s, t){ return s + t.length * lineH + 6; }, 0); })));
-    var wholeText = whole.map(function(d){ return d.text; }).join("     •     ");
-    var wholeLines = whole.length ? doc.splitTextToSize(wholeText, W - 2 * M - 110) : [];
-    var need = 16 + (whole.length ? wholeLines.length * lineH + 22 : 0) + 30 + colH + 16;
-    if(y + need > H - 40){ doc.addPage(); y = header(true) + 6; }
+    y = doc.lastAutoTable.finalY + 22;
+    if(y + 60 > BOTTOM){ doc.addPage(); y = 40; }
     y = section("Ansvarspunkter for privilege week", y);
+    var fsz = L.fs, lh = L.lh, pad = L.pad;
     if(!duties.length){
-      doc.setFont("helvetica", "italic"); doc.setFontSize(10.5); doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.setFont("helvetica", "italic"); doc.setFontSize(fsz); doc.setTextColor(muted[0], muted[1], muted[2]);
       doc.text("Ingen ansvarspunkter lagt til ennå.", M, y + 8);
     } else {
       if(whole.length){
-        var bh = wholeLines.length * lineH + 14;
-        doc.setFillColor(soft[0], soft[1], soft[2]); doc.roundedRect(M, y, W - 2 * M, bh, 6, 6, "F");
-        doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(acc[0], acc[1], acc[2]);
-        doc.text("HELE UKEN", M + 12, y + 18);
-        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(ink[0], ink[1], ink[2]);
-        doc.text(wholeLines, M + 100, y + 18, { lineHeightFactor: lineH / 10.5 });
-        y += bh + 10;
+        var bh = L.wholeLines.length * lh + 2 * pad;
+        doc.setFillColor(soft[0], soft[1], soft[2]); doc.roundedRect(M, y, totalW, bh, 5, 5, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(fsz * 0.9); doc.setTextColor(acc[0], acc[1], acc[2]);
+        doc.text("HELE UKEN", M + 10, y + pad + fsz * 0.8);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(fsz); doc.setTextColor(ink[0], ink[1], ink[2]);
+        doc.text(L.wholeLines, M + 84, y + pad + fsz * 0.8);
+        y += bh + 8;
       }
+      var hh = lh + 2 * pad + 2;
+      // Dagkolonnene fyller resten av siden (maks ~150pt), så det er plass til notater.
+      var colH = Math.max(L.colH, Math.min(150, BOTTOM - 4 - (y + hh)));
       var days = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag"];
-      // Kolonnene fyller ledig plass nederst (opptil ~170pt), så arket ser helt ut og det er plass til notater.
-      colH = Math.max(colH, Math.min(170, H - 46 - (y + 24 + 16)));
-      cols.forEach(function(items, i){
+      L.dayLines.forEach(function(items, i){
         var x = M + i * (colW + colGap);
-        doc.setFillColor(acc[0], acc[1], acc[2]); doc.roundedRect(x, y, colW, 24, 6, 6, "F"); doc.rect(x, y + 12, colW, 12, "F");
-        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(255, 255, 255);
-        doc.text(days[i], x + colW / 2, y + 16, { align: "center" });
-        doc.setFillColor(247, 249, 251); doc.setDrawColor(line[0], line[1], line[2]); doc.setLineWidth(0.6);
-        doc.rect(x, y + 24, colW, colH + 16, "FD");
-        var iy = y + 24 + 18;
-        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(ink[0], ink[1], ink[2]);
+        doc.setFillColor(acc[0], acc[1], acc[2]); doc.roundedRect(x, y, colW, hh, 5, 5, "F"); doc.rect(x, y + hh / 2, colW, hh / 2, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(fsz + 0.5); doc.setTextColor(255, 255, 255);
+        doc.text(days[i], x + colW / 2, y + hh / 2 + fsz * 0.35, { align: "center" });
+        doc.setFillColor(247, 249, 251); doc.setDrawColor(line[0], line[1], line[2]); doc.setLineWidth(0.5);
+        doc.rect(x, y + hh, colW, colH, "FD");
+        var iy = y + hh + pad + fsz * 0.85;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(fsz);
         if(!items.length){ doc.setTextColor(muted[0], muted[1], muted[2]); doc.text("–", x + colW / 2, iy, { align: "center" }); }
         items.forEach(function(t){
-          doc.setFillColor(acc[0], acc[1], acc[2]); doc.circle(x + 13, iy - 3.5, 2.2, "F");
+          doc.setFillColor(acc[0], acc[1], acc[2]); doc.circle(x + 9, iy - fsz * 0.32, Math.max(1.4, fsz * 0.19), "F");
           doc.setTextColor(ink[0], ink[1], ink[2]);
-          doc.text(t, x + 22, iy, { lineHeightFactor: lineH / 10.5 });
-          iy += t.length * lineH + 6;
+          doc.text(t, x + 16, iy);
+          iy += t.length * lh + fsz * 0.5;
         });
       });
     }
-    footer();
+    var n = doc.internal.getNumberOfPages(), t = new Date();
+    for(var pi = 1; pi <= n; pi++){
+      doc.setPage(pi);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text("Utskrevet " + t.getDate() + "." + (t.getMonth() + 1) + "." + t.getFullYear() + "  ·  LDC-portalen", M, H - 14);
+      if(n > 1) doc.text("Side " + pi + " av " + n, W - M, H - 14, { align: "right" });
+    }
     doc.save(pdfFileName("Privilege-week", cur));
   }
   byId("pwPrintBtn").addEventListener("click", printPrivilegeWeekPoster);
@@ -9032,6 +9045,7 @@
     var dow = hit ? ["man","tir","ons","tor","fre"].indexOf((hit.time || "").trim().toLowerCase().slice(0, 3)) : -1;
     return dow === -1 ? [] : [dow + 1];
   }
+  function dutyIsWholeWeek(d){ return !d.days.length || d.days.length === 5; }
   function dutyShortText(d){
     return d.days.length ? d.text.replace(/\s*[(–—-]\s*(mandag|tirsdag|onsdag|torsdag|fredag)\s*\)?\s*$/i, "") || d.text : d.text;
   }
